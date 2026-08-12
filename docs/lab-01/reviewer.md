@@ -9,6 +9,7 @@
 | [PR #7](https://github.com/phatthidawadi/toktickit/pull/7) | `feature/1-project-foundation` | Approved with comments |
 | [PR #11](https://github.com/phatthidawadi/toktickit/pull/11) | `feature/2-health-check` | Approved with comments |
 | [PR #12](https://github.com/phatthidawadi/toktickit/pull/12) | `feature/3-category-seed` | Approved with comments |
+| [PR #13](https://github.com/phatthidawadi/toktickit/pull/13) | `feature/4-category-list` | Approved |
 
 ### Reviewer comment I received (PR #7):
 "บิวทำ project foundation ได้ค่อนข้างเป็นระบบเลย โครงสร้างโปรเจกต์และการแยก branch ทำให้เห็นขอบเขตของงานชัดเจนดี 👍 โดยรวมโอเคและสามารถต่อยอดในส่วนของ feature อื่น ๆ ได้ง่ายขึ้น ถ้ามีโอกาสอยากให้เพิ่มรายละเอียดใน README เกี่ยวกับวิธี setup และการ run project อีกนิด จะช่วยให้คนอื่นในทีม clone แล้วเริ่มทำงานต่อได้ง่ายขึ้น"
@@ -33,6 +34,12 @@
 
 ### How I responded (PR #12):
 "ขอบคุณมากครับ! ผมได้ทำการลบ comment แนะนำและบรรทัด TODO ออกจากไฟล์ `schema.prisma` และ `seed.ts` จนคลีนเรียบร้อยแล้วครับ รวมถึงได้เพิ่มประวัติ Prompt ของ AI ในไฟล์ `ai_use.md` ให้ครบถ้วนไม่มี placeholder เหลือแล้วครับ"
+
+### Reviewer comment I received (PR #13):
+"ตรวจสอบ PR Feature 4: Category List Display เบื้องต้นแล้ว Base branch และ feature branch ถูกต้องตาม workflow ของ Lab และ PR มีการแยกงานของ Issue 4 ไว้ชัดเจน ก่อน Approve รบกวนตรวจสอบว่า GET /api/categories สามารถดึง category จาก database ได้จริง และส่งข้อมูลเรียงตาม id รวมถึงหน้าเว็บสามารถแสดง category ทั้ง 4 รายการได้เมื่อ API ทำงานปกติ และแสดงสถานะ Offline เมื่อ API ใช้งานไม่ได้ ถ้าทดสอบส่วน API และ UI ตาม test plan แล้วผ่านทั้งหมด ผมไม่มีจุดที่ต้องแก้เพิ่มเติม"
+
+### How I responded (PR #13):
+"ขอบคุณสำหรับการรีวิวครับ! ผมได้ทำการเขียน Unit Test เพื่อจำลองและตรวจสอบทั้งการดึง API, การเรียงลำดับ ID, การแสดงผลหน้าเว็บเวลาปกติ รวมถึงจำลองสถานการณ์เวลา API ใช้งานไม่ได้ (Offline) เรียบร้อยแล้วครับ ซึ่งผลเทสต์รันผ่าน 100% ทั้งหมดตรงตาม Test Plan เป๊ะๆ ครับ มั่นใจได้เลยครับ"
 
 ## Pull Requests I reviewed for my partner
 ### My comment:
