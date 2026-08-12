@@ -11,6 +11,7 @@
 | 4 | Implement Issue 2 API health check. | The agent updated `app.ts` to return `{ status: "ok" }` and verified the test passed. |
 | 5 | Implement Issue 3 Category Model and Seeding. | The agent updated `schema.prisma` and `seed.ts` to implement the Category model and idempotent seeding logic, then successfully seeded the DB. |
 | 6 | Remove instruction comments from schema.prisma and seed.ts. | The agent cleaned up the files to make the codebase cleaner for the PR review. |
+| 7 | Implement Issue 4 Category List feature. | The agent implemented the frontend fetching logic in `api.ts`, the UI states in `App.tsx`, the backend route in `app.ts`, and corresponding UI and backend tests. |
 
 ## Reflection
 Using the AI agent significantly sped up the initial project scaffold and Git setup. I had to correct the agent when it initially put the scaffold files directly into `main` and `lab1-staging` instead of `feature/1-project-foundation` (because the instructions dictate an empty foundation). The agent was very effective at modifying the endpoints and models and running tests to verify.
