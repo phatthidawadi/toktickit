@@ -9,7 +9,8 @@
 | 2 | Reset main and lab1-staging to empty branches and move all files to feature/1-project-foundation. | Approved the restructuring. The agent moved the scaffold to the correct branch. |
 | 3 | Update README.md with detailed setup instructions based on peer review comment. | The agent added comprehensive setup instructions and recorded the peer review. |
 | 4 | Implement Issue 2 API health check. | The agent updated `app.ts` to return `{ status: "ok" }` and verified the test passed. |
-| 5 |  |  |
+| 5 | Implement Issue 3 Category Model and Seeding. | The agent updated `schema.prisma` and `seed.ts` to implement the Category model and idempotent seeding logic, then successfully seeded the DB. |
+| 6 | Remove instruction comments from schema.prisma and seed.ts. | The agent cleaned up the files to make the codebase cleaner for the PR review. |
 
 ## Reflection
-Using the AI agent significantly sped up the initial project scaffold and Git setup. I had to correct the agent when it initially put the scaffold files directly into `main` and `lab1-staging` instead of `feature/1-project-foundation` (because the instructions dictate an empty foundation). The agent was very effective at modifying the `app.ts` endpoint for the health check and running tests to verify.
+Using the AI agent significantly sped up the initial project scaffold and Git setup. I had to correct the agent when it initially put the scaffold files directly into `main` and `lab1-staging` instead of `feature/1-project-foundation` (because the instructions dictate an empty foundation). The agent was very effective at modifying the endpoints and models and running tests to verify.

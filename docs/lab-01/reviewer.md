@@ -8,6 +8,7 @@
 |----|--------|------------------|
 | [PR #7](https://github.com/phatthidawadi/toktickit/pull/7) | `feature/1-project-foundation` | Approved with comments |
 | [PR #11](https://github.com/phatthidawadi/toktickit/pull/11) | `feature/2-health-check` | Approved with comments |
+| [PR #12](https://github.com/phatthidawadi/toktickit/pull/12) | `feature/3-category-seed` | Approved with comments |
 
 ### Reviewer comment I received (PR #7):
 "บิวทำ project foundation ได้ค่อนข้างเป็นระบบเลย โครงสร้างโปรเจกต์และการแยก branch ทำให้เห็นขอบเขตของงานชัดเจนดี 👍 โดยรวมโอเคและสามารถต่อยอดในส่วนของ feature อื่น ๆ ได้ง่ายขึ้น ถ้ามีโอกาสอยากให้เพิ่มรายละเอียดใน README เกี่ยวกับวิธี setup และการ run project อีกนิด จะช่วยให้คนอื่นในทีม clone แล้วเริ่มทำงานต่อได้ง่ายขึ้น"
@@ -26,6 +27,12 @@
 "ขอบคุณที่ช่วยเช็คครับ! โค้ดส่ง JSON ตาม spec แล้วครับ และได้เพิ่ม `res.setHeader("Cache-Control", "no-cache");` เข้าไปแล้วครับ นอกจากนี้ยังได้ปรับปรุงไฟล์ `tests.md` โดยลบ placeholder ของ Issue 4 ออกชั่วคราวและระบุว่าเป็น Pending เพื่อไม่ให้สับสนกับ Test Evidence ของ Issue 2 เรียบร้อยแล้วครับ ขอบคุณสำหรับคำแนะนำเรื่อง documentation มากครับ!"
 
 "ขอบคุณสำหรับการตรวจสอบอย่างละเอียดอีกครั้งครับ! จากการตรวจสอบไฟล์ `app.ts` ใน commit ล่าสุด พบว่าได้ลบ stub 501 ออกไปแล้วเหลือเพียง 200 ตาม acceptance criteria เรียบร้อยครับ ทั้งนี้ได้ทำการรัน Test ใหม่อีกครั้งเพื่อยืนยัน และได้อัปเดต Test Evidence ล่าสุดลงใน `tests.md` ให้เรียบร้อยแล้วครับ"
+
+### Reviewer comment I received (PR #12):
+"บิวทำ Category Model และ Seed ได้ตรง requirement ดี โดยใช้ `name @unique` และ `upsert` ทำให้สามารถ seed ซ้ำได้โดยไม่เกิด category ซ้ำ ถือว่าออกแบบได้เหมาะกับงานนี้ มีจุดที่แนะนำให้แก้ก่อน merge คือยังมี TODO/comment เก่าค้างใน `schema.prisma` และ `seed.ts` รวมถึง `console.log("TODO: implement the category seed.")` ทั้งที่ implementation เสร็จแล้ว ควรลบออกให้ code สะอาดขึ้น และใน `ai_use.md` ยังมี placeholder กับจำนวน prompt ที่ยังไม่ครบตามหัวข้อ 6–10 ข้อ ถ้าเติมส่วนนี้ให้ครบ งานจะดู complete และพร้อม merge มากขึ้น"
+
+### How I responded (PR #12):
+"ขอบคุณมากครับ! ผมได้ทำการลบ comment แนะนำและบรรทัด TODO ออกจากไฟล์ `schema.prisma` และ `seed.ts` จนคลีนเรียบร้อยแล้วครับ รวมถึงได้เพิ่มประวัติ Prompt ของ AI ในไฟล์ `ai_use.md` ให้ครบถ้วนไม่มี placeholder เหลือแล้วครับ"
 
 ## Pull Requests I reviewed for my partner
 ### My comment:
