@@ -14,9 +14,12 @@ All test files live under server/tests/lab-01/ and client/tests/lab-01/.
 
 ### Issue 2: API health check
 ```
- ✓ tests/lab-01/health.test.ts (1 test) 36ms
+ ✓ tests/lab-01/health.test.ts (1 test) 35ms
+
  Test Files  1 passed (1)
       Tests  1 passed (1)
+   Start at  21:44:46
+   Duration  1.03s
 ```
 
 ### Issue 4: Category list (Backend Integration)

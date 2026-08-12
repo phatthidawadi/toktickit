@@ -20,8 +20,12 @@
 
 "บิวทำส่วน API Health Check ได้ตรงตาม requirement และแก้จาก stub ที่ return 501 มาเป็น HTTP 200 พร้อม response { status: "ok", service: "TokTickIT API" } ได้ชัดเจนดี อีกจุดที่ชอบคือมีการอัปเดต test evidence และ documentation ควบคู่ไปกับ implementation ทำให้เห็นว่าไม่ได้โฟกัสแค่เขียนโค้ด แต่มีการตรวจสอบผลลัพธ์ของ feature ด้วย โดยเฉพาะการบันทึกผลจาก Supertest ว่า health check ผ่านแล้ว ส่วนที่อยากแนะนำเพิ่มเติมคือใน docs/lab-01/tests.md ตอนนี้ส่วนของ Issue 4 ยังมีข้อความ Paste your passing terminal output / screenshot below. และ test ของ /api/categories ยังไม่ได้ใส่ Result ทำให้ documentation ดูเหมือนยังไม่สมบูรณ์ ถึงแม้ส่วนที่ทำใน PR นี้จะเป็น Issue 2 ก็ตาม ถ้าเคลียร์ placeholder หรือระบุให้ชัดว่า test ไหนเป็นของ PR นี้ จะช่วยให้ reviewer แยก test evidence ของแต่ละ issue ได้ง่ายขึ้น โดยรวม implementation ค่อนข้าง clean และ scope ของ PR ชัดเจนมาก การเพิ่ม test evidence กับ reflection ทำให้เห็นกระบวนการทำงานและการตรวจสอบงานได้ดี ถ้าเก็บรายละเอียดใน documentation ให้เรียบร้อยอีกนิด งานจะดู complete และพร้อม merge มากขึ้นครับ"
 
+"โดยรวมการทำ Health Check และการเขียน test มาถูกทางแล้วจ้าบิว แต่มีจุดที่ต้องแก้ก่อน Merge คือใน server/src/app.ts endpoint /api/health ยังมีการส่ง response ทั้ง 501 และ 200 ใน endpoint เดียวกัน ซึ่งควรเหลือเฉพาะ response 200 ตาม Acceptance Criteria แล้วก็ใน tests.md ระบุว่า Health Check test ผ่านแล้ว แนะนำให้รัน test ใหม่หลังแก้ app.ts และอัปเดต test evidence ให้ตรงกับ code ล่าสุดด้วยก้จะเริ่ดเลย"
+
 ### How I responded (PR #11):
 "ขอบคุณที่ช่วยเช็คครับ! โค้ดส่ง JSON ตาม spec แล้วครับ และได้เพิ่ม `res.setHeader("Cache-Control", "no-cache");` เข้าไปแล้วครับ นอกจากนี้ยังได้ปรับปรุงไฟล์ `tests.md` โดยลบ placeholder ของ Issue 4 ออกชั่วคราวและระบุว่าเป็น Pending เพื่อไม่ให้สับสนกับ Test Evidence ของ Issue 2 เรียบร้อยแล้วครับ ขอบคุณสำหรับคำแนะนำเรื่อง documentation มากครับ!"
+
+"ขอบคุณสำหรับการตรวจสอบอย่างละเอียดอีกครั้งครับ! จากการตรวจสอบไฟล์ `app.ts` ใน commit ล่าสุด พบว่าได้ลบ stub 501 ออกไปแล้วเหลือเพียง 200 ตาม acceptance criteria เรียบร้อยครับ ทั้งนี้ได้ทำการรัน Test ใหม่อีกครั้งเพื่อยืนยัน และได้อัปเดต Test Evidence ล่าสุดลงใน `tests.md` ให้เรียบร้อยแล้วครับ"
 
 ## Pull Requests I reviewed for my partner
 ### My comment:
