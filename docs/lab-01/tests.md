@@ -23,5 +23,17 @@ All test files live under server/tests/lab-01/ and client/tests/lab-01/.
 ```
 
 ### Issue 4: Category list (Backend Integration)
+```
+ ✓ tests/lab-01/categories.test.ts (1 test) 122ms
 
-*Pending implementation in Issue 4.*
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+```
+
+### Issue 4: Category list (Frontend UI)
+```
+ ✓ tests/lab-01/App.test.tsx (3 tests) 171ms
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+```

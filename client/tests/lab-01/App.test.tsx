@@ -1,6 +1,8 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import App from "../../src/App.js";
+import * as api from "../../src/api.js";
 
 describe("App", () => {
   // WORKED EXAMPLE — provided for you.
@@ -9,9 +11,37 @@ describe("App", () => {
     expect(screen.getByText(/TokTickIT/i)).toBeInTheDocument();
   });
 
-  // Issue 4 — write these yourself. Hint: mock the api module with
-  // vi.spyOn(api, "checkSystem").mockResolvedValue(...) / .mockRejectedValue(...)
-  // then click the button and assert the Online list / Offline message.
-  it.todo("shows Online and the seeded categories on success");
-  it.todo("shows an Offline error message when the API is unavailable");
+  it("shows Online and the seeded categories on success", async () => {
+    const user = userEvent.setup();
+    const mockCategories = [
+      { id: 1, name: "Account and Access" },
+      { id: 2, name: "Hardware" },
+    ];
+    vi.spyOn(api, "checkSystem").mockResolvedValueOnce({
+      online: true,
+      categories: mockCategories,
+    });
+
+    render(<App />);
+    const button = screen.getByRole("button", { name: /check system/i });
+    await user.click(button);
+
+    // Assert online badge and categories
+    expect(await screen.findByText(/online/i)).toBeInTheDocument();
+    expect(screen.getByText("Account and Access")).toBeInTheDocument();
+    expect(screen.getByText("Hardware")).toBeInTheDocument();
+  });
+
+  it("shows an Offline error message when the API is unavailable", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, "checkSystem").mockRejectedValueOnce(new Error("Offline"));
+
+    render(<App />);
+    const button = screen.getByRole("button", { name: /check system/i });
+    await user.click(button);
+
+    // Assert offline message
+    expect(await screen.findByText(/offline:/i)).toBeInTheDocument();
+    expect(screen.getByText(/api is currently unavailable/i)).toBeInTheDocument();
+  });
 });
