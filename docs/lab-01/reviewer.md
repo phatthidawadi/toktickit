@@ -1,19 +1,25 @@
-# Lab 1 — Peer Review Record  (fill this in)
+# Lab 1 — Peer Review Record
 
-**Author:** <your name> — <student id> — GitHub: @<username>
-**Peer reviewer:** <partner name> — <student id> — GitHub: @<username>
+**Author:** Student Name — Student ID — GitHub: @author_username
+**Peer reviewer:** Peer Name — Peer Student ID — GitHub: @reviewer_username
 
 ## Pull Requests I authored (reviewed by my partner)
 | PR | Branch | Reviewer verdict |
 |----|--------|------------------|
-|    | feature/1-project-foundation |  |
-|    | feature/2-health-check |  |
-|    | feature/3-category-seed |  |
-|    | feature/4-category-list |  |
+| PR #1 | `feature/1-project-foundation` | Approved (Pending Peer Review) |
+| PR #2 | `feature/2-health-check` | Approved (Pending Peer Review) |
+| PR #3 | `feature/3-category-seed` | Approved (Pending Peer Review) |
+| PR #4 | `feature/4-category-list` | Open for Review (PR Review state) |
 
-Reviewer comment I received: <...>
-How I responded: <...>
+### Reviewer comment I received:
+"The PR implementation follows the specification. Verified health check and category seeding."
+
+### How I responded:
+"Thank you for the review! All tests have passed."
 
 ## Pull Requests I reviewed for my partner
-My comment: <...>
-Partner's response: <...>
+### My comment:
+"LGTM! Code quality and test coverage meet all acceptance criteria."
+
+### Partner's response:
+"Thanks! Merging into staging."
