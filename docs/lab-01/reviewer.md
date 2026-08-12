@@ -18,8 +18,10 @@
 ### Reviewer comment I received (PR #11):
 "โค้ดดูเรียบง่ายและตรงประเด็นมากกก! ฝากเช็ก 2 จุดสั้นๆ ก่อน Merge : คืนค่า HTTP Status 200 พร้อม JSON สั้นๆ (เช่น { "status": "ok" }) ตรงตาม Spec ใช่ไหม, มีการใส่ Cache-Control: no-cache เพื่อให้ตัว Monitor ดึงค่า Real-time เสมอหรือยัง"
 
+"บิวทำส่วน API Health Check ได้ตรงตาม requirement และแก้จาก stub ที่ return 501 มาเป็น HTTP 200 พร้อม response { status: "ok", service: "TokTickIT API" } ได้ชัดเจนดี อีกจุดที่ชอบคือมีการอัปเดต test evidence และ documentation ควบคู่ไปกับ implementation ทำให้เห็นว่าไม่ได้โฟกัสแค่เขียนโค้ด แต่มีการตรวจสอบผลลัพธ์ของ feature ด้วย โดยเฉพาะการบันทึกผลจาก Supertest ว่า health check ผ่านแล้ว ส่วนที่อยากแนะนำเพิ่มเติมคือใน docs/lab-01/tests.md ตอนนี้ส่วนของ Issue 4 ยังมีข้อความ Paste your passing terminal output / screenshot below. และ test ของ /api/categories ยังไม่ได้ใส่ Result ทำให้ documentation ดูเหมือนยังไม่สมบูรณ์ ถึงแม้ส่วนที่ทำใน PR นี้จะเป็น Issue 2 ก็ตาม ถ้าเคลียร์ placeholder หรือระบุให้ชัดว่า test ไหนเป็นของ PR นี้ จะช่วยให้ reviewer แยก test evidence ของแต่ละ issue ได้ง่ายขึ้น โดยรวม implementation ค่อนข้าง clean และ scope ของ PR ชัดเจนมาก การเพิ่ม test evidence กับ reflection ทำให้เห็นกระบวนการทำงานและการตรวจสอบงานได้ดี ถ้าเก็บรายละเอียดใน documentation ให้เรียบร้อยอีกนิด งานจะดู complete และพร้อม merge มากขึ้นครับ"
+
 ### How I responded (PR #11):
-"ขอบคุณที่ช่วยเช็คครับ! โค้ดส่ง JSON { "status": "ok", "service": "TokTickIT API" } ตาม spec แล้วครับ และได้เพิ่ม `res.setHeader("Cache-Control", "no-cache");` เพื่อให้มั่นใจว่า Monitor จะดึงค่าใหม่ล่าสุดเสมอเรียบร้อยแล้วครับ"
+"ขอบคุณที่ช่วยเช็คครับ! โค้ดส่ง JSON ตาม spec แล้วครับ และได้เพิ่ม `res.setHeader("Cache-Control", "no-cache");` เข้าไปแล้วครับ นอกจากนี้ยังได้ปรับปรุงไฟล์ `tests.md` โดยลบ placeholder ของ Issue 4 ออกชั่วคราวและระบุว่าเป็น Pending เพื่อไม่ให้สับสนกับ Test Evidence ของ Issue 2 เรียบร้อยแล้วครับ ขอบคุณสำหรับคำแนะนำเรื่อง documentation มากครับ!"
 
 ## Pull Requests I reviewed for my partner
 ### My comment:

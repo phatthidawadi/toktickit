@@ -21,4 +21,4 @@ All test files live under server/tests/lab-01/ and client/tests/lab-01/.
 
 ### Issue 4: Category list (Backend Integration)
 
-Paste your passing terminal output / screenshot below.
+*Pending implementation in Issue 4.*
