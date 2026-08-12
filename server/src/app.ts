@@ -18,6 +18,7 @@ app.use(express.json());
 // It must return HTTP 200 with JSON: { status: "ok", service: "TokTickIT API" }
 // ---------------------------------------------------------------------------
 app.get("/api/health", (_req: Request, res: Response) => {
+  res.setHeader("Cache-Control", "no-cache");
   res.status(200).json({ status: "ok", service: "TokTickIT API" });
 });
 
