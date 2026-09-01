@@ -2,8 +2,8 @@
 
 ## 1. Overview of AI Involvement
 AI assistance was utilized during Sprint 2 (Lab 2) for:
-- Architecture planning and decomposition of Sprint 2 requirements into 9 GitHub Issues (Issue 5 to Issue 13).
-- Drafting Sprint 2 Engineering Specification (`specification.md`), UI Design Specification (`ui-spec.md`), REST API Contract (`api-spec.md`), and Test Plan (`tests.md`).
+- Architecture planning and decomposition of Sprint 2 requirements into 10 GitHub Issues (Issue 5 to Issue 14).
+- Drafting Sprint 2 Engineering Specification (`specification.md`), UI Design Specification (`ui-spec.md`), REST API Contract (`api-spec.md`), Test Plan (`tests.md`), and Developer Guide (`developer-guide.md`).
 - Designing PostgreSQL database schema models in `schema.prisma` and idempotent seed script `seed.ts`.
 - Implementing TypeScript backend API routes and Supertest API integration test suites.
 - Implementing React frontend components in the Zen Green Theme (#006B3C) and Vitest RTL component test suites.
@@ -21,8 +21,8 @@ AI assistance was utilized during Sprint 2 (Lab 2) for:
 - **AI Action & Response**: Updated `BR-01` in `docs/lab-02/specification.md`, updated `api-spec.md`, and implemented `generateTicketNumber` helper function in `server/src/utils/ticketNumber.ts` with unit test.
 
 ### Prompt Set 3: Feature Branch & PR Workflow Execution
-- **Human Guidance**: Execute Issue 5 through Issue 12 sequentially using feature branches, commit without emojis, open PRs targeting `lab2-staging`, and link corresponding GitHub Issues (`Closes #N`).
-- **AI Action & Response**: Created feature branches (`feature/5-doc-spec` to `feature/12-attachment-lifecycle`), opened PRs #23 through #30, and verified test execution before peer reviews.
+- **Human Guidance**: Execute Issue 5 through Issue 14 sequentially using feature branches, commit without emojis, open PRs targeting `lab2-staging`, and link corresponding GitHub Issues (`Closes #N`).
+- **AI Action & Response**: Created feature branches (`feature/5-doc-spec` to `feature/14-developer-guide`), opened PRs #23 through #33, and verified test execution before peer reviews.
 
 ---
 

@@ -27,7 +27,7 @@ Sprint 2 (Lab 2) has been fully implemented, reviewed, tested, and verified agai
 
 ## 2. Peer Review Log & Pull Requests
 
-All 8 feature issues (Issue 5 through Issue 12) were developed on dedicated feature branches, submitted via GitHub Pull Requests against `lab2-staging`, and peer-reviewed prior to merging.
+All 10 feature issues (Issue 5 through Issue 14) were developed on dedicated feature branches, submitted via GitHub Pull Requests against `lab2-staging`, and peer-reviewed prior to merging into `main`.
 
 | Issue | PR Title | PR Link | Status | Peer Review Summary |
 | :--- | :--- | :--- | :---: | :--- |
@@ -39,6 +39,8 @@ All 8 feature issues (Issue 5 through Issue 12) were developed on dedicated feat
 | **Issue 10** | Issue 10: My Tickets List API, UI, Filtering, and Pagination | PR #28 | Merged | Approved. Requester data isolation (BR-03), search, status badges, and mobile cards. |
 | **Issue 11** | Issue 11: Requester Ticket Detail Read-Only Screen | PR #29 | Merged | Approved. 403 Forbidden enforcement, 404 handling, and Read-Only UI Spec 5.4. |
 | **Issue 12** | Issue 12: Attachment Lifecycle (Upload, Download, Soft Removal) | PR #30 | Merged | Approved. 5MB limit, executable file block, removal modal, and 410 Gone download response. |
+| **Issue 13** | Issue 13: E2E Testing, Visual Screenshots Evidence, and Staging Integration | PR #31 | Merged | Approved. Complete E2E User Journey test, QA summary matrix, and AI usage logs. |
+| **Issue 14** | Issue 14: Sprint 2 Developer Guide and Architecture Documentation | PR #33 | Merged | Approved. 3-tier system architecture diagram, setup commands, and lifecycle guide. |
 
 ---
 
@@ -60,6 +62,6 @@ All 8 feature issues (Issue 5 through Issue 12) were developed on dedicated feat
 - [x] All 12 Functional Requirements (FR-01 to FR-12) implemented.
 - [x] All 10 Business Rules (BR-01 to BR-10) implemented.
 - [x] All 8 Acceptance Criteria (AC-01 to AC-08) satisfied and verified.
-- [x] All PRs merged into `lab2-staging` with clean git history.
-- [x] All GitHub Issues #14 to #22 closed and updated to `Done`.
-- [x] Complete documentation set (`specification.md`, `ui-spec.md`, `api-spec.md`, `tests.md`, `reviewer.md`, `ai-use.md`).
+- [x] All PRs merged into `lab2-staging` and integrated into `main` with clean git history.
+- [x] All GitHub Issues #14 to #22 and #32 closed and updated to `Done`.
+- [x] Complete documentation set in `docs/lab-02/` (`specification.md`, `ui-spec.md`, `api-spec.md`, `tests.md`, `reviewer.md`, `ai-use.md`, `developer-guide.md`).
