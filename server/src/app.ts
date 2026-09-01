@@ -263,7 +263,63 @@ app.get("/api/tickets", async (req: Request, res: Response) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// Lab 2 — Ticket Detail Read-Only
+// GET /api/tickets/:id
+// ---------------------------------------------------------------------------
+app.get("/api/tickets/:id", async (req: Request, res: Response) => {
+  try {
+    const requesterHeader = req.headers["x-requester-id"];
+    if (!requesterHeader) {
+      return res.status(400).json({ error: "Missing x-requester-id header" });
+    }
+
+    const requesterId = Number(requesterHeader);
+    if (isNaN(requesterId) || requesterId <= 0) {
+      return res.status(400).json({ error: "Invalid x-requester-id header" });
+    }
+
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId) || ticketId <= 0) {
+      return res.status(404).json({ error: "Ticket not found" });
+    }
+
+    const ticket = await getPrisma().ticket.findUnique({
+      where: { id: ticketId },
+      include: {
+        category: { select: { id: true, name: true, description: true } },
+        relatedSystem: { select: { id: true, name: true, description: true } },
+        attachments: {
+          where: { isRemoved: false },
+          select: {
+            id: true,
+            filename: true,
+            originalName: true,
+            size: true,
+            mimeType: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: "Ticket not found" });
+    }
+
+    // BR-03 & AC-03: Access Control (403 Forbidden if ticket belongs to another requester)
+    if (ticket.requesterId !== requesterId) {
+      return res.status(403).json({ error: "Access denied. You can only view your own tickets." });
+    }
+
+    res.status(200).json(ticket);
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 export default app;
+
 
 
 
