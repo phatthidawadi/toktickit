@@ -161,8 +161,11 @@ app.post("/api/tickets", async (req: Request, res: Response) => {
 
     // Generate Ticket Number (TKT-YYYY-XXXXXX)
     const currentYear = new Date().getFullYear();
-    const count = await getPrisma().ticket.count();
-    const ticketNumber = generateTicketNumber(count + 1, currentYear);
+    const lastTicket = await getPrisma().ticket.findFirst({
+      orderBy: { id: "desc" },
+    });
+    const nextSeq = lastTicket ? lastTicket.id + 1 : 1;
+    const ticketNumber = generateTicketNumber(nextSeq, currentYear);
 
     const newTicket = await getPrisma().ticket.create({
       data: {
@@ -318,7 +321,184 @@ app.get("/api/tickets/:id", async (req: Request, res: Response) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// Lab 2 — Attachment Lifecycle
+// Multer Configuration & Validation (BR-07, AC-04, AC-05, AC-06)
+// ---------------------------------------------------------------------------
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+
+const uploadsDir = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, uploadsDir);
+  },
+  filename: (_req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, `attachment-${uniqueSuffix}${ext}`);
+  },
+});
+
+const DISALLOWED_EXTENSIONS = [".exe", ".bat", ".cmd", ".sh"];
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB Limit (AC-05)
+  },
+  fileFilter: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (DISALLOWED_EXTENSIONS.includes(ext)) {
+      return cb(new Error("File type not allowed (e.g. executable files are rejected)"));
+    }
+    cb(null, true);
+  },
+});
+
+// POST /api/tickets/:id/attachments — Upload Attachment
+app.post("/api/tickets/:id/attachments", (req: Request, res: Response) => {
+  upload.single("file")(req, res, async (err: any) => {
+    if (err) {
+      if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
+        return res.status(400).json({ error: "File size exceeds maximum limit of 5MB" });
+      }
+      return res.status(400).json({ error: err.message || "File upload failed" });
+    }
+
+    try {
+      const requesterHeader = req.headers["x-requester-id"];
+      if (!requesterHeader) {
+        return res.status(400).json({ error: "Missing x-requester-id header" });
+      }
+
+      const requesterId = Number(requesterHeader);
+      const ticketId = Number(req.params.id);
+
+      const ticket = await getPrisma().ticket.findUnique({
+        where: { id: ticketId },
+      });
+
+      if (!ticket) {
+        return res.status(404).json({ error: "Ticket not found" });
+      }
+
+      if (ticket.requesterId !== requesterId) {
+        return res.status(403).json({ error: "Access denied. You can only attach files to your own tickets." });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      const attachment = await getPrisma().attachment.create({
+        data: {
+          ticketId,
+          filename: req.file.filename,
+          originalName: req.file.originalname,
+          mimeType: req.file.mimetype,
+          size: req.file.size,
+          filePath: req.file.path,
+        },
+      });
+
+      res.status(201).json(attachment);
+    } catch (error) {
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
+});
+
+// GET /api/attachments/:id/download — Download Attachment (410 Gone if removed)
+app.get("/api/attachments/:id/download", async (req: Request, res: Response) => {
+  try {
+    const requesterHeader = req.headers["x-requester-id"];
+    if (!requesterHeader) {
+      return res.status(400).json({ error: "Missing x-requester-id header" });
+    }
+
+    const requesterId = Number(requesterHeader);
+    const attachmentId = Number(req.params.id);
+
+    const attachment = await getPrisma().attachment.findUnique({
+      where: { id: attachmentId },
+      include: { ticket: true },
+    });
+
+    if (!attachment) {
+      return res.status(404).json({ error: "Attachment not found" });
+    }
+
+    if (attachment.ticket.requesterId !== requesterId) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    // BR-07 & AC-06: Soft-removed attachment returns 410 Gone
+    if (attachment.isRemoved) {
+      return res.status(410).json({ error: "Attachment has been removed" });
+    }
+
+    if (!fs.existsSync(attachment.filePath)) {
+      return res.status(404).json({ error: "File content not found on server" });
+    }
+
+    res.download(attachment.filePath, attachment.originalName);
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// DELETE /api/attachments/:id — Soft-Remove Attachment
+app.delete("/api/attachments/:id", async (req: Request, res: Response) => {
+  try {
+    const requesterHeader = req.headers["x-requester-id"];
+    if (!requesterHeader) {
+      return res.status(400).json({ error: "Missing x-requester-id header" });
+    }
+
+    const requesterId = Number(requesterHeader);
+    const attachmentId = Number(req.params.id);
+    const { reason } = req.body || {};
+
+    if (!reason || typeof reason !== "string" || reason.trim().length < 5) {
+      return res.status(400).json({ error: "A removal reason of at least 5 characters is required" });
+    }
+
+    const attachment = await getPrisma().attachment.findUnique({
+      where: { id: attachmentId },
+      include: { ticket: true },
+    });
+
+    if (!attachment) {
+      return res.status(404).json({ error: "Attachment not found" });
+    }
+
+    if (attachment.ticket.requesterId !== requesterId) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const updated = await getPrisma().attachment.update({
+      where: { id: attachmentId },
+      data: {
+        isRemoved: true,
+        removedReason: reason.trim(),
+        removedAt: new Date(),
+      },
+    });
+
+    res.status(200).json({ message: "Attachment removed successfully", attachment: updated });
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 export default app;
+
 
 
 
