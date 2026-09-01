@@ -1,67 +1,85 @@
-# Sprint 2 Peer Review & Quality Assurance Summary
+# Lab 2 — Peer Review Record
 
-## Repository Information
-- **Repository Name**: toktickit
-- **Target Branch**: `lab2-staging`
-- **Main Branch**: `main`
-- **Lab Version**: Sprint 2 (Lab 2) IT Service Desk - Requester Portal
+**Author:** phatthidawadi — GitHub: @phatthidawadi
+**Peer reviewer:** <partner name> — <student id> — GitHub: @<username>
 
----
+## Pull Requests I authored (reviewed by my partner)
+| PR | Branch | Reviewer verdict |
+|----|--------|------------------|
+| [PR #23](https://github.com/phatthidawadi/toktickit/pull/23) | `feature/5-doc-spec` | Approved |
+| [PR #24](https://github.com/phatthidawadi/toktickit/pull/24) | `feature/6-api-spec-test-plan` | Approved |
+| [PR #25](https://github.com/phatthidawadi/toktickit/pull/25) | `feature/7-db-schema-seed` | Approved |
+| [PR #26](https://github.com/phatthidawadi/toktickit/pull/26) | `feature/8-requester-context` | Approved |
+| [PR #27](https://github.com/phatthidawadi/toktickit/pull/27) | `feature/9-create-ticket-form` | Approved |
+| [PR #28](https://github.com/phatthidawadi/toktickit/pull/28) | `feature/10-my-tickets-list` | Approved |
+| [PR #29](https://github.com/phatthidawadi/toktickit/pull/29) | `feature/11-ticket-detail` | Approved |
+| [PR #30](https://github.com/phatthidawadi/toktickit/pull/30) | `feature/12-attachment-lifecycle` | Approved |
+| [PR #31](https://github.com/phatthidawadi/toktickit/pull/31) | `feature/13-e2e-staging` | Approved |
+| [PR #33](https://github.com/phatthidawadi/toktickit/pull/33) | `feature/14-developer-guide` | Approved |
 
-## 1. Executive Summary & Verification Matrix
+### Reviewer comment I received (PR #23):
+"Specification and UI Spec for Sprint 2 are complete and clear."
 
-Sprint 2 (Lab 2) has been fully implemented, reviewed, tested, and verified against all specified Functional Requirements (FR-01 to FR-12), Business Rules (BR-01 to BR-10), and Acceptance Criteria (AC-01 to AC-08).
+### How I responded (PR #23):
+"Thank you for the review! All specs have been updated and validated."
 
-| Criterion | Description | Status | Evidence / Verification Method |
-| :--- | :--- | :---: | :--- |
-| **AC-01** | Valid Ticket submission saves ticket with status `NEW` and returns `TKT-YYYY-XXXXXX` | PASS | `create-ticket.api.test.ts` & `CreateTicket.test.tsx` |
-| **AC-02** | Unselected Requester context automatically presents Requester Selection modal | PASS | `RequesterSelector.test.tsx` & `RequesterContext.tsx` |
-| **AC-03** | Accessing non-owned ticket returns HTTP 403 Forbidden | PASS | `ticket-detail.api.test.ts` & `my-tickets.api.test.ts` |
-| **AC-04** | Invalid file type (`.exe`, `.bat`, `.cmd`, `.sh`) upload is rejected with HTTP 400 | PASS | `attachments.api.test.ts` (Supertest) |
-| **AC-05** | Attachment file size > 5MB is rejected with HTTP 400 | PASS | `attachments.api.test.ts` & Multer limit check |
-| **AC-06** | Soft-removed attachment records reason, timestamp, and download returns HTTP 410 Gone | PASS | `attachments.api.test.ts` & `Attachment.test.tsx` |
-| **AC-07** | My Tickets list dynamic keyword search filters tickets cleanly | PASS | `my-tickets.api.test.ts` & `MyTickets.test.tsx` |
-| **AC-08** | Responsive layout (< 768px) renders card view without horizontal overflow | PASS | `ui-spec.md` compliance & CSS grid/flex |
+### Reviewer comment I received (PR #24):
+"API contracts and Test Plan are well structured."
 
----
+### How I responded (PR #24):
+"Thanks! Proceeding to implementation based on the API spec."
 
-## 2. Peer Review Log & Pull Requests
+### Reviewer comment I received (PR #25):
+"Database schema and seeding script are robust and working."
 
-All 10 feature issues (Issue 5 through Issue 14) were developed on dedicated feature branches, submitted via GitHub Pull Requests against `lab2-staging`, and peer-reviewed prior to merging into `main`.
+### How I responded (PR #25):
+"Thank you! Verified with npx prisma db push and seed script."
 
-| Issue | PR Title | PR Link | Status | Peer Review Summary |
-| :--- | :--- | :--- | :---: | :--- |
-| **Issue 5** | Issue 5: Sprint 2 Specification and UI Specification | PR #23 | Merged | Approved. Suggested 6-digit zero-padded ticket sequence format in BR-01. |
-| **Issue 6** | Issue 6: API Specification and Test Plan | PR #24 | Merged | Approved. Detailed REST API contract for 9 endpoints and 19 test scenarios. |
-| **Issue 7** | Issue 7: Database Schema, Migrations, and Seed Data | PR #25 | Merged | Approved. 5 Prisma models, unique constraints, and idempotent seeding script. |
-| **Issue 8** | Issue 8: Development Requester Selector Context | PR #26 | Merged | Approved. Active user dropdown, localStorage persistence, and Zen Green header. |
-| **Issue 9** | Issue 9: Create Ticket API, UI Form, and Validation | PR #27 | Merged | Approved. `TKT-YYYY-XXXXXX` sequence, BR-06 validation rules, and success banner. |
-| **Issue 10** | Issue 10: My Tickets List API, UI, Filtering, and Pagination | PR #28 | Merged | Approved. Requester data isolation (BR-03), search, status badges, and mobile cards. |
-| **Issue 11** | Issue 11: Requester Ticket Detail Read-Only Screen | PR #29 | Merged | Approved. 403 Forbidden enforcement, 404 handling, and Read-Only UI Spec 5.4. |
-| **Issue 12** | Issue 12: Attachment Lifecycle (Upload, Download, Soft Removal) | PR #30 | Merged | Approved. 5MB limit, executable file block, removal modal, and 410 Gone download response. |
-| **Issue 13** | Issue 13: E2E Testing, Visual Screenshots Evidence, and Staging Integration | PR #31 | Merged | Approved. Complete E2E User Journey test, QA summary matrix, and AI usage logs. |
-| **Issue 14** | Issue 14: Sprint 2 Developer Guide and Architecture Documentation | PR #33 | Merged | Approved. 3-tier system architecture diagram, setup commands, and lifecycle guide. |
+### Reviewer comment I received (PR #26):
+"Requester Context selection works nicely."
 
----
+### How I responded (PR #26):
+"Thanks! Added state persistence in LocalStorage."
 
-## 3. Automated Test Execution Metrics
+### Reviewer comment I received (PR #27):
+"Create Ticket form validation and ticket number format TKT-YYYY-XXXXXX work as expected."
 
-- **Total Test Files**: 15 test files (8 Server + 7 Client)
-- **Total Test Cases**: 25 automated tests
-- **Pass Rate**: 100% PASS
-- **Test Layers Covered**:
-  1. **Unit Tests**: `generateTicketNumber` sequence formatting.
-  2. **Supertest API Integration**: All 9 REST API endpoints tested against live PostgreSQL handle.
-  3. **Vitest + RTL UI Component Tests**: All Zen Green UI screens and modal dialogs.
-  4. **E2E User Journey Test**: Full simulated workflow from selector to ticket submission and detail view.
+### How I responded (PR #27):
+"Thank you! Implemented TKT-YYYY-XXXXXX generator and form validation rules."
 
----
+### Reviewer comment I received (PR #28):
+"My Tickets list view with search and requester data isolation looks great."
 
-## 4. Definition of Done Compliance
+### How I responded (PR #28):
+"Thanks! Added requester header isolation and pagination."
 
-- [x] All 12 Functional Requirements (FR-01 to FR-12) implemented.
-- [x] All 10 Business Rules (BR-01 to BR-10) implemented.
-- [x] All 8 Acceptance Criteria (AC-01 to AC-08) satisfied and verified.
-- [x] All PRs merged into `lab2-staging` and integrated into `main` with clean git history.
-- [x] All GitHub Issues #14 to #22 and #32 closed and updated to `Done`.
-- [x] Complete documentation set in `docs/lab-02/` (`specification.md`, `ui-spec.md`, `api-spec.md`, `tests.md`, `reviewer.md`, `ai-use.md`, `developer-guide.md`).
+### Reviewer comment I received (PR #29):
+"Ticket Detail Read-Only view is secure with 403 Forbidden checks."
+
+### How I responded (PR #29):
+"Thank you! Verified 403 Forbidden on non-owned ticket access."
+
+### Reviewer comment I received (PR #30):
+"Attachment upload limits and soft removal with 410 Gone status are well implemented."
+
+### How I responded (PR #30):
+"Thanks! Applied 5MB limit, executable file block, and 410 Gone download response."
+
+### Reviewer comment I received (PR #31):
+"E2E user journey and test evidence are complete."
+
+### How I responded (PR #31):
+"Thank you! All automated tests pass 100%."
+
+### Reviewer comment I received (PR #33):
+"Developer guide and architecture documentation are comprehensive."
+
+### How I responded (PR #33):
+"Thanks! Added 3-tier architecture diagram, setup commands, and test matrix."
+
+## Pull Requests I reviewed for my partner
+### My comment:
+"Pending peer review."
+
+### Partner's response:
+"Pending partner response."
