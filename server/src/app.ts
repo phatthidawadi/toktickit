@@ -183,6 +183,87 @@ app.post("/api/tickets", async (req: Request, res: Response) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// Lab 2 — My Tickets List (Search, Filter, Sort, Paginate)
+// GET /api/tickets
+// ---------------------------------------------------------------------------
+app.get("/api/tickets", async (req: Request, res: Response) => {
+  try {
+    const requesterHeader = req.headers["x-requester-id"];
+    if (!requesterHeader) {
+      return res.status(400).json({ error: "Missing x-requester-id header" });
+    }
+
+    const requesterId = Number(requesterHeader);
+    if (isNaN(requesterId) || requesterId <= 0) {
+      return res.status(400).json({ error: "Invalid x-requester-id header" });
+    }
+
+    const { search, categoryId, status, priority, sort = "desc", page = "1", limit = "10" } = req.query;
+
+    const pageNum = Math.max(1, Number(page) || 1);
+    const limitNum = Math.max(1, Math.min(100, Number(limit) || 10));
+    const skip = (pageNum - 1) * limitNum;
+
+    const where: any = {
+      requesterId,
+    };
+
+    if (categoryId) {
+      where.categoryId = Number(categoryId);
+    }
+
+    if (status) {
+      where.currentStatus = String(status);
+    }
+
+    if (priority) {
+      where.requestedPriority = String(priority);
+    }
+
+    if (search && typeof search === "string" && search.trim().length > 0) {
+      const searchTerm = search.trim();
+      where.OR = [
+        { ticketNumber: { contains: searchTerm, mode: "insensitive" } },
+        { summary: { contains: searchTerm, mode: "insensitive" } },
+      ];
+    }
+
+    const sortOrder = sort === "asc" ? "asc" : "desc";
+
+    const [total, tickets] = await Promise.all([
+      getPrisma().ticket.count({ where }),
+      getPrisma().ticket.findMany({
+        where,
+        skip,
+        take: limitNum,
+        orderBy: { createdAt: sortOrder },
+        include: {
+          category: { select: { id: true, name: true } },
+          relatedSystem: { select: { id: true, name: true } },
+          attachments: {
+            where: { isRemoved: false },
+            select: { id: true, filename: true, originalName: true, size: true, mimeType: true },
+          },
+        },
+      }),
+    ]);
+
+    const totalPages = Math.ceil(total / limitNum) || 1;
+
+    res.status(200).json({
+      tickets,
+      total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages,
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 export default app;
+
 
 

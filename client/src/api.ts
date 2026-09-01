@@ -30,18 +30,37 @@ export interface CreateTicketInput {
   requestedPriority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 }
 
+export interface AttachmentSummary {
+  id: number;
+  filename: string;
+  originalName: string;
+  size: number;
+  mimeType: string;
+}
+
 export interface Ticket {
   id: number;
   ticketNumber: string;
   summary: string;
   description: string;
   requestedPriority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
-  currentStatus: string;
+  currentStatus: "NEW" | "IN_PROGRESS" | "RESOLVED" | "CLOSED" | string;
   requesterId: number;
   categoryId: number;
   relatedSystemId: number;
   createdAt: string;
   updatedAt: string;
+  category?: Category;
+  relatedSystem?: RelatedSystem;
+  attachments?: AttachmentSummary[];
+}
+
+export interface PaginatedTickets {
+  tickets: Ticket[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }
 
 export interface SystemStatus {
@@ -94,6 +113,43 @@ export async function createTicket(input: CreateTicketInput, requesterId: number
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({ error: "Failed to create ticket" }));
     throw new Error(errorData.error || "Failed to create ticket");
+  }
+
+  return res.json();
+}
+
+export interface FetchMyTicketsParams {
+  search?: string;
+  categoryId?: number | string;
+  status?: string;
+  priority?: string;
+  sort?: string;
+  page?: number;
+  limit?: number;
+}
+
+export async function fetchMyTickets(
+  params: FetchMyTicketsParams,
+  requesterId: number
+): Promise<PaginatedTickets> {
+  const queryParams = new URLSearchParams();
+  if (params.search) queryParams.append("search", params.search);
+  if (params.categoryId) queryParams.append("categoryId", String(params.categoryId));
+  if (params.status) queryParams.append("status", params.status);
+  if (params.priority) queryParams.append("priority", params.priority);
+  if (params.sort) queryParams.append("sort", params.sort);
+  if (params.page) queryParams.append("page", String(params.page));
+  if (params.limit) queryParams.append("limit", String(params.limit));
+
+  const res = await fetch(`${API_URL}/api/tickets?${queryParams.toString()}`, {
+    headers: {
+      "x-requester-id": String(requesterId),
+    },
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ error: "Failed to fetch tickets" }));
+    throw new Error(errorData.error || "Failed to fetch tickets");
   }
 
   return res.json();

@@ -1,10 +1,23 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "../../src/App.js";
 import * as api from "../../src/api.js";
 
+const mockRequester = {
+  id: 1,
+  name: "Jennifer Anderson",
+  email: "jennifer.a@example.com",
+  department: "Human Resources",
+  isActive: true,
+};
+
 describe("App", () => {
+  beforeEach(() => {
+    localStorage.setItem("toktickit_selected_requester", JSON.stringify(mockRequester));
+    vi.restoreAllMocks();
+  });
+
   // WORKED EXAMPLE — provided for you.
   it("renders the TokTickIT heading", () => {
     render(<App />);
@@ -45,3 +58,4 @@ describe("App", () => {
     expect(screen.getByText(/api is currently unavailable/i)).toBeInTheDocument();
   });
 });
+
