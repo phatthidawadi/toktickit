@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { fetchTicketDetail, Ticket } from "../api.js";
+import {
+  fetchTicketDetail,
+  uploadAttachment,
+  getAttachmentDownloadUrl,
+  softRemoveAttachment,
+  Ticket,
+  AttachmentSummary,
+} from "../api.js";
 import { useRequester } from "../context/RequesterContext.js";
 
 interface TicketDetailViewProps {
@@ -15,7 +22,14 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({ ticketId, on
   const [error, setError] = useState<string | null>(null);
   const [isForbidden, setIsForbidden] = useState<boolean>(false);
 
-  useEffect(() => {
+  // Attachment Management States
+  const [uploading, setUploading] = useState<boolean>(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [removingAttachment, setRemovingAttachment] = useState<AttachmentSummary | null>(null);
+  const [removeReason, setRemoveReason] = useState<string>("");
+  const [removeError, setRemoveError] = useState<string | null>(null);
+
+  const loadDetail = () => {
     if (!selectedRequester) return;
 
     setLoading(true);
@@ -35,7 +49,47 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({ ticketId, on
         }
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    loadDetail();
   }, [ticketId, selectedRequester]);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUploadError(null);
+    const file = e.target.files?.[0];
+    if (!file || !selectedRequester || !ticket) return;
+
+    setUploading(true);
+    try {
+      await uploadAttachment(ticket.id, file, selectedRequester.id);
+      setUploading(false);
+      e.target.value = "";
+      loadDetail();
+    } catch (err: any) {
+      setUploadError(err.message || "File upload failed");
+      setUploading(false);
+    }
+  };
+
+  const handleConfirmSoftRemove = async () => {
+    if (!removingAttachment || !selectedRequester) return;
+    setRemoveError(null);
+
+    if (!removeReason.trim() || removeReason.trim().length < 5) {
+      setRemoveError("Removal reason must be at least 5 characters long");
+      return;
+    }
+
+    try {
+      await softRemoveAttachment(removingAttachment.id, removeReason, selectedRequester.id);
+      setRemovingAttachment(null);
+      setRemoveReason("");
+      loadDetail();
+    } catch (err: any) {
+      setRemoveError(err.message || "Soft removal failed");
+    }
+  };
 
   const getStatusBadgeStyle = (status: string) => {
     switch (status) {
@@ -215,7 +269,122 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({ ticketId, on
         gap: "20px",
       }}
     >
-      {/* Navigation & Action Bar */}
+      {/* Soft Removal Confirmation Modal Dialog */}
+      {removingAttachment && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1100,
+            padding: "16px",
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderRadius: "8px",
+              border: "1px solid #E0E6E2",
+              padding: "24px",
+              maxWidth: "480px",
+              width: "100%",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            }}
+          >
+            <h4 style={{ fontSize: "18px", fontWeight: "bold", color: "#C5221F", margin: "0 0 8px 0" }}>
+              Remove File Attachment
+            </h4>
+            <p style={{ fontSize: "14px", color: "#1F2925", marginBottom: "16px" }}>
+              You are about to soft-remove <strong>{removingAttachment.originalName}</strong>. Please state the reason for removal.
+            </p>
+
+            {removeError && (
+              <div
+                style={{
+                  backgroundColor: "#FDF2F2",
+                  border: "1px solid #F87171",
+                  color: "#C5221F",
+                  padding: "10px",
+                  borderRadius: "6px",
+                  fontSize: "13px",
+                  marginBottom: "12px",
+                }}
+              >
+                {removeError}
+              </div>
+            )}
+
+            <div style={{ marginBottom: "20px" }}>
+              <label
+                htmlFor="removal-reason-input"
+                style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#1F2925", marginBottom: "4px" }}
+              >
+                Removal Reason <span style={{ color: "#C5221F" }}>*</span>
+              </label>
+              <textarea
+                id="removal-reason-input"
+                rows={3}
+                placeholder="e.g. File contains sensitive data / uploaded duplicate file"
+                value={removeReason}
+                onChange={(e) => setRemoveReason(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  borderRadius: "6px",
+                  border: "1px solid #C8D2CC",
+                  fontSize: "14px",
+                }}
+              />
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setRemovingAttachment(null);
+                  setRemoveReason("");
+                  setRemoveError(null);
+                }}
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  border: "1px solid #C8D2CC",
+                  color: "#1F2925",
+                  padding: "8px 16px",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmSoftRemove}
+                style={{
+                  backgroundColor: "#C5221F",
+                  color: "#FFFFFF",
+                  border: "none",
+                  padding: "8px 18px",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                }}
+              >
+                Remove Attachment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Navigation Bar */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <button
           onClick={onBack}
@@ -354,7 +523,7 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({ ticketId, on
         </p>
       </div>
 
-      {/* File Attachments Section */}
+      {/* File Attachments & Upload Section (Issue 12) */}
       <div
         style={{
           backgroundColor: "#FFFFFF",
@@ -364,13 +533,51 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({ ticketId, on
           padding: "24px",
         }}
       >
-        <h3 style={{ fontSize: "16px", fontWeight: "bold", color: "#1F2925", marginBottom: "12px" }}>
-          Attachments
-        </h3>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <h3 style={{ fontSize: "16px", fontWeight: "bold", color: "#1F2925", margin: 0 }}>
+            File Attachments
+          </h3>
+
+          <label
+            style={{
+              backgroundColor: uploading ? "#65756E" : "#006B3C",
+              color: "#FFFFFF",
+              padding: "6px 14px",
+              borderRadius: "6px",
+              fontSize: "13px",
+              fontWeight: "600",
+              cursor: uploading ? "not-allowed" : "pointer",
+            }}
+          >
+            {uploading ? "Uploading..." : "+ Upload File"}
+            <input
+              type="file"
+              onChange={handleFileUpload}
+              disabled={uploading}
+              style={{ display: "none" }}
+            />
+          </label>
+        </div>
+
+        {uploadError && (
+          <div
+            style={{
+              backgroundColor: "#FDF2F2",
+              border: "1px solid #F87171",
+              color: "#C5221F",
+              padding: "10px",
+              borderRadius: "6px",
+              fontSize: "13px",
+              marginBottom: "16px",
+            }}
+          >
+            {uploadError}
+          </div>
+        )}
 
         {!ticket.attachments || ticket.attachments.length === 0 ? (
           <p style={{ color: "#65756E", fontSize: "14px", margin: 0 }}>
-            No file attachments uploaded for this ticket.
+            No file attachments uploaded for this ticket yet.
           </p>
         ) : (
           <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
@@ -381,11 +588,12 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({ ticketId, on
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  padding: "10px 14px",
-                  backgroundColor: "#F5F7F6",
+                  padding: "12px 16px",
+                  backgroundColor: att.isRemoved ? "#F9FAFB" : "#F5F7F6",
                   borderRadius: "6px",
                   marginBottom: "8px",
                   border: "1px solid #E0E6E2",
+                  opacity: att.isRemoved ? 0.65 : 1,
                 }}
               >
                 <div>
@@ -393,6 +601,49 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({ ticketId, on
                   <span style={{ fontSize: "12px", color: "#65756E", marginLeft: "10px" }}>
                     ({(att.size / 1024).toFixed(1)} KB)
                   </span>
+
+                  {att.isRemoved && (
+                    <div style={{ color: "#C5221F", fontSize: "12px", marginTop: "2px" }}>
+                      Soft-Removed (Reason: {att.removedReason || "N/A"})
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                  {!att.isRemoved ? (
+                    <>
+                      <a
+                        href={getAttachmentDownloadUrl(att.id)}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          color: "#006B3C",
+                          fontSize: "13px",
+                          fontWeight: "600",
+                          textDecoration: "none",
+                        }}
+                      >
+                        Download
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => setRemovingAttachment(att)}
+                        style={{
+                          backgroundColor: "transparent",
+                          border: "none",
+                          color: "#C5221F",
+                          fontSize: "13px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </>
+                  ) : (
+                    <span style={{ fontSize: "12px", color: "#65756E", fontStyle: "italic" }}>
+                      Download Disabled (410 Gone)
+                    </span>
+                  )}
                 </div>
               </li>
             ))}

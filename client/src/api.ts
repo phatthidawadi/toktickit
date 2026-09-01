@@ -36,6 +36,9 @@ export interface AttachmentSummary {
   originalName: string;
   size: number;
   mimeType: string;
+  isRemoved?: boolean;
+  removedReason?: string;
+  removedAt?: string;
   createdAt?: string;
 }
 
@@ -177,4 +180,67 @@ export async function fetchTicketDetail(ticketId: number, requesterId: number): 
   }
 
   return res.json();
+}
+
+export async function uploadAttachment(
+  ticketId: number,
+  file: File,
+  requesterId: number
+): Promise<AttachmentSummary> {
+  // Client-side validations (BR-07, AC-04, AC-05)
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error("File size exceeds maximum limit of 5MB");
+  }
+
+  const disallowed = [".exe", ".bat", ".cmd", ".sh"];
+  const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
+  if (disallowed.includes(ext)) {
+    throw new Error("File type not allowed (executable files are rejected)");
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/attachments`, {
+    method: "POST",
+    headers: {
+      "x-requester-id": String(requesterId),
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ error: "Upload failed" }));
+    throw new Error(errorData.error || "Upload failed");
+  }
+
+  return res.json();
+}
+
+export function getAttachmentDownloadUrl(attachmentId: number): string {
+  return `${API_URL}/api/attachments/${attachmentId}/download`;
+}
+
+export async function softRemoveAttachment(
+  attachmentId: number,
+  reason: string,
+  requesterId: number
+): Promise<void> {
+  if (!reason || reason.trim().length < 5) {
+    throw new Error("Removal reason of at least 5 characters is required");
+  }
+
+  const res = await fetch(`${API_URL}/api/attachments/${attachmentId}`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      "x-requester-id": String(requesterId),
+    },
+    body: JSON.stringify({ reason: reason.trim() }),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ error: "Soft removal failed" }));
+    throw new Error(errorData.error || "Soft removal failed");
+  }
 }
