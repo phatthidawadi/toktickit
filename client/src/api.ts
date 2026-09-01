@@ -36,6 +36,7 @@ export interface AttachmentSummary {
   originalName: string;
   size: number;
   mimeType: string;
+  createdAt?: string;
 }
 
 export interface Ticket {
@@ -150,6 +151,29 @@ export async function fetchMyTickets(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({ error: "Failed to fetch tickets" }));
     throw new Error(errorData.error || "Failed to fetch tickets");
+  }
+
+  return res.json();
+}
+
+export async function fetchTicketDetail(ticketId: number, requesterId: number): Promise<Ticket> {
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}`, {
+    headers: {
+      "x-requester-id": String(requesterId),
+    },
+  });
+
+  if (res.status === 403) {
+    throw new Error("403 Forbidden: You do not have permission to view this ticket.");
+  }
+
+  if (res.status === 404) {
+    throw new Error("404 Not Found: The requested ticket does not exist.");
+  }
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ error: "Failed to fetch ticket details" }));
+    throw new Error(errorData.error || "Failed to fetch ticket details");
   }
 
   return res.json();

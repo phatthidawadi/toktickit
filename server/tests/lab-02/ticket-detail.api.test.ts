@@ -1,0 +1,75 @@
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import { app } from "../../src/app.js";
+
+describe("GET /api/tickets/:id", () => {
+  it("returns 200 OK with ticket details when requesting owned ticket", async () => {
+    // 1. Fetch requesters
+    const reqRes = await request(app).get("/api/requesters");
+    const requesterId = reqRes.body[0].id;
+
+    // 2. Create a ticket for this requester
+    const createRes = await request(app)
+      .post("/api/tickets")
+      .set("x-requester-id", String(requesterId))
+      .send({
+        summary: "Detail Test Ticket Summary",
+        description: "Detailed description for detail test ticket",
+        categoryId: 1,
+        relatedSystemId: 1,
+        requestedPriority: "HIGH",
+      });
+
+    const ticketId = createRes.body.id;
+
+    // 3. Fetch ticket detail
+    const res = await request(app)
+      .get(`/api/tickets/${ticketId}`)
+      .set("x-requester-id", String(requesterId));
+
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBe(ticketId);
+    expect(res.body.summary).toBe("Detail Test Ticket Summary");
+    expect(res.body.category).toBeDefined();
+  });
+
+  it("returns 403 Forbidden when requesting a ticket owned by another requester (AC-03)", async () => {
+    const reqRes = await request(app).get("/api/requesters");
+    const requesterA = reqRes.body[0].id;
+    const requesterB = reqRes.body[1].id;
+
+    // Create ticket for Requester A
+    const createRes = await request(app)
+      .post("/api/tickets")
+      .set("x-requester-id", String(requesterA))
+      .send({
+        summary: "Requester A Private Ticket",
+        description: "Description of ticket belonging to Requester A",
+        categoryId: 1,
+        relatedSystemId: 1,
+        requestedPriority: "LOW",
+      });
+
+    const ticketId = createRes.body.id;
+
+    // Requester B attempts to view Requester A's ticket
+    const res = await request(app)
+      .get(`/api/tickets/${ticketId}`)
+      .set("x-requester-id", String(requesterB));
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toContain("Access denied");
+  });
+
+  it("returns 404 Not Found for non-existent ticket ID", async () => {
+    const reqRes = await request(app).get("/api/requesters");
+    const requesterId = reqRes.body[0].id;
+
+    const res = await request(app)
+      .get("/api/tickets/999999")
+      .set("x-requester-id", String(requesterId));
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toContain("Ticket not found");
+  });
+});
