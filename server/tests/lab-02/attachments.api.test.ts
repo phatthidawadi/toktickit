@@ -9,6 +9,12 @@ describe("Attachment Lifecycle API", () => {
     const reqRes = await request(app).get("/api/requesters");
     const requesterId = reqRes.body[0].id;
 
+    const catRes = await request(app).get("/api/categories");
+    const categoryId = catRes.body[0].id;
+
+    const sysRes = await request(app).get(`/api/related-systems?categoryId=${categoryId}`);
+    const relatedSystemId = sysRes.body[0].id;
+
     // Create ticket
     const ticketRes = await request(app)
       .post("/api/tickets")
@@ -16,11 +22,12 @@ describe("Attachment Lifecycle API", () => {
       .send({
         summary: "Attachment Test Ticket",
         description: "Testing attachment upload functionality",
-        categoryId: 1,
-        relatedSystemId: 1,
+        categoryId,
+        relatedSystemId,
         requestedPriority: "MEDIUM",
       });
 
+    expect(ticketRes.status).toBe(201);
     const ticketId = ticketRes.body.id;
 
     // Create temp test file
@@ -33,7 +40,9 @@ describe("Attachment Lifecycle API", () => {
       .set("x-requester-id", String(requesterId))
       .attach("file", tempFilePath);
 
-    fs.unlinkSync(tempFilePath);
+    if (fs.existsSync(tempFilePath)) {
+      fs.unlinkSync(tempFilePath);
+    }
 
     expect(res.status).toBe(201);
     expect(res.body.id).toBeDefined();
@@ -53,7 +62,9 @@ describe("Attachment Lifecycle API", () => {
       .set("x-requester-id", String(requesterId))
       .attach("file", tempExePath);
 
-    fs.unlinkSync(tempExePath);
+    if (fs.existsSync(tempExePath)) {
+      fs.unlinkSync(tempExePath);
+    }
 
     expect(res.status).toBe(400);
     expect(res.body.error).toContain("File type not allowed");
@@ -63,17 +74,24 @@ describe("Attachment Lifecycle API", () => {
     const reqRes = await request(app).get("/api/requesters");
     const requesterId = reqRes.body[0].id;
 
+    const catRes = await request(app).get("/api/categories");
+    const categoryId = catRes.body[0].id;
+
+    const sysRes = await request(app).get(`/api/related-systems?categoryId=${categoryId}`);
+    const relatedSystemId = sysRes.body[0].id;
+
     const ticketRes = await request(app)
       .post("/api/tickets")
       .set("x-requester-id", String(requesterId))
       .send({
         summary: "Soft Remove Test Ticket",
         description: "Testing soft removal of attachment",
-        categoryId: 1,
-        relatedSystemId: 1,
+        categoryId,
+        relatedSystemId,
         requestedPriority: "LOW",
       });
 
+    expect(ticketRes.status).toBe(201);
     const ticketId = ticketRes.body.id;
 
     const tempFilePath = path.join(process.cwd(), "temp_remove_test.txt");
@@ -84,8 +102,11 @@ describe("Attachment Lifecycle API", () => {
       .set("x-requester-id", String(requesterId))
       .attach("file", tempFilePath);
 
-    fs.unlinkSync(tempFilePath);
+    if (fs.existsSync(tempFilePath)) {
+      fs.unlinkSync(tempFilePath);
+    }
 
+    expect(uploadRes.status).toBe(201);
     const attachmentId = uploadRes.body.id;
 
     // Soft-remove attachment with reason

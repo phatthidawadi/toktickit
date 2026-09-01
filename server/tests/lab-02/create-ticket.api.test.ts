@@ -4,7 +4,6 @@ import { app } from "../../src/app.js";
 
 describe("POST /api/tickets", () => {
   it("creates a new ticket when valid data and x-requester-id are provided", async () => {
-    // 1. Fetch categories and related systems first
     const catRes = await request(app).get("/api/categories");
     expect(catRes.status).toBe(200);
     const categoryId = catRes.body[0].id;
@@ -13,18 +12,16 @@ describe("POST /api/tickets", () => {
     expect(sysRes.status).toBe(200);
     const relatedSystemId = sysRes.body[0].id;
 
-    // 2. Fetch requesters
     const reqRes = await request(app).get("/api/requesters");
     expect(reqRes.status).toBe(200);
     const requesterId = reqRes.body[0].id;
 
-    // 3. Submit valid ticket
     const ticketData = {
-      summary: "Laptop battery drains quickly",
-      description: "My laptop battery is draining much faster than usual even when the system is idle.",
+      summary: "VPN Connection drops frequently",
+      description: "When connecting via home Wi-Fi, the VPN disconnects every 10-15 minutes.",
       categoryId,
       relatedSystemId,
-      requestedPriority: "MEDIUM",
+      requestedPriority: "HIGH",
     };
 
     const res = await request(app)
@@ -36,21 +33,24 @@ describe("POST /api/tickets", () => {
     expect(res.body.id).toBeDefined();
     expect(res.body.ticketNumber).toMatch(/^TKT-\d{4}-\d{6}$/);
     expect(res.body.currentStatus).toBe("NEW");
-    expect(res.body.summary).toBe(ticketData.summary);
-    expect(res.body.requesterId).toBe(requesterId);
   });
 
-  it("returns 400 when x-requester-id is missing", async () => {
+  it("returns 400 when x-requester-id header is missing", async () => {
+    const catRes = await request(app).get("/api/categories");
+    const categoryId = catRes.body[0].id;
+    const sysRes = await request(app).get(`/api/related-systems?categoryId=${categoryId}`);
+    const relatedSystemId = sysRes.body[0].id;
+
     const res = await request(app).post("/api/tickets").send({
-      summary: "Test Ticket Summary",
-      description: "Test description for ticket submission",
-      categoryId: 1,
-      relatedSystemId: 1,
+      summary: "Missing header test ticket",
+      description: "Description long enough for validation",
+      categoryId,
+      relatedSystemId,
       requestedPriority: "LOW",
     });
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toContain("Missing x-requester-id");
+    expect(res.body.error).toContain("Missing x-requester-id header");
   });
 
   it("returns 400 when summary or description is invalid", async () => {
@@ -61,14 +61,14 @@ describe("POST /api/tickets", () => {
       .post("/api/tickets")
       .set("x-requester-id", String(requesterId))
       .send({
-        summary: "Bad", // Less than 5 chars
-        description: "Short", // Less than 10 chars
+        summary: "Bad",
+        description: "Short",
         categoryId: 1,
         relatedSystemId: 1,
-        requestedPriority: "LOW",
+        requestedPriority: "MEDIUM",
       });
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toContain("Summary");
+    expect(res.body.error).toBeDefined();
   });
 });

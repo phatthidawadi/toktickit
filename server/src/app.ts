@@ -161,11 +161,10 @@ app.post("/api/tickets", async (req: Request, res: Response) => {
 
     // Generate Ticket Number (TKT-YYYY-XXXXXX)
     const currentYear = new Date().getFullYear();
-    const lastTicket = await getPrisma().ticket.findFirst({
-      orderBy: { id: "desc" },
-    });
-    const nextSeq = lastTicket ? lastTicket.id + 1 : 1;
-    const ticketNumber = generateTicketNumber(nextSeq, currentYear);
+    const count = await getPrisma().ticket.count();
+    const uniqueOffset = Math.floor(Math.random() * 10000);
+    const seq = count + 1 + uniqueOffset;
+    const ticketNumber = generateTicketNumber(seq, currentYear);
 
     const newTicket = await getPrisma().ticket.create({
       data: {
