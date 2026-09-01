@@ -1,6 +1,4 @@
-// Prisma schema — datasource and generator are pre-wired.
-// Your DATABASE_URL lives in server/.env (copy it from .env.example).
-
+// Prisma schema for TokTickIT Lab 2
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,8 +8,79 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model RequesterUser {
+  id          Int      @id @default(autoincrement())
+  name        String
+  email       String   @unique
+  department  String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tickets     Ticket[]
+}
+
 model Category {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  createdAt DateTime @default(now())
+  id             Int             @id @default(autoincrement())
+  name           String          @unique
+  description    String?
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  relatedSystems RelatedSystem[]
+  tickets        Ticket[]
+}
+
+model RelatedSystem {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  categoryId  Int
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  tickets  Ticket[]
+
+  @@unique([name, categoryId])
+}
+
+model Ticket {
+  id                Int      @id @default(autoincrement())
+  ticketNumber      String   @unique
+  summary           String
+  description       String
+  requestedPriority String
+  currentStatus     String   @default("NEW")
+  requesterId       Int
+  categoryId        Int
+  relatedSystemId   Int
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  requester     RequesterUser @relation(fields: [requesterId], references: [id], onDelete: Restrict)
+  category      Category      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  relatedSystem RelatedSystem @relation(fields: [relatedSystemId], references: [id], onDelete: Restrict)
+  attachments   Attachment[]
+
+  @@index([requesterId])
+  @@index([categoryId])
+  @@index([requestedPriority])
+  @@index([currentStatus])
+}
+
+model Attachment {
+  id            Int       @id @default(autoincrement())
+  ticketId      Int
+  filename      String
+  originalName  String
+  mimeType      String
+  size          Int
+  filePath      String
+  isRemoved     Boolean   @default(false)
+  removedReason String?
+  removedAt     DateTime?
+  createdAt     DateTime  @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
 }
