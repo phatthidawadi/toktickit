@@ -72,10 +72,10 @@
 "Thank you! All automated tests pass 100%."
 
 ### Reviewer comment I received (PR #33):
-"Developer guide and architecture documentation are comprehensive."
+"Documentation formatting across docs/lab-02 matches Lab 1 structure cleanly."
 
 ### How I responded (PR #33):
-"Thanks! Added 3-tier architecture diagram, setup commands, and test matrix."
+"Thanks! Cleaned up documentation files to match Lab 1 structure."
 
 ## Pull Requests I reviewed for my partner
 ### My comment:

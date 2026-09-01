@@ -14,7 +14,7 @@
 | 7 | Implement Ticket Detail Read-Only view (`GET /api/tickets/:id`) with 403 Forbidden enforcement. | Verified cross-requester access blocking and read-only field rendering. |
 | 8 | Implement Attachment upload limit (5MB), executable file block, and soft removal (410 Gone). | Verified attachment upload route, soft removal modal, and download status code. |
 | 9 | Write End-to-End User Journey test suite in Vitest + RTL. | Verified `E2EUserJourney.test.tsx` passing 100%. |
-| 10 | Create Sprint 2 Developer Guide and Architecture Documentation (`developer-guide.md`). | Verified `developer-guide.md` containing 3-tier architecture diagram and setup commands. |
+| 10 | Align Lab 2 markdown documentation files formatting with Lab 1 structure. | Verified all 6 markdown files in `docs/lab-02/` match Lab 1 structure cleanly. |
 
 ## Reflection
 Using the AI agent accelerated the execution of Sprint 2 (Lab 2) features across both backend and frontend layers. The agent maintained strict test-driven development (TDD), generating Supertest API integration tests and Vitest UI component tests for each feature before submitting PRs. I guided the agent to adhere to custom formatting constraints (such as omitting emojis from documentation and commit messages, zero-padded ticket sequence numbers `TKT-YYYY-XXXXXX`, and HTTP 410 Gone status for soft-removed attachments). The automated test suite achieved a 100% pass rate across 25 test cases in 15 test files.
