@@ -26,7 +26,7 @@
 ภาพรวมโครงสร้างเอกสารคลีนมาก ระบุ Data Model Prisma และ API Summary ไว้ครบถ้วน"
 
 ### How I responded (PR #23):
-"ขอบคุณสำหรับรีวิวและคำแนะนำนะ ฉันได้อัปเดตข้อกำหนดใน Business Rule (BR-01) ในเอกสาร specification.md เพิ่มเติมแล้วนะ โดยระบุชัดเจนว่าส่วน XXXXXX ของ Ticket Number (TKT-YYYY-XXXXXX) จะเป็น 6-digit zero-padded sequence (ตัวอย่างเช่น TKT-2026-000001) เพื่อให้การพัฒนา Ticket Number Generator ใน Issue ถัดไปสอดคล้องกัน ฝากตรวจสอบให้อีกทีนะ"
+"ขอบคุณสำหรับรีวิวและคำแนะนำนะ ฉันได้อัปเดตข้อกำหนดใน Business Rule (BR-01) ในเอกสาร specification.md เพิ่มเติมแล้วนะ โดยระบุชัดเจนว่าส่วน XXXXXX ของ Ticket Number (TKT-YYYY-XXXXXX) จะเป็น 6-digit zero-padded sequence (ตัวอย่างเช่น TKT-2026-000001) เพื่อให้การพัฒนา Ticket Number Generator ใน Issue ถัดไปสอดคล้องกัน ฝากตรวจสอบใหีกทีนะ"
 
 ### Reviewer comment I received (PR #24):
 "REST API Specification (api-spec.md) และ Test Plan (tests.md) ของ Sprint 2 ได้สมบูรณ์และเป็นมืออาชีพมาก
@@ -145,10 +145,81 @@
 ## Pull Requests I reviewed for my partner
 | PR | Branch | Reviewer verdict |
 |----|--------|------------------|
-| [lmaybelgracel/toktickit#24](https://github.com/lmaybelgracel/toktickit/pull/24) | `feature/6-api-spec-test-plan` | Approved |
+| [lmaybelgracel/TokTickit#23](https://github.com/lmaybelgracel/TokTickit/pull/23) | `feature/5-spec-doc` | Approved with comments |
+| [lmaybelgracel/TokTickit#24](https://github.com/lmaybelgracel/TokTickit/pull/24) | `feature/6-ui-api-spec` | Approved with comments |
+| [lmaybelgracel/TokTickit#26](https://github.com/lmaybelgracel/TokTickit/pull/26) | `feature/8-db-schema-seed` | Approved with comments |
+| [lmaybelgracel/TokTickit#27](https://github.com/lmaybelgracel/TokTickit/pull/27) | `feature/9-requester-context` | Approved with comments |
+| [lmaybelgracel/TokTickit#28](https://github.com/lmaybelgracel/TokTickit/pull/28) | `feature/10-create-ticket` | Approved with comments |
+| [lmaybelgracel/TokTickit#29](https://github.com/lmaybelgracel/TokTickit/pull/29) | `feature/11-my-tickets` | Approved with comments |
+
+### My comment (PR #23 for partner lmaybelgracel):
+"ภาพรวมสเปกทำได้ดีมาก โครงสร้างตรงตาม Appendix A ของ Lab 2 Handout กำหนด Scope และ Zen Green Theme ได้ชัดเจนดีมาก
+
+ขอเสนอแนะเพิ่มเติมเล็กน้อยเพื่อความสมบูรณ์ก่อนเริ่ม Implement:
+1. [BR Strategy] เพิ่มความชัดเจนเรื่อง Transaction เมื่ออัปโหลดไฟล์ล้มเหลว
+2. [BR Validation] กำหนดความยาวของ removalReason (3 - 250 ตัวอักษร)
+3. [Data Schema] ระบุ Prisma Indexes (@@index([requesterId]))
+4. [API Standard] ระบุ HTTP Header สำหรับ Requester Context (X-Development-Requester-Id)
+5. [Acceptance Criteria] เพิ่ม AC สำหรับ No-results และ Error State (AC-08/AC-09)"
+
+### Partner's response (PR #23 for partner lmaybelgracel):
+"ขอบคุณมากสำหรับข้อเสนอแนะที่มีประโยชน์มากค่ะ ได้ทำการปรับปรุงเอกสาร docs/lab-02/specification.md และ push อัปเดตเข้า PR เรียบร้อยแล้ว รบกวนตรวจสอบอีกครั้งและช่วยกด Merge pull request เข้า lab2-staging ได้เลยค่ะ"
 
 ### My comment (PR #24 for partner lmaybelgracel):
-"ตรวจสอบ PR Feature 6: API Specification and Test Plan ของเพื่อนเรียบร้อยแล้ว รายละเอียด REST API Contract ทั้ง 9 Endpoints และ Test Scenarios ครบถ้วน สมบูรณ์ พร้อมสำหรับก้าวถัดไปครับ"
+"เอกสาร UI Specification และ API Contract ใน docs/lab-02/specification.md เขียนได้ครอบคลุมและชัดเจนดีมาก มีการกำหนดธีมสี Zen Green พร้อม Hex Code ชัดเจน และมี Endpoints ครอบคลุมการทำงานของ Requester ทั้งหมด รวมถึงการใช้ Header X-Development-Requester-Id สำหรับแยก Identity
+
+ข้อเสนอแนะเพิ่มเติมเล็กน้อย:
+1. ใน UI Spec อาจระบุสีของ Priority/Status Badge และ Visual State ของไฟล์ที่โดน Soft-remove เพิ่มเติม
+2. ใน API Spec อยากเสนอให้ใส่ HTTP Status Codes (200, 201, 400, 403, 404, 410) และ Request Body สำหรับ DELETE /api/attachments/:id (removalReason) ให้ชัดเจนยิ่งขึ้น"
 
 ### Partner's response (PR #24 for partner lmaybelgracel):
-"ขอบคุณสำหรับการตรวจทานและ Approve PR ครับ จะเริ่มดำเนินการในฟีเจอร์ถัดไปตามแผนครับ"
+"ขอบคุณมากสำหรับคำแนะนำและข้อเสนอแนะที่มีประโยชน์มากค่ะ ได้ทำการอัปเดตเอกสาร docs/lab-02/ui-spec.md และ push ขึ้น PR #24 เรียบร้อยแล้วค่ะ รบกวนตรวจสอบอีกครั้ง และช่วยกด Approve พร้อมกด Merge pull request เข้า lab2-staging ให้ด้วยนะคะ"
+
+### My comment (PR #26 for partner lmaybelgracel):
+"ดูภาพรวมของ PR #26 (Issue 8: Database Schema and Seed Data) แล้วทำได้ตรงตาม Specification ของ Lab 2 ครบถ้วนและเรียบร้อยมาก
+
+จุดที่ชอบและออกแบบได้ดี:
+1. schema.prisma: ออกแบบ Models ครบถ้วน มีการตั้งค่า Enums, Unique Constraints และสร้าง @@index สำหรับ Foreign Keys ต่างๆ ได้ครอบคลุม
+2. Attachment Model: มี fields รองรับ Soft Removal (isRemoved, removedAt, removalReason) ตาม BR-07
+3. seed.ts: ใช้งาน upsert สำหรับทุก Entity รัน Seed ซ้ำได้โดยไม่เกิดข้อมูลซ้ำ (Idempotency)
+
+ข้อเสนอแนะเพิ่มเติมก่อน Merge:
+- อย่าลืมสร้าง/ตรวจสอบไฟล์ Prisma Migration (npx prisma migrate dev) และ commit โฟลเดอร์ server/prisma/migrations/ ขึ้น Git"
+
+### Partner's response (PR #26 for partner lmaybelgracel):
+"ขอบคุณมากสำหรับข้อเสนอแนะ ได้ทำการสร้างไฟล์ Prisma Migration DDL สำหรับ Lab 2 ครอบคลุม Tables, Enums, Constraints และ Indexes ทั้งหมด พร้อมทั้ง commit ขึ้น PR #26 เรียบร้อยแล้วค่ะ"
+
+### My comment (PR #27 for partner lmaybelgracel):
+"ฟีเจอร์ Development Requester Context ทำได้ตรงตามข้อกำหนด FR-01, FR-02, FR-03, BR-03, AC-02 และ AC-07 การแสดงผลหน้า Requester Selector มี Banner แจ้งเตือนสภาวะ Context Test ชัดเจน UI สวยงามตาม Zen Green Design System
+
+ข้อเสนอแนะเพิ่มเติมก่อน Merge:
+1. ใน client/vite.config.ts ควรอัปเดต include เป็น ["src/__tests__/**/*.test.tsx", "tests/**/*.test.tsx"]
+2. ใน client/src/App.tsx มี Typo property maxWdith ใน styles.headerInner แนะนำลบออก"
+
+### Partner's response (PR #27 for partner lmaybelgracel):
+"ขอบคุณสำหรับ Code Review มากๆ เลยนะคะ ได้ดำเนินการแก้ไขตามข้อเสนอแนะเพิ่มเติมเรียบร้อยแล้วค่ะ ทำการ push commit แก้ไขขึ้น PR เรียบร้อยแล้วนะคะ รบกวนตรวจสอบและ Approve เพื่อ Merge ได้เลยค่ะ ขอบคุณมากค่ะ"
+
+### My comment (PR #28 for partner lmaybelgracel):
+"ตรวจสอบโค้ดและผลการทดสอบของ Issue 10: Create Ticket Workflow and Reference Data APIs (#28) เรียบร้อยแล้ว:
+1. Backend APIs: Implement GET /api/categories, GET /api/related-systems, และ POST /api/tickets ได้ตรงตาม specification
+2. Frontend UI: หน้าจอ CreateTicket.tsx ตกแต่งได้สวยงามตาม Zen Green Theme
+3. Automated Tests: รัน Vitest ทั้งฝั่ง Server และ Client ผ่าน 100%
+
+ข้อเสนอแนะเล็กน้อย (Non-blocking):
+- ใน POST /api/tickets อาจเพิ่มการเช็ก category.isActive === true และ relatedSystem.isActive === true เพื่อป้องกันการส่ง ID หมวดหมู่ที่ถูกปิดใช้งานเข้ามา"
+
+### Partner's response (PR #28 for partner lmaybelgracel):
+"ขอบคุณสำหรับ Code Review และคำแนะนำ ได้นำข้อเสนอแนะเพิ่มเติมมาปรับปรุงในระบบเรียบร้อยแล้วค่ะ โดยอัปเดต API POST /api/tickets ให้ตรวจสอบ category.isActive === true และ relatedSystem.isActive === true ก่อนสร้าง Ticket เรียบร้อยแล้วค่ะ"
+
+### My comment (PR #29 for partner lmaybelgracel):
+"ตรวจสอบ PR #29 เรียบร้อยแล้ว โค้ดตรงตามข้อกำหนดของ Issue 11 และสเปกใน api-spec.md และ ui-spec.md ครบถ้วน:
+1. Backend (GET /api/tickets): รองรับ Header X-Development-Requester-Id, กรองข้อมูลแยกตาม Requester Context
+2. Frontend UI: ออกแบบตาม Zen Green Theme แสดงผล Priority Badges และ Status Badge
+3. Automated Tests: ผ่าน 100%
+
+ข้อเสนอแนะเพิ่มเติม (Minor Recommendations):
+1. Debounce สำหรับ Search Input (Client)
+2. ขจัด Warning ใน Vitest UI Test (act(...) Warning)"
+
+### Partner's response (PR #29 for partner lmaybelgracel):
+"ขอบคุณสำหรับการตรวจทานและรีวิวอย่างละเอียดครับ จะนำข้อเสนอแนะเรื่อง Debounce และการขจัด act(...) Warning ไปปรับปรุงในระบบต่อไปครับ"
