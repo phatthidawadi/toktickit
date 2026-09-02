@@ -1,7 +1,7 @@
 # Lab 2 — Peer Review Record
 
 **Author:** phatthidawadi — GitHub: @phatthidawadi
-**Peer reviewer:** chanya06 — GitHub: @chanya06
+**Peer reviewer:** lmaybelgracel — GitHub: @lmaybelgracel
 
 ## Pull Requests I authored (reviewed by my partner)
 | PR | Branch | Reviewer verdict |
@@ -15,7 +15,7 @@
 | [PR #29](https://github.com/phatthidawadi/toktickit/pull/29) | `feature/11-ticket-detail` | Approved |
 | [PR #30](https://github.com/phatthidawadi/toktickit/pull/30) | `feature/12-attachment-lifecycle` | Approved |
 | [PR #31](https://github.com/phatthidawadi/toktickit/pull/31) | `feature/13-e2e-staging` | Approved |
-| [PR #33](https://github.com/phatthidawadi/toktickit/pull/33) | `feature/14-developer-guide` | Approved |
+| [PR #33](https://github.com/phatthidawadi/toktickit/pull/33) | `feature/14-developer-guide` | Pending |
 
 ### Reviewer comment I received (PR #23):
 "ทำส่วน Sprint 2 Engineering Specification และ UI Specification (Zen Green Theme) ได้สมบูรณ์และละเอียดมาก
@@ -137,15 +137,15 @@
 "ขอบคุณมากสำหรับคำรีวิวและการตรวจทานสรุปภาพรวมทั้งหมดของ Sprint 2 ยินดีอย่างยิ่งที่ผลการทดสอบ E2E User Journey, เอกสาร QA Summary (reviewer.md) และ AI Audit Trail (ai-use.md) ครบถ้วนตามมาตรฐานและ Definition of Done ของรายวิชา หลังจากเพื่อนกด Approve และ Merge PR #31 แล้ว ฉันจะทำการรวม branch lab2-staging เข้าสู่ main เพื่อเสร็จสิ้น Sprint 2 (Lab 2) อย่างสมบูรณ์ ขอบคุณสำหรับคำรีวิวและความช่วยเหลือตลอดทั้ง Sprint"
 
 ### Reviewer comment I received (PR #33):
-"Sprint 2 Documentation Housekeeping, Alignment, and Final Verification สำหรับ Issue 14 ได้จัดเรียงเอกสารทั้ง 6 ไฟล์ใน docs/lab-02/ ได้อย่างสมบูรณ์ ถูกต้องตามข้อกำหนด และเป็นมาตรฐานเดียวกับ lab-01"
+"Pending peer review."
 
 ### How I responded (PR #33):
-"ขอบคุณมากครับสำหรับคำรีวิวและการตรวจทานเอกสารใน docs/lab-02/ ทั้ง 6 ไฟล์ ได้แก่ specification.md, ui-spec.md, api-spec.md, tests.md, reviewer.md และ ai-use.md ซึ่งบัดนี้ได้ซิงค์ข้อมูลกับ implementation และ test evidence จริงทั้งหมดแล้วครับ"
+"Pending peer response."
 
 ## Pull Requests I reviewed for my partner
 | PR | Branch | Reviewer verdict |
 |----|--------|------------------|
-| [chanya06/toktickit#24](https://github.com/phatthidawadi/toktickit/pull/24) | `feature/6-api-spec-test-plan` | Approved |
+| [lmaybelgracel/toktickit#24](https://github.com/lmaybelgracel/toktickit/pull/24) | `feature/6-api-spec-test-plan` | Approved |
 
 ### My comment (PR #24 for partner):
 "ตรวจสอบ PR Feature 6: API Specification and Test Plan ของเพื่อนเรียบร้อยแล้ว รายละเอียด REST API Contract ทั้ง 9 Endpoints และ Test Scenarios ครบถ้วน สมบูรณ์ พร้อมสำหรับก้าวถัดไปครับ"
