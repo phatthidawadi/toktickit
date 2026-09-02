@@ -1,7 +1,7 @@
 # Lab 2 — Peer Review Record
 
 **Author:** phatthidawadi — GitHub: @phatthidawadi
-**Peer reviewer:** lmaybelgracel — GitHub: @lmaybelgracel
+**Peer reviewer:** chanya06 — GitHub: @chanya06
 
 ## Pull Requests I authored (reviewed by my partner)
 | PR | Branch | Reviewer verdict |
@@ -147,8 +147,8 @@
 |----|--------|------------------|
 | [lmaybelgracel/toktickit#24](https://github.com/lmaybelgracel/toktickit/pull/24) | `feature/6-api-spec-test-plan` | Approved |
 
-### My comment (PR #24 for partner):
+### My comment (PR #24 for partner lmaybelgracel):
 "ตรวจสอบ PR Feature 6: API Specification and Test Plan ของเพื่อนเรียบร้อยแล้ว รายละเอียด REST API Contract ทั้ง 9 Endpoints และ Test Scenarios ครบถ้วน สมบูรณ์ พร้อมสำหรับก้าวถัดไปครับ"
 
-### Partner's response (PR #24 for partner):
+### Partner's response (PR #24 for partner lmaybelgracel):
 "ขอบคุณสำหรับการตรวจทานและ Approve PR ครับ จะเริ่มดำเนินการในฟีเจอร์ถัดไปตามแผนครับ"
