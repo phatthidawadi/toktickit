@@ -7,14 +7,14 @@
 | PR | Branch | Reviewer verdict |
 |----|--------|------------------|
 | [PR #23](https://github.com/phatthidawadi/toktickit/pull/23) | `feature/5-doc-spec` | Approved with comments |
-| [PR #24](https://github.com/phatthidawadi/toktickit/pull/24) | `feature/6-api-spec-test-plan` | Approved |
-| [PR #25](https://github.com/phatthidawadi/toktickit/pull/25) | `feature/7-db-schema-seed` | Approved |
-| [PR #26](https://github.com/phatthidawadi/toktickit/pull/26) | `feature/8-requester-context` | Approved |
-| [PR #27](https://github.com/phatthidawadi/toktickit/pull/27) | `feature/9-create-ticket-form` | Approved |
-| [PR #28](https://github.com/phatthidawadi/toktickit/pull/28) | `feature/10-my-tickets-list` | Approved |
-| [PR #29](https://github.com/phatthidawadi/toktickit/pull/29) | `feature/11-ticket-detail` | Approved |
-| [PR #30](https://github.com/phatthidawadi/toktickit/pull/30) | `feature/12-attachment-lifecycle` | Approved |
-| [PR #31](https://github.com/phatthidawadi/toktickit/pull/31) | `feature/13-e2e-staging` | Approved |
+| [PR #24](https://github.com/phatthidawadi/toktickit/pull/24) | `feature/6-api-spec-test-plan` | Approved with comments |
+| [PR #25](https://github.com/phatthidawadi/toktickit/pull/25) | `feature/7-db-schema-seed` | Approved with comments |
+| [PR #26](https://github.com/phatthidawadi/toktickit/pull/26) | `feature/8-requester-context` | Approved with comments |
+| [PR #27](https://github.com/phatthidawadi/toktickit/pull/27) | `feature/9-create-ticket-form` | Approved with comments |
+| [PR #28](https://github.com/phatthidawadi/toktickit/pull/28) | `feature/10-my-tickets-list` | Approved with comments |
+| [PR #29](https://github.com/phatthidawadi/toktickit/pull/29) | `feature/11-ticket-detail` | Approved with comments |
+| [PR #30](https://github.com/phatthidawadi/toktickit/pull/30) | `feature/12-attachment-lifecycle` | Approved with comments |
+| [PR #31](https://github.com/phatthidawadi/toktickit/pull/31) | `feature/13-e2e-staging` | Approved with comments |
 | [PR #33](https://github.com/phatthidawadi/toktickit/pull/33) | `feature/14-developer-guide` | Pending |
 
 ### Reviewer comment I received (PR #23):
