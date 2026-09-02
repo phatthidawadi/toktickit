@@ -147,6 +147,7 @@
 |----|--------|------------------|
 | [lmaybelgracel/TokTickit#23](https://github.com/lmaybelgracel/TokTickit/pull/23) | `feature/5-spec-doc` | Approved with comments |
 | [lmaybelgracel/TokTickit#24](https://github.com/lmaybelgracel/TokTickit/pull/24) | `feature/6-ui-api-spec` | Approved with comments |
+| [lmaybelgracel/TokTickit#25](https://github.com/lmaybelgracel/TokTickit/pull/25) | `feature/7-test-plan` | Approved with comments |
 | [lmaybelgracel/TokTickit#26](https://github.com/lmaybelgracel/TokTickit/pull/26) | `feature/8-db-schema-seed` | Approved with comments |
 | [lmaybelgracel/TokTickit#27](https://github.com/lmaybelgracel/TokTickit/pull/27) | `feature/9-requester-context` | Approved with comments |
 | [lmaybelgracel/TokTickit#28](https://github.com/lmaybelgracel/TokTickit/pull/28) | `feature/10-create-ticket` | Approved with comments |
@@ -174,6 +175,22 @@
 
 ### Partner's response (PR #24 for partner lmaybelgracel):
 "ขอบคุณมากสำหรับคำแนะนำและข้อเสนอแนะที่มีประโยชน์มากค่ะ ได้ทำการอัปเดตเอกสาร docs/lab-02/ui-spec.md และ push ขึ้น PR #24 เรียบร้อยแล้วค่ะ รบกวนตรวจสอบอีกครั้ง และช่วยกด Approve พร้อมกด Merge pull request เข้า lab2-staging ให้ด้วยนะคะ"
+
+### My comment (PR #25 for partner lmaybelgracel):
+"ได้ทำการรีวิวเอกสารแผนการทดสอบและตาราง Traceability Matrix สำหรับ Lab 2 เรียบร้อยแล้ว โดยรวมวางโครงสร้างและกำหนดขอบเขตการทดสอบได้ดีมาก ขอส่งสรุปผลการรีวิวและข้อแนะนำเพิ่มเติมดังนี้:
+
+จุดที่ทำได้ดี:
+1. Multi-layer Testing Architecture ครอบคลุม Supertest, Vitest และ Playwright
+2. Security & Data Ownership Boundary ป้องกันการเข้าถึงข้อมูลข้ามตัวตน
+3. Requirement Mapping เชื่อมโยง Test ID กับ FR และ AC ได้เป็นระบบ
+
+ข้อแนะนำเพิ่มเติมสำหรับปรับปรุง:
+1. เพิ่ม Test Cases สำหรับ Edge Cases & Business Rules (BR-06, BR-07, BR-11, AC-05, AC-06)
+2. Form Data Retention on Error (BR-09, AC-09)
+3. อัปเดต Test Evidence & File Paths ให้ถูกต้อง"
+
+### Partner's response (PR #25 for partner lmaybelgracel):
+"ขอบคุณสำหรับคำแนะนำและข้อเสนอแนะที่มีประโยชน์มากค่ะ ได้ทำการปรับปรุงเอกสาร docs/lab-02/tests.md และ push ขึ้น PR #25 เรียบร้อยแล้ว รบกวนตรวจสอบอีกครั้ง และช่วยกด Approve พร้อมกด Merge pull request เข้า lab2-staging ให้ด้วยนะคะ"
 
 ### My comment (PR #26 for partner lmaybelgracel):
 "ดูภาพรวมของ PR #26 (Issue 8: Database Schema and Seed Data) แล้วทำได้ตรงตาม Specification ของ Lab 2 ครบถ้วนและเรียบร้อยมาก
