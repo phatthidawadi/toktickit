@@ -16,3 +16,6 @@ scratch/
 test-results/
 server/uploads/
 toktickit/
+client/src/**/*.js
+client/tests/**/*.js
+

@@ -407,9 +407,10 @@ app.post("/api/tickets/:id/attachments", (req: Request, res: Response) => {
         },
       });
 
-      res.status(201).json(attachment);
-    } catch (error) {
-      res.status(500).json({ error: "Internal Server Error" });
+      return res.status(201).json(attachment);
+    } catch (error: any) {
+      console.error("Attachment upload error:", error);
+      res.status(500).json({ error: error?.message || "Internal Server Error" });
     }
   });
 });
