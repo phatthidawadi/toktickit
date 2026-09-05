@@ -121,10 +121,10 @@ npx playwright test --config=e2e/playwright.config.ts
 
 | Test Suite | Total Test Files | Total `it()` Test Cases | Passed | Failed | Skipped | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Server Unit & API Tests | 8 | 19 | 19 | 0 | 0 | Pass |
-| Client UI Component Tests | 9 | 11 | 11 | 0 | 0 | Pass |
+| Server Unit & API Tests | 8 | 20 | 20 | 0 | 0 | Pass |
+| Client UI Component Tests | 9 | 14 | 14 | 0 | 0 | Pass |
 | E2E Playwright Tests | 1 | 3 | 3 | 0 | 0 | Pass |
-| **Total** | **18** | **33** | **33** | **0** | **0** | **Pass** |
+| **Total** | **18** | **37** | **37** | **0** | **0** | **Pass** |
 
 ---
 

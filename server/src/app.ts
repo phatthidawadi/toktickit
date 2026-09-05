@@ -163,9 +163,9 @@ app.post("/api/tickets", async (req: Request, res: Response) => {
     const currentYear = new Date().getFullYear();
     let ticketNumber = "";
     let attempts = 0;
-    while (attempts < 20) {
+    while (attempts < 30) {
       const count = await getPrisma().ticket.count();
-      const seq = count + 1 + attempts + Math.floor(Math.random() * 50);
+      const seq = count + 1 + attempts * 10 + Math.floor(Math.random() * 10000);
       const candidate = generateTicketNumber(seq, currentYear);
       const existing = await getPrisma().ticket.findUnique({ where: { ticketNumber: candidate } });
       if (!existing) {
@@ -175,7 +175,7 @@ app.post("/api/tickets", async (req: Request, res: Response) => {
       attempts++;
     }
     if (!ticketNumber) {
-      ticketNumber = `TKT-${currentYear}-${Date.now().toString().slice(-6)}`;
+      ticketNumber = `TKT-${currentYear}-${Math.floor(100000 + Math.random() * 900000)}`;
     }
 
     const newTicket = await getPrisma().ticket.create({
