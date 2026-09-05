@@ -161,11 +161,12 @@ app.post("/api/tickets", async (req: Request, res: Response) => {
 
     // Generate Ticket Number (TKT-YYYY-XXXXXX)
     const currentYear = new Date().getFullYear();
-    const lastTicket = await getPrisma().ticket.findFirst({
-      orderBy: { id: "desc" },
-    });
-    const nextSeq = lastTicket ? lastTicket.id + 1 : 1;
-    const ticketNumber = generateTicketNumber(nextSeq, currentYear);
+    let seq = (await getPrisma().ticket.count()) + 1;
+    let ticketNumber = generateTicketNumber(seq, currentYear);
+    while (await getPrisma().ticket.findUnique({ where: { ticketNumber } })) {
+      seq++;
+      ticketNumber = generateTicketNumber(seq, currentYear);
+    }
 
     const newTicket = await getPrisma().ticket.create({
       data: {
@@ -181,8 +182,9 @@ app.post("/api/tickets", async (req: Request, res: Response) => {
     });
 
     res.status(201).json(newTicket);
-  } catch (error) {
-    res.status(500).json({ error: "Internal Server Error" });
+  } catch (error: any) {
+    console.error("Create ticket error:", error);
+    res.status(500).json({ error: error?.message || "Internal Server Error" });
   }
 });
 
@@ -413,6 +415,36 @@ app.post("/api/tickets/:id/attachments", (req: Request, res: Response) => {
       res.status(500).json({ error: error?.message || "Internal Server Error" });
     }
   });
+});
+
+// GET /api/attachments/:id — Retrieve Attachment Metadata
+app.get("/api/attachments/:id", async (req: Request, res: Response) => {
+  try {
+    const requesterHeader = req.headers["x-requester-id"];
+    if (!requesterHeader) {
+      return res.status(400).json({ error: "Missing x-requester-id header" });
+    }
+
+    const requesterId = Number(requesterHeader);
+    const attachmentId = Number(req.params.id);
+
+    const attachment = await getPrisma().attachment.findUnique({
+      where: { id: attachmentId },
+      include: { ticket: true },
+    });
+
+    if (!attachment) {
+      return res.status(404).json({ error: "Attachment not found" });
+    }
+
+    if (attachment.ticket.requesterId !== requesterId) {
+      return res.status(403).json({ error: "Access denied. You can only view metadata for attachments on your own tickets." });
+    }
+
+    res.json(attachment);
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
 // GET /api/attachments/:id/download — Download Attachment (410 Gone if removed)

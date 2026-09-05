@@ -66,6 +66,9 @@ The IT department needs a professional, web-based support ticketing experience f
 - **BR-08**: **Soft Removal**: Attachment removal must be a soft delete (`isRemoved = true`). The removal reason is required (min 5 chars).
 - **BR-09**: **Removed File Access**: Files marked as soft-removed cannot be downloaded or previewed, but metadata (filename, size, removal reason, removed timestamp) remains readable.
 - **BR-10**: **Search & Filter Rules**: Searching is case-insensitive. Default page size is 10 items. Default sorting is Ticket Date descending.
+- **BR-11**: **Duplicate-Submission Prevention**: To prevent duplicate ticket creation from multiple rapid clicks or slow networks, the form submission button enters a disabled busy state immediately upon submission until the API response resolves.
+- **BR-12**: **Failure Behavior & Form State Preservation**: If ticket submission fails due to network disconnection or backend API error (e.g. HTTP 500/503), all user-entered form values (Category, Related System, Priority, Summary, Description, and selected attachments) must remain strictly preserved in local component state. A top-level error alert is shown, allowing the user to correct or retry without re-entering data.
+- **BR-13**: **Attachment Transaction & Compensation Strategy**: Ticket creation and file attachment uploads operate in a two-stage process. If ticket creation succeeds but an attachment upload fails (e.g. upload stream interrupt or storage full), the Ticket is retained in status `NEW` with its official Ticket Number, and the system notifies the user with a warning alert containing an option to retry uploading attachments directly from the Ticket Detail view.
 
 ---
 
@@ -77,11 +80,17 @@ The interface implements the **Zen Green Theme** with Primary Green (`#006B3C`),
 ## 7. Data Changes (Prisma Schema)
 
 ### Models
-- **`RequesterUser`**: `id`, `name`, `email`, `department`, `isActive`, `createdAt`, `updatedAt`.
-- **`Category`**: `id`, `name`, `description`, `isActive`.
-- **`RelatedSystem`**: `id`, `name`, `description`, `categoryId`, `isActive`.
+- **`RequesterUser`**: `id`, `name`, `email` (unique), `department`, `isActive`, `createdAt`, `updatedAt`.
+- **`Category`**: `id`, `name` (unique), `description`, `isActive`, `createdAt`.
+- **`RelatedSystem`**: `id`, `name`, `description`, `categoryId`, `isActive`, `createdAt`. Unique constraint on `[name, categoryId]`.
 - **`Ticket`**: `id`, `ticketNumber` (unique), `summary`, `description`, `requestedPriority`, `currentStatus`, `requesterId`, `categoryId`, `relatedSystemId`, `createdAt`, `updatedAt`.
 - **`Attachment`**: `id`, `ticketId`, `filename`, `originalName`, `mimeType`, `size`, `filePath`, `isRemoved`, `removedReason`, `removedAt`, `createdAt`.
+
+### Database Indexes & Optimization Decisions
+- `Ticket`: `@@index([requesterId])` for foreign key lookups.
+- `Ticket`: `@@index([requesterId, createdAt])` composite index to optimize paginated ticket list queries filtered by Requester ID and sorted by creation date descending.
+- `Ticket`: `@@index([categoryId])`, `@@index([requestedPriority])`, `@@index([currentStatus])` for frequent list filtering.
+- `Attachment`: `@@index([ticketId])` for ticket attachment joins.
 
 ---
 
@@ -91,9 +100,10 @@ The interface implements the **Zen Green Theme** with Primary Green (`#006B3C`),
 - `GET /api/categories`: Retrieve active Ticket Categories.
 - `GET /api/related-systems`: Retrieve active Related Systems.
 - `POST /api/tickets`: Create a new ticket (Headers: `x-requester-id`).
-- `GET /api/tickets`: Query requester-owned tickets (Params: `search`, `category`, `priority`, `status`, `sort`, `page`, `limit`).
+- `GET /api/tickets`: Query requester-owned tickets (Params: `search`, `categoryId`, `priority`, `status`, `sort`, `page`, `limit`).
 - `GET /api/tickets/:id`: Retrieve owned ticket details.
 - `POST /api/tickets/:id/attachments`: Upload attachment file.
+- `GET /api/attachments/:id`: Retrieve single attachment metadata.
 - `GET /api/attachments/:id/download`: Download active attachment file.
 - `DELETE /api/attachments/:id`: Soft-remove attachment with reason payload.
 
@@ -105,20 +115,28 @@ The interface implements the **Zen Green Theme** with Primary Green (`#006B3C`),
 
 - **AC-01**: Given valid Ticket input, when Requester submits the form, then one Ticket is saved, status is `NEW`, and official Ticket Number (`TKT-YYYY-XXXXXX`) is returned.
 - **AC-02**: Given no Development Requester selected, when user attempts to navigate to ticket screens, then Requester Selection screen is displayed.
-- **AC-03**: Given Requester B selected, when requesting a Ticket belonging to Requester A via API or UI, then 403 Forbidden is returned.
-- **AC-04**: Given an invalid file type (e.g. `.exe`), when user attempts attachment upload, then validation error is shown and upload is rejected.
-- **AC-05**: Given a file > 5MB, when user attempts attachment upload, then file size error is displayed and upload is rejected.
-- **AC-06**: Given an active attachment on an owned ticket, when user clicks Remove and provides a valid reason, then file is soft-removed and download link becomes disabled.
+- **AC-03**: Given Requester B selected, when requesting a Ticket or Attachment belonging to Requester A via API or UI, then 403 Forbidden is returned.
+- **AC-04**: Given an invalid file type (e.g. `.exe`), when user attempts attachment upload, then validation error is shown and upload is rejected with HTTP 400.
+- **AC-05**: Given a file > 5MB, when user attempts attachment upload, then file size error is displayed and upload is rejected with HTTP 400.
+- **AC-06**: Given an active attachment on an owned ticket, when user clicks Remove and provides a valid reason (min 5 chars), then file is soft-removed and download link returns HTTP 410 Gone.
 - **AC-07**: Given My Tickets screen, when searching for keyword "Wi-Fi", then list filters dynamically to show only matching tickets.
 - **AC-08**: Given mobile viewport (< 768px), when viewing My Tickets, then list automatically renders in responsive card format without horizontal overflow.
+- **AC-09**: Given invalid form input (summary < 5 chars or description < 10 chars), when Requester clicks Submit, then inline validation messages appear below the respective fields and API is not called.
+- **AC-10**: Given My Tickets screen, when selecting Category, Priority, or Status filter dropdowns, then list updates dynamically to show only matching items.
+- **AC-11**: Given My Tickets screen, when toggling Sort dropdown (Newest vs Oldest), then list ordering updates accordingly.
+- **AC-12**: Given My Tickets screen with > 10 tickets, when navigating page controls (Next/Previous), then pagination metadata and ticket page content update correctly.
+- **AC-13**: Given a Requester with zero tickets or a filter yielding no matches, when viewing My Tickets, then an empty state or no-results state with a Clear Filters CTA is rendered.
+- **AC-14**: Given active Requester Selection dropdown, when switching context from Requester A to Requester B, then the application reloads ticket list for Requester B context.
+- **AC-15**: Given backend API error during submission, when ticket form submission fails, then all entered form field values remain preserved in the form state for correction.
+- **AC-16**: Given interactive UI elements, when navigated via keyboard or screen reader, then visible focus indicators and accessible labels are present.
 
 ---
 
 ## 10. Definition of Done
 
 ### Product Completion
-- All Functional Requirements (FR-01 to FR-12) and Business Rules (BR-01 to BR-10) implemented.
-- All Acceptance Criteria (AC-01 to AC-08) satisfied and verified with automated tests.
+- All Functional Requirements (FR-01 to FR-12) and Business Rules (BR-01 to BR-13) implemented.
+- All Acceptance Criteria (AC-01 to AC-16) satisfied and verified with automated tests.
 - 100% pass rate on Unit, API, UI, and E2E test suites in `main` branch.
 - Zero horizontal scrolling or UI visual clipping on Desktop, Tablet, and Mobile viewports.
 
@@ -131,5 +149,10 @@ The interface implements the **Zen Green Theme** with Primary Green (`#006B3C`),
 ---
 
 ## 11. Assumptions and Decisions
+
 1. **Development Requester Header**: Requester identity is sent via HTTP Header `x-requester-id` to simulate logged-in user context in REST requests.
-2. **Soft Removal Strategy**: Files remain physically on disk in scratch/uploads storage to allow audit metadata display, but download endpoint returns 410 Gone for soft-removed files.
+2. **Database Composite Index Decision**: A composite index `(requesterId, createdAt DESC)` is defined on the `Ticket` table. This decision optimizes the primary query in Sprint 2 (`GET /api/tickets` filtered by `requesterId` and sorted by `createdAt`), eliminating database filesort operations and ensuring fast pagination response times as ticket volume grows.
+3. **Attachment Transaction & Compensation Strategy**: Because ticket creation (`POST /api/tickets`) and file attachment uploads (`POST /api/tickets/:id/attachments`) are separate API calls, transactional integrity is managed via a two-stage compensation strategy:
+   - Stage 1: The ticket entity is created in PostgreSQL with status `NEW` and assigned an official Ticket Number.
+   - Stage 2: Attachments are uploaded sequentially. If an attachment upload fails (e.g. storage error), the ticket remains safely created, and the user is presented with a non-blocking warning notification with an option to attach missing files from the Ticket Detail view. Orphaned temporary files from aborted uploads are automatically cleaned up by disk garbage collection.
+4. **Soft Removal Storage Strategy**: Soft-removed files remain physically on disk in scratch/uploads storage to preserve audit metadata display, but the download endpoint returns HTTP 410 Gone for soft-removed files.
