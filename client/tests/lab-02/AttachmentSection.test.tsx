@@ -37,10 +37,10 @@ const mockTicketWithAttachments = {
     },
     {
       id: 11,
-      filename: "attachment-2.txt",
-      originalName: "confidential_log.txt",
+      filename: "attachment-2.pdf",
+      originalName: "confidential_log.pdf",
       size: 1024,
-      mimeType: "text/plain",
+      mimeType: "application/pdf",
       isRemoved: true,
       removedReason: "Uploaded wrong log file",
     },

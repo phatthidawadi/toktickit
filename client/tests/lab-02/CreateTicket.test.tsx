@@ -200,4 +200,100 @@ describe("CreateTicketForm UI Component", () => {
     submitBtn.focus();
     expect(document.activeElement).toBe(submitBtn);
   });
+
+  it("uploads selected file after ticket creation and displays validation error for prohibited file types", async () => {
+    let ticketCreated = false;
+    let attachmentUploaded = false;
+
+    vi.spyOn(globalThis, "fetch").mockImplementation((url, init) => {
+      const urlString = typeof url === "string" ? url : (url as Request).url;
+      const method = init?.method || "GET";
+
+      if (urlString.includes("/api/categories")) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockCategories) } as Response);
+      }
+      if (urlString.includes("/api/related-systems")) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockSystems) } as Response);
+      }
+      if (urlString.includes("/api/tickets/99/attachments") && method === "POST") {
+        attachmentUploaded = true;
+        return Promise.resolve({
+          ok: true,
+          status: 201,
+          json: () =>
+            Promise.resolve({
+              id: 1,
+              filename: "att-1.pdf",
+              originalName: "report.pdf",
+              size: 1024,
+              mimeType: "application/pdf",
+            }),
+        } as Response);
+      }
+      if (urlString.includes("/api/tickets") && method === "POST") {
+        ticketCreated = true;
+        return Promise.resolve({
+          ok: true,
+          status: 201,
+          json: () =>
+            Promise.resolve({
+              id: 99,
+              ticketNumber: "TKT-2026-000099",
+              summary: "Upload Test Ticket",
+              description: "Testing attachment upload during creation",
+              currentStatus: "NEW",
+            }),
+        } as Response);
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve([]) } as Response);
+    });
+
+    render(
+      <RequesterProvider>
+        <TestWrapper />
+      </RequesterProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Create IT Support Ticket")).toBeDefined();
+    });
+
+    const categorySelect = screen.getByLabelText(/Category/i) as HTMLSelectElement;
+    fireEvent.change(categorySelect, { target: { value: "2" } });
+
+    await waitFor(() => {
+      const systemSelect = screen.getByLabelText(/Related System/i) as HTMLSelectElement;
+      expect(systemSelect.disabled).toBe(false);
+      fireEvent.change(systemSelect, { target: { value: "1" } });
+    });
+
+    const summaryInput = screen.getByLabelText(/Ticket Summary/i);
+    const descriptionInput = screen.getByLabelText(/Detailed Description/i);
+    const fileInput = screen.getByLabelText(/Optional File Attachment/i) as HTMLInputElement;
+
+    // Test prohibited file selection
+    const invalidFile = new File(["test"], "invalid_script.txt", { type: "text/plain" });
+    fireEvent.change(fileInput, { target: { files: [invalidFile] } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/prohibited for security reasons/i)).toBeDefined();
+    });
+
+    // Select valid file
+    const validFile = new File(["pdf content"], "report.pdf", { type: "application/pdf" });
+    fireEvent.change(fileInput, { target: { files: [validFile] } });
+
+    fireEvent.change(summaryInput, { target: { value: "Upload attachment test summary" } });
+    fireEvent.change(descriptionInput, { target: { value: "Detailed description for attachment upload testing" } });
+
+    const submitBtn = screen.getByRole("button", { name: /Submit Ticket/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText("Ticket Submitted Successfully!")).toBeDefined();
+    });
+
+    expect(ticketCreated).toBe(true);
+    expect(attachmentUploaded).toBe(true);
+  });
 });

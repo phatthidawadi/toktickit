@@ -3,6 +3,7 @@ import {
   fetchCategories,
   fetchRelatedSystems,
   createTicket,
+  uploadAttachment,
   Category,
   RelatedSystem,
   Ticket,
@@ -27,6 +28,7 @@ export const CreateTicketForm: React.FC<CreateTicketFormProps> = ({ onSuccess, o
   const [requestedPriority, setRequestedPriority] = useState<"LOW" | "MEDIUM" | "HIGH" | "URGENT">("MEDIUM");
   const [summary, setSummary] = useState<string>("");
   const [description, setDescription] = useState<string>("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // UI / Validation State
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -122,6 +124,10 @@ export const CreateTicketForm: React.FC<CreateTicketFormProps> = ({ onSuccess, o
         selectedRequester.id
       );
 
+      if (selectedFile) {
+        await uploadAttachment(ticket.id, selectedFile, selectedRequester.id);
+      }
+
       setCreatedTicket(ticket);
       setSubmitting(false);
       if (onSuccess) onSuccess(ticket);
@@ -135,6 +141,7 @@ export const CreateTicketForm: React.FC<CreateTicketFormProps> = ({ onSuccess, o
     setCreatedTicket(null);
     setSummary("");
     setDescription("");
+    setSelectedFile(null);
     setErrors({});
     setFormError(null);
   };
@@ -516,12 +523,17 @@ export const CreateTicketForm: React.FC<CreateTicketFormProps> = ({ onSuccess, o
                 const file = e.target.files?.[0];
                 if (file) {
                   const ext = "." + file.name.split(".").pop()?.toLowerCase();
-                  if ([".exe", ".bat", ".cmd", ".sh"].includes(ext)) {
+                  const allowed = [".jpg", ".jpeg", ".png", ".webp", ".pdf"];
+                  if (!allowed.includes(ext)) {
                     setFormError(`File type ${ext} is prohibited for security reasons (AC-04)`);
+                    setSelectedFile(null);
                     e.target.value = "";
                   } else {
                     setFormError(null);
+                    setSelectedFile(file);
                   }
+                } else {
+                  setSelectedFile(null);
                 }
               }}
               style={{

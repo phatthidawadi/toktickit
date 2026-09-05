@@ -26,16 +26,43 @@ describe("GET /api/tickets", () => {
     });
   });
 
-  it("filters tickets by search keyword", async () => {
+  it("filters tickets by search keyword matching description specifically", async () => {
+    const reqRes = await request(app).get("/api/requesters");
+    const requesterId = reqRes.body[0].id;
+    const catRes = await request(app).get("/api/categories");
+    const sysRes = await request(app).get("/api/related-systems");
+
+    const uniqueTerm = `desc_unique_${Date.now()}`;
+    await request(app)
+      .post("/api/tickets")
+      .set("x-requester-id", String(requesterId))
+      .send({
+        summary: "Generic Support Ticket",
+        description: `This description contains the special token ${uniqueTerm} for testing search`,
+        categoryId: catRes.body[0].id,
+        relatedSystemId: sysRes.body[0].id,
+        requestedPriority: "LOW",
+      });
+
+    const res = await request(app)
+      .get(`/api/tickets?search=${uniqueTerm}`)
+      .set("x-requester-id", String(requesterId));
+
+    expect(res.status).toBe(200);
+    expect(res.body.tickets.length).toBeGreaterThan(0);
+    expect(res.body.tickets[0].description).toContain(uniqueTerm);
+  });
+
+  it("caps limit parameter at maximum 50 (returns limit 50 when limit=100 requested)", async () => {
     const reqRes = await request(app).get("/api/requesters");
     const requesterId = reqRes.body[0].id;
 
     const res = await request(app)
-      .get("/api/tickets?search=battery")
+      .get("/api/tickets?limit=100")
       .set("x-requester-id", String(requesterId));
 
     expect(res.status).toBe(200);
-    expect(res.body.tickets).toBeDefined();
+    expect(res.body.limit).toBe(50);
   });
 
   it("returns 400 when x-requester-id header is missing", async () => {

@@ -479,6 +479,10 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({ ticketId, on
           }}
         >
           <div>
+            <span style={{ color: "#65756E", display: "block", marginBottom: "2px" }}>Requester</span>
+            <strong style={{ color: "#1F2925" }}>{ticket.requester ? `${ticket.requester.name} (${ticket.requester.email})` : "N/A"}</strong>
+          </div>
+          <div>
             <span style={{ color: "#65756E", display: "block", marginBottom: "2px" }}>Category</span>
             <strong style={{ color: "#1F2925" }}>{ticket.category?.name || "N/A"}</strong>
           </div>
