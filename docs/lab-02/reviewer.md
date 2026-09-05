@@ -138,13 +138,16 @@
 ## Pull Requests I reviewed for my partner
 | PR | Branch | Reviewer verdict |
 |----|--------|------------------|
-| [lmaybelgracel/TokTickit#23](https://github.com/lmaybelgracel/TokTickit/pull/23) | `feature/5-spec-doc` | Approved with comments |
-| [lmaybelgracel/TokTickit#24](https://github.com/lmaybelgracel/TokTickit/pull/24) | `feature/6-ui-api-spec` | Approved with comments |
-| [lmaybelgracel/TokTickit#25](https://github.com/lmaybelgracel/TokTickit/pull/25) | `feature/7-test-plan` | Approved with comments |
-| [lmaybelgracel/TokTickit#26](https://github.com/lmaybelgracel/TokTickit/pull/26) | `feature/8-db-schema-seed` | Approved with comments |
-| [lmaybelgracel/TokTickit#27](https://github.com/lmaybelgracel/TokTickit/pull/27) | `feature/9-requester-context` | Approved with comments |
-| [lmaybelgracel/TokTickit#28](https://github.com/lmaybelgracel/TokTickit/pull/28) | `feature/10-create-ticket` | Approved with comments |
-| [lmaybelgracel/TokTickit#29](https://github.com/lmaybelgracel/TokTickit/pull/29) | `feature/11-my-tickets` | Approved with comments |
+| [lmaybelgracel/TokTickit#23](https://github.com/lmaybelgracel/TokTickit/pull/23) | `feature/lab2-engineering-spec` | Approved with comments |
+| [lmaybelgracel/TokTickit#24](https://github.com/lmaybelgracel/TokTickit/pull/24) | `feature/lab2-ui-api-spec` | Approved with comments |
+| [lmaybelgracel/TokTickit#25](https://github.com/lmaybelgracel/TokTickit/pull/25) | `feature/lab2-test-plan` | Approved with comments |
+| [lmaybelgracel/TokTickit#26](https://github.com/lmaybelgracel/TokTickit/pull/26) | `feature/lab2-database-seed` | Approved with comments |
+| [lmaybelgracel/TokTickit#27](https://github.com/lmaybelgracel/TokTickit/pull/27) | `feature/lab2-requester-context` | Approved with comments |
+| [lmaybelgracel/TokTickit#28](https://github.com/lmaybelgracel/TokTickit/pull/28) | `feature/lab2-create-ticket` | Approved with comments |
+| [lmaybelgracel/TokTickit#29](https://github.com/lmaybelgracel/TokTickit/pull/29) | `feature/lab2-my-tickets` | Approved with comments |
+| [lmaybelgracel/TokTickit#30](https://github.com/lmaybelgracel/TokTickit/pull/30) | `feature/lab2-ticket-detail-attachments` | Approved with comments |
+| [lmaybelgracel/TokTickit#31](https://github.com/lmaybelgracel/TokTickit/pull/31) | `feature/lab2-automated-e2e-tests` | Approved with comments |
+| [lmaybelgracel/TokTickit#32](https://github.com/lmaybelgracel/TokTickit/pull/32) | `feature/lab2-visual-evidence` | Approved with comments |
 
 ### My comment (PR #23 for partner lmaybelgracel):
 "ภาพรวมสเปกทำได้ดีมาก โครงสร้างตรงตาม Appendix A ของ Lab 2 Handout กำหนด Scope และ Zen Green Theme ได้ชัดเจนดีมาก
@@ -233,3 +236,50 @@
 
 ### Partner's response (PR #29 for partner lmaybelgracel):
 "ขอบคุณสำหรับการตรวจทานและรีวิวอย่างละเอียดครับ จะนำข้อเสนอแนะเรื่อง Debounce และการขจัด act(...) Warning ไปปรับปรุงในระบบต่อไปครับ"
+
+### My comment (PR #30 for partner lmaybelgracel):
+"ตรวจ schema, migration และ seed data แล้วค่ะ ภาพรวมจัดโครงสร้างได้ดีและครอบคลุมงานส่วนฐานข้อมูลของ Feature 6 ค่ะ การใช้ upsert กับ seed data เหมาะกับการรันซ้ำ และข้อมูลที่เตรียมไว้ก็ครบตามที่ feature นี้ต้องใช้
+
+มีจุดหนึ่งที่อยากเสนอให้ปรับเพิ่มเติมค่ะ ใน Attachment มีฟิลด์ removedByRequesterId สำหรับเก็บผู้ที่นำไฟล์ออก แต่ตอนนี้ฟิลด์นี้ยังไม่ได้เชื่อม relation กับ DevelopmentRequester ถ้าเพิ่ม relation และ foreign key เข้าไป จะช่วยให้ข้อมูลมีความถูกต้องมากขึ้น และป้องกันการบันทึก requester ID ที่ไม่มีอยู่จริงค่ะ
+
+หลังจากเพิ่ม relation แล้ว แนะนำให้สร้าง migration ใหม่ และลองรัน migration, seed สองรอบ รวมถึง tests อีกครั้ง เพื่อเช็กว่ายังทำงานได้ตามเดิมและไม่มีข้อมูลซ้ำค่ะ
+
+ส่วนอื่นโดยรวมเรียบร้อยดีค่ะ หลังปรับจุดนี้แล้วน่าจะพร้อมสำหรับการตรวจรอบถัดไปค่ะ"
+
+### Partner's response (PR #30 for partner lmaybelgracel):
+"แก้ครบทั้ง 3 ข้อแล้วนะ:
+- เพิ่มตรวจ isActive ของ Requester ก่อนอัปโหลดไฟล์
+- เพิ่มเช็กประเภทและขนาดไฟล์ฝั่งหน้าเว็บก่อนส่ง request
+- เพิ่ม word-break: break-word ให้ชื่อไฟล์ยาวบนมือถือ
+
+เพิ่ม test ครอบคลุมไว้แล้ว ตอนนี้ Server ผ่าน 30/30 และ Client ผ่าน 15/15 รวมถึง build ผ่านทั้งสองฝั่ง รบกวนช่วยตรวจให้อีกรอบนะ"
+
+### My comment (PR #31 for partner lmaybelgracel):
+"ตรวจสอบโค้ดและผลการทดสอบของ Issue 13: Automated Testing and End-to-End Tests (#31) เรียบร้อยแล้ว:
+- Backend API Tests (Vitest & Supertest): มีชุดทดสอบใน server/tests/lab-02/ ครอบคลุม API-01 ถึง API-10 (create-ticket, attachments, my-tickets, ticket-detail, requester-context, reference-data) รวม 33/33 test cases ผ่าน 100%
+- Frontend UI Component Tests (Vitest & RTL): มีชุดทดสอบใน client/src/__tests__/lab-02/ ครอบคลุม UI-01 ถึง UI-05 รวม 17/17 test cases ผ่าน 100%
+- Playwright End-to-End Tests: ไฟล์ e2e/lab-02/requester-ticket-flow.spec.ts ทดสอบครบถ้วนตาม scenario E2E-01 ครอบคลุมทั้ง flow การเลือก Requester Context, validation ไฟล์แนบ, การสร้าง Ticket, ดูรายละเอียด, อัปโหลดและ soft-remove ไฟล์แนบ
+- Documentation & Build: อัปเดต docs/lab-02/tests.md ระบุ Requirement Traceability Matrix (AC-01 ถึง AC-09), Responsive Checklist และผลการทดสอบครบถ้วน คำสั่ง npm run build ผ่านสมบูรณ์ทั้งฝั่ง Server และ Client
+
+ข้อเสนอแนะเพิ่มเติม (Minor Recommendation):
+1. ใน package.json ส่วน root อาจเพิ่ม script \"install:e2e\": \"playwright install chromium\" เพื่อความสะดวกของผู้พัฒนาในการ setup สภาพแวดล้อม E2E testing ครั้งแรก"
+
+### Partner's response (PR #31 for partner lmaybelgracel):
+"เพิ่ม script install:e2e ให้แล้วนะ ตอนนี้ setup Chromium ครั้งแรกได้ด้วย npm run install:e2e และลองตรวจด้วย --dry-run แล้วเรียก Playwright ได้ถูกต้อง ขอบคุณสำหรับคำแนะนำ"
+
+### My comment (PR #32 for partner lmaybelgracel):
+"สรุปผลการตรวจทาน:
+- UI Style & Zen Green Theme Contract: Implement ธีมตรงตาม UI Specification ครบถ้วน Palette สีถูกต้อง (#006B3C, #0B7A46, #EAF6EF, #F5F7F6, #F0F4F2, #B71C1C) Surface Card และ Read-only fields แยกความแตกต่างชัดเจน พร้อม unit test ใน UIStyle.test.tsx (UI-06) ตรวจสอบ CSS และ Accessibility Contract ผ่านเรียบร้อย
+- Accessibility & Assistive Technology: ช่องที่จำเป็นต้องกรอกมีเครื่องหมายดอกจันสีแดง * พร้อม aria-required=\"true\" ครบถ้วน และมี Focus Ring สีเขียว (#0B7A46) เมื่อใช้งานด้วยแป้นพิมพ์
+- Responsive Viewport & Overflow: มี @media breakpoints ครอบคลุม Desktop, Tablet และ Mobile (ปรับเป็น single-column layout, ปุ่ม touch-friendly สูงอย่างน้อย 44px) และใช้ overflow-wrap: anywhere จัดการชื่อไฟล์ยาว ไม่พบปัญหา Horizontal Page Overflow
+- Visual Evidence & Screenshots: ชุดทดสอบ Playwright ใน visual-evidence.spec.ts (VIS-01) จับภาพหน้าจอ Responsive และ Modal Evidence บันทึกลงใน repository ครบถ้วนทุก viewport
+- Automated Tests & Build: Server Vitest (33/33), Client Vitest (21/21), Playwright E2E & Visual (2/2) ผ่าน 100%
+
+ข้อเสนอแนะเพิ่มเติมเล็กน้อย (Non-blocking):
+1. ใน visual-evidence.spec.ts Playwright จะ Save ภาพไปที่ artifacts/lab-02/screenshots/ ในขณะที่ไฟล์รูปใน Repo อยู่ที่ docs/lab-02/screenshots/ อาจพิจารณาเพิ่ม script ช่วยคัดลอกไฟล์รูปภาพ
+2. ใน lab2.css breakpoint ปัจจุบันเริ่มที่ 767px ในอนาคตอาจลองเช็กการแสดงผลบนหน้าจอขนาดเล็กมากๆ (เช่น < 360px) เพื่อความสมบูรณ์แบบยิ่งขึ้น"
+
+### Partner's response (PR #32 for partner lmaybelgracel):
+"ขอบคุณสำหรับคำแนะนำนะ เราเพิ่ม responsive สำหรับหน้าจอเล็กกว่า 360px แล้ว แล้วก็เพิ่ม Playwright เช็กที่ขนาด 320×568 พร้อมภาพหลักฐานของหน้า My Tickets และ removal modal เรียบร้อย ไม่มี horizontal overflow ค่ะ
+ส่วนเรื่องพาธรูป เราเช็กอีกครั้งแล้ว ตอนนี้ทั้ง test, เอกสาร และรูปใน repo ใช้ artifacts/lab-02/screenshots/ ตรงกันทั้งหมด และไม่มีรูปอีกชุดอยู่ใน docs/lab-02/screenshots/ เลยยังไม่ได้เพิ่ม script copy เพื่อไม่ให้เกิดไฟล์ซ้ำค่ะ
+ผลทดสอบล่าสุด Client 21/21, Playwright 2/2 และ build ผ่านทั้งหมด ฝากตรวจอีกครั้งได้เลยนะ"
