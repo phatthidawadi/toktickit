@@ -150,15 +150,17 @@
 ## Pull Requests I reviewed for my partner
 | PR | Branch | Reviewer verdict |
 |----|--------|------------------|
-| [lmaybelgracel/TokTickit#23](https://github.com/lmaybelgracel/TokTickit/pull/23) | `feature/5-doc-spec` | Approved with comments |
-| [lmaybelgracel/TokTickit#24](https://github.com/lmaybelgracel/TokTickit/pull/24) | `feature/6-api-spec-test-plan` | Approved with comments |
-| [lmaybelgracel/TokTickit#25](https://github.com/lmaybelgracel/TokTickit/pull/25) | `feature/7-db-schema-seed` | Approved with comments |
-| [lmaybelgracel/TokTickit#26](https://github.com/lmaybelgracel/TokTickit/pull/26) | `feature/8-requester-context` | Approved with comments |
-| [lmaybelgracel/TokTickit#27](https://github.com/lmaybelgracel/TokTickit/pull/27) | `feature/9-create-ticket-form` | Approved with comments |
-| [lmaybelgracel/TokTickit#28](https://github.com/lmaybelgracel/TokTickit/pull/28) | `feature/10-my-tickets-list` | Approved with comments |
-| [lmaybelgracel/TokTickit#29](https://github.com/lmaybelgracel/TokTickit/pull/29) | `feature/11-ticket-detail` | Approved with comments |
-| [lmaybelgracel/TokTickit#30](https://github.com/lmaybelgracel/TokTickit/pull/30) | `feature/12-attachment-lifecycle` | Approved with comments |
-| [lmaybelgracel/TokTickit#31](https://github.com/lmaybelgracel/TokTickit/pull/31) | `feature/13-e2e-staging` | Approved with comments |
+| [lmaybelgracel/TokTickit#23](https://github.com/lmaybelgracel/TokTickit/pull/23) | `feature/lab2-engineering-spec` | Approved with comments |
+| [lmaybelgracel/TokTickit#24](https://github.com/lmaybelgracel/TokTickit/pull/24) | `feature/lab2-ui-api-spec` | Approved with comments |
+| [lmaybelgracel/TokTickit#25](https://github.com/lmaybelgracel/TokTickit/pull/25) | `feature/lab2-test-plan` | Approved with comments |
+| [lmaybelgracel/TokTickit#26](https://github.com/lmaybelgracel/TokTickit/pull/26) | `feature/lab2-database-seed` | Approved with comments |
+| [lmaybelgracel/TokTickit#27](https://github.com/lmaybelgracel/TokTickit/pull/27) | `feature/lab2-requester-context` | Approved with comments |
+| [lmaybelgracel/TokTickit#28](https://github.com/lmaybelgracel/TokTickit/pull/28) | `feature/lab2-create-ticket` | Approved with comments |
+| [lmaybelgracel/TokTickit#29](https://github.com/lmaybelgracel/TokTickit/pull/29) | `feature/lab2-my-tickets` | Approved with comments |
+| [lmaybelgracel/TokTickit#30](https://github.com/lmaybelgracel/TokTickit/pull/30) | `feature/lab2-ticket-detail-attachments` | Approved with comments |
+| [lmaybelgracel/TokTickit#31](https://github.com/lmaybelgracel/TokTickit/pull/31) | `feature/lab2-automated-e2e-tests` | Approved with comments |
+| [lmaybelgracel/TokTickit#32](https://github.com/lmaybelgracel/TokTickit/pull/32) | `feature/lab2-visual-evidence` | Approved with comments |
+| [lmaybelgracel/TokTickit#33](https://github.com/lmaybelgracel/TokTickit/pull/33) | `docs/lab2-delivery-evidence` | Approved with comments |
 | [lmaybelgracel/TokTickit#36](https://github.com/lmaybelgracel/TokTickit/pull/36) | `docs/lab2-reviewer` | Approved with comments |
 
 ### My comment (PR #23 for partner lmaybelgracel):
