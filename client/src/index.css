@@ -1,0 +1,86 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --zg-primary: #006B3C;
+  --zg-primary-hover: #00542f;
+  --zg-secondary: #0B7A46;
+  --zg-pale: #EAF6EF;
+  --zg-bg: #F5F7F6;
+  --zg-card-bg: #FFFFFF;
+  --zg-read-only: #F0F4F2;
+  --zg-text-dark: #1E293B;
+  --zg-text-muted: #64748B;
+  --zg-border: #E2E8F0;
+  --zg-focus-ring: 0 0 0 3px rgba(11, 122, 70, 0.25);
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--zg-bg);
+  color: var(--zg-text-dark);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Card & Surface Elevation */
+.card, .bg-white.rounded, .border.rounded-3 {
+  border-radius: 12px !important;
+  border: 1px solid var(--zg-border) !important;
+  box-shadow: 0 4px 16px rgba(0, 107, 60, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Form Controls */
+.form-control, .form-select {
+  border-radius: 8px !important;
+  border: 1px solid #CBD5E1 !important;
+  padding: 0.625rem 0.875rem !important;
+  font-size: 0.95rem !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--zg-secondary) !important;
+  box-shadow: var(--zg-focus-ring) !important;
+  outline: none !important;
+}
+
+/* Buttons */
+.btn-primary, button[type="submit"] {
+  background-color: var(--zg-primary) !important;
+  border-color: var(--zg-primary) !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  padding: 0.625rem 1.25rem !important;
+  box-shadow: 0 2px 6px rgba(0, 107, 60, 0.2) !important;
+}
+
+.btn-primary:hover, button[type="submit"]:hover {
+  background-color: var(--zg-primary-hover) !important;
+  border-color: var(--zg-primary-hover) !important;
+  box-shadow: 0 4px 12px rgba(0, 107, 60, 0.3) !important;
+}
+
+.btn-outline-secondary {
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  border-color: #CBD5E1 !important;
+}
+
+/* Badges */
+.badge {
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+  padding: 0.35em 0.75em !important;
+  border-radius: 6px !important;
+}
+
+/* Tables */
+.table th {
+  background-color: #F8FAFC !important;
+  color: #475569 !important;
+  font-weight: 600 !important;
+  font-size: 0.85rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  border-bottom: 2px solid #E2E8F0 !important;
+}
