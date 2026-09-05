@@ -264,7 +264,7 @@ export const CreateTicketForm: React.FC<CreateTicketFormProps> = ({ onSuccess, o
         padding: "32px",
       }}
     >
-      <div style={{ marginBottom: "24px", borderBottom: "1px solid #E0E6E2", pb: "16px" }}>
+      <div style={{ marginBottom: "24px", borderBottom: "1px solid #E0E6E2", paddingBottom: "16px" }}>
         <h2 style={{ fontSize: "22px", fontWeight: "bold", color: "#1F2925", margin: "0 0 6px 0" }}>
           Create IT Support Ticket
         </h2>

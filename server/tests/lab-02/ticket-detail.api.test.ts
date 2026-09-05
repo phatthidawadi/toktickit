@@ -8,6 +8,12 @@ describe("GET /api/tickets/:id", () => {
     const reqRes = await request(app).get("/api/requesters");
     const requesterId = reqRes.body[0].id;
 
+    const catRes = await request(app).get("/api/categories");
+    const categoryId = catRes.body[0].id;
+
+    const sysRes = await request(app).get("/api/related-systems");
+    const relatedSystemId = sysRes.body[0].id;
+
     // 2. Create a ticket for this requester
     const createRes = await request(app)
       .post("/api/tickets")
@@ -15,8 +21,8 @@ describe("GET /api/tickets/:id", () => {
       .send({
         summary: "Detail Test Ticket Summary",
         description: "Detailed description for detail test ticket",
-        categoryId: 1,
-        relatedSystemId: 1,
+        categoryId,
+        relatedSystemId,
         requestedPriority: "HIGH",
       });
 
@@ -38,6 +44,12 @@ describe("GET /api/tickets/:id", () => {
     const requesterA = reqRes.body[0].id;
     const requesterB = reqRes.body[1].id;
 
+    const catRes = await request(app).get("/api/categories");
+    const categoryId = catRes.body[0].id;
+
+    const sysRes = await request(app).get("/api/related-systems");
+    const relatedSystemId = sysRes.body[0].id;
+
     // Create ticket for Requester A
     const createRes = await request(app)
       .post("/api/tickets")
@@ -45,8 +57,8 @@ describe("GET /api/tickets/:id", () => {
       .send({
         summary: "Requester A Private Ticket",
         description: "Description of ticket belonging to Requester A",
-        categoryId: 1,
-        relatedSystemId: 1,
+        categoryId,
+        relatedSystemId,
         requestedPriority: "LOW",
       });
 
