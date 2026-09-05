@@ -4,17 +4,17 @@ import { app } from "../../src/app.js";
 
 describe("GET /api/tickets/:id", () => {
   it("returns 200 OK with ticket details when requesting owned ticket", async () => {
-    // 1. Fetch requesters
     const reqRes = await request(app).get("/api/requesters");
     const requesterId = reqRes.body[0].id;
 
     const catRes = await request(app).get("/api/categories");
     const categoryId = catRes.body[0].id;
 
-    const sysRes = await request(app).get("/api/related-systems");
+    const sysRes = await request(app).get(`/api/related-systems?categoryId=${categoryId}`);
     const relatedSystemId = sysRes.body[0].id;
 
-    // 2. Create a ticket for this requester
+    // Create a ticket for this requester
+
     const createRes = await request(app)
       .post("/api/tickets")
       .set("x-requester-id", String(requesterId))
@@ -26,9 +26,10 @@ describe("GET /api/tickets/:id", () => {
         requestedPriority: "HIGH",
       });
 
+    expect(createRes.status).toBe(201);
     const ticketId = createRes.body.id;
 
-    // 3. Fetch ticket detail
+    // Fetch ticket detail
     const res = await request(app)
       .get(`/api/tickets/${ticketId}`)
       .set("x-requester-id", String(requesterId));
@@ -115,7 +116,7 @@ describe("GET /api/tickets/:id", () => {
     const catRes = await request(app).get("/api/categories");
     const categoryId = catRes.body[0].id;
 
-    const sysRes = await request(app).get("/api/related-systems");
+    const sysRes = await request(app).get(`/api/related-systems?categoryId=${categoryId}`);
     const relatedSystemId = sysRes.body[0].id;
 
     // Create ticket for Requester A
