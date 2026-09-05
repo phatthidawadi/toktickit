@@ -151,7 +151,7 @@ Query tickets owned exclusively by the currently selected Requester.
   - `categoryId` (optional number): Filter by Category ID.
   - `priority` (optional enum): `LOW`, `MEDIUM`, `HIGH`, `URGENT`.
   - `status` (optional enum): `NEW`.
-  - `sort` (optional string): `desc` (default), `asc`.
+  - `sort` (optional string): `createdAt_desc` (default), `createdAt_asc`, `priority_desc`.
   - `page` (optional number): Page index (default: 1).
   - `limit` (optional number): Page size (default: 10, max: 50).
 

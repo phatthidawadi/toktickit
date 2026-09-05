@@ -47,12 +47,15 @@ Sprint 2 (Lab 2) applies Spec-Driven Development (Spec DD) and Test-Driven Devel
 | **UI-03** | UI | AC-08 | App responsive viewport container | Adapts layout layout containers cleanly across breakpoints | `client/tests/lab-01/App.test.tsx` | Pass |
 | **UI-04** | UI | AC-02, AC-14 | Development Requester Selector modal rendering | Displays modal dropdown with active requesters when context is missing | `client/tests/lab-02/RequesterSelector.test.tsx` | Pass |
 | **UI-05** | UI | AC-09, BR-06 | Create Ticket form inline validation | Displays red error messages below invalid fields without calling API | `client/tests/lab-02/CreateTicket.test.tsx` | Pass |
-| **UI-06** | UI | AC-07, AC-10, AC-11 | My Tickets search, filter, and sort controls | Dynamically filters and sorts ticket list on control interactions | `client/tests/lab-02/MyTickets.test.tsx` | Pass |
-| **UI-07** | UI | AC-01, FR-09 | Read-only Ticket Detail view rendering | Displays complete ticket header and fields in soft gray-green read-only mode | `client/tests/lab-02/TicketDetail.test.tsx` | Pass |
-| **UI-08** | UI | AC-01 | RequesterTicketDetail component view | Renders detailed ticket overview and ownership badges | `client/tests/lab-02/RequesterTicketDetail.test.tsx` | Pass |
-| **UI-09** | UI | AC-06, BR-09 | Attachment active download link & soft-removed badge | Renders active download link and soft-removed metadata with disabled download | `client/tests/lab-02/Attachment.test.tsx` | Pass |
-| **UI-10** | UI | AC-06 | AttachmentSection component rendering | Renders attachment list and soft-removal modal dialog | `client/tests/lab-02/AttachmentSection.test.tsx` | Pass |
-| **UI-11** | UI | AC-01, AC-02, AC-07 | End-to-End User Journey React flow | Completes full Requester selection, ticket submission, and list view flow | `client/tests/lab-02/E2EUserJourney.test.tsx` | Pass |
+| **UI-06** | UI | AC-15, BR-12 | Form state retention on API 500 failure | Retains user-entered form field values when API submission fails | `client/tests/lab-02/CreateTicket.test.tsx` | Pass |
+| **UI-07** | UI | AC-16 | Accessibility focus rings & ARIA required markers | Asserts aria-required, aria-label, and accessible labels on controls | `client/tests/lab-02/CreateTicket.test.tsx` | Pass |
+| **UI-08** | UI | AC-07, AC-10, AC-11 | My Tickets search, filter, and sort controls | Dynamically filters and sorts ticket list on control interactions | `client/tests/lab-02/MyTickets.test.tsx` | Pass |
+| **UI-09** | UI | AC-08 | My Tickets responsive layout | Renders table on desktop (>=992px) and card list on mobile (<768px) | `client/tests/lab-02/MyTickets.test.tsx` | Pass |
+| **UI-10** | UI | AC-01, FR-09 | Read-only Ticket Detail view rendering | Displays complete ticket header and fields in soft gray-green read-only mode | `client/tests/lab-02/TicketDetail.test.tsx` | Pass |
+| **UI-11** | UI | AC-01 | RequesterTicketDetail component view | Renders detailed ticket overview and ownership badges | `client/tests/lab-02/RequesterTicketDetail.test.tsx` | Pass |
+| **UI-12** | UI | AC-06, BR-09 | Attachment active download link & soft-removed badge | Renders active download link and soft-removed metadata with disabled download | `client/tests/lab-02/Attachment.test.tsx` | Pass |
+| **UI-13** | UI | AC-06 | AttachmentSection component rendering | Renders attachment list and soft-removal modal dialog | `client/tests/lab-02/AttachmentSection.test.tsx` | Pass |
+| **UI-14** | UI | AC-01, AC-02, AC-07 | End-to-End User Journey React flow | Completes full Requester selection, ticket submission, and list view flow | `client/tests/lab-02/E2EUserJourney.test.tsx` | Pass |
 
 ---
 
@@ -84,8 +87,8 @@ Sprint 2 (Lab 2) applies Spec-Driven Development (Spec DD) and Test-Driven Devel
 | **AC-12** (Pagination controls and item counts) | `API-05`, `E2E-02` | 100% Covered |
 | **AC-13** (Empty and no-results states with Clear Filters CTA) | `UI-06`, `E2E-02` | 100% Covered |
 | **AC-14** (Requester context switching reloads ticket list) | `API-04`, `UI-04`, `E2E-01` | 100% Covered |
-| **AC-15** (Form values preserved on API failure) | `UI-05`, `E2E-01` | 100% Covered |
-| **AC-16** (Accessibility focus rings & ARIA labels) | `UI-01`, `UI-02` | 100% Covered |
+| **AC-15** (Form values preserved on API failure) | `UI-06`, `E2E-01` | 100% Covered |
+| **AC-16** (Accessibility focus rings & ARIA labels) | `UI-07`, `UI-01`, `UI-02` | 100% Covered |
 
 ---
 

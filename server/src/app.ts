@@ -161,11 +161,21 @@ app.post("/api/tickets", async (req: Request, res: Response) => {
 
     // Generate Ticket Number (TKT-YYYY-XXXXXX)
     const currentYear = new Date().getFullYear();
-    let seq = (await getPrisma().ticket.count()) + 1;
-    let ticketNumber = generateTicketNumber(seq, currentYear);
-    while (await getPrisma().ticket.findUnique({ where: { ticketNumber } })) {
-      seq++;
-      ticketNumber = generateTicketNumber(seq, currentYear);
+    let ticketNumber = "";
+    let attempts = 0;
+    while (attempts < 20) {
+      const count = await getPrisma().ticket.count();
+      const seq = count + 1 + attempts + Math.floor(Math.random() * 50);
+      const candidate = generateTicketNumber(seq, currentYear);
+      const existing = await getPrisma().ticket.findUnique({ where: { ticketNumber: candidate } });
+      if (!existing) {
+        ticketNumber = candidate;
+        break;
+      }
+      attempts++;
+    }
+    if (!ticketNumber) {
+      ticketNumber = `TKT-${currentYear}-${Date.now().toString().slice(-6)}`;
     }
 
     const newTicket = await getPrisma().ticket.create({
@@ -234,7 +244,12 @@ app.get("/api/tickets", async (req: Request, res: Response) => {
       ];
     }
 
-    const sortOrder = sort === "asc" ? "asc" : "desc";
+    let orderBy: any = { createdAt: "desc" };
+    if (sort === "createdAt_asc" || sort === "asc") {
+      orderBy = { createdAt: "asc" };
+    } else if (sort === "priority_desc") {
+      orderBy = { requestedPriority: "desc" };
+    }
 
     const [total, tickets] = await Promise.all([
       getPrisma().ticket.count({ where }),
@@ -242,7 +257,7 @@ app.get("/api/tickets", async (req: Request, res: Response) => {
         where,
         skip,
         take: limitNum,
-        orderBy: { createdAt: sortOrder },
+        orderBy,
         include: {
           category: { select: { id: true, name: true } },
           relatedSystem: { select: { id: true, name: true } },

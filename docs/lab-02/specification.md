@@ -123,7 +123,7 @@ The interface implements the **Zen Green Theme** with Primary Green (`#006B3C`),
 - **AC-08**: Given mobile viewport (< 768px), when viewing My Tickets, then list automatically renders in responsive card format without horizontal overflow.
 - **AC-09**: Given invalid form input (summary < 5 chars or description < 10 chars), when Requester clicks Submit, then inline validation messages appear below the respective fields and API is not called.
 - **AC-10**: Given My Tickets screen, when selecting Category, Priority, or Status filter dropdowns, then list updates dynamically to show only matching items.
-- **AC-11**: Given My Tickets screen, when toggling Sort dropdown (Newest vs Oldest), then list ordering updates accordingly.
+- **AC-11**: Given My Tickets screen, when toggling Sort dropdown (Date Newest/Oldest vs Priority), then list ordering updates accordingly.
 - **AC-12**: Given My Tickets screen with > 10 tickets, when navigating page controls (Next/Previous), then pagination metadata and ticket page content update correctly.
 - **AC-13**: Given a Requester with zero tickets or a filter yielding no matches, when viewing My Tickets, then an empty state or no-results state with a Clear Filters CTA is rendered.
 - **AC-14**: Given active Requester Selection dropdown, when switching context from Requester A to Requester B, then the application reloads ticket list for Requester B context.

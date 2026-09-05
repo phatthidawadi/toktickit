@@ -43,4 +43,16 @@ describe("GET /api/tickets", () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toContain("Missing x-requester-id");
   });
+
+  it("supports sort by priority_desc", async () => {
+    const reqRes = await request(app).get("/api/requesters");
+    const requesterId = reqRes.body[0].id;
+
+    const res = await request(app)
+      .get("/api/tickets?sort=priority_desc")
+      .set("x-requester-id", String(requesterId));
+
+    expect(res.status).toBe(200);
+    expect(res.body.tickets).toBeDefined();
+  });
 });
