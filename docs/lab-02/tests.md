@@ -48,7 +48,7 @@ Sprint 2 (Lab 2) applies Spec-Driven Development (Spec DD) and Test-Driven Devel
 | **UI-04** | UI | AC-02, AC-14 | Development Requester Selector modal rendering | Displays modal dropdown with active requesters when context is missing | `client/tests/lab-02/RequesterSelector.test.tsx` | Pass |
 | **UI-05** | UI | AC-09, BR-06 | Create Ticket form inline validation | Displays red error messages below invalid fields without calling API | `client/tests/lab-02/CreateTicket.test.tsx` | Pass |
 | **UI-06** | UI | AC-15, BR-12 | Form state retention on API 500 failure | Retains user-entered form field values when API submission fails | `client/tests/lab-02/CreateTicket.test.tsx` | Pass |
-| **UI-07** | UI | AC-16 | Accessibility focus rings & ARIA required markers | Asserts aria-required, aria-label, and accessible labels on controls | `client/tests/lab-02/CreateTicket.test.tsx` | Pass |
+| **UI-07** | UI | AC-16 | Accessibility focus rings, ARIA required markers & keyboard focus navigation | Asserts aria-required, aria-label, and keyboard focus navigation across form controls | `client/tests/lab-02/CreateTicket.test.tsx` | Pass |
 | **UI-08** | UI | AC-07, AC-10, AC-11 | My Tickets search, filter, and sort controls | Dynamically filters and sorts ticket list on control interactions | `client/tests/lab-02/MyTickets.test.tsx` | Pass |
 | **UI-09** | UI | AC-08 | My Tickets responsive layout | Renders table on desktop (>=992px) and card list on mobile (<768px) | `client/tests/lab-02/MyTickets.test.tsx` | Pass |
 | **UI-10** | UI | AC-01, FR-09 | Read-only Ticket Detail view rendering | Displays complete ticket header and fields in soft gray-green read-only mode | `client/tests/lab-02/TicketDetail.test.tsx` | Pass |

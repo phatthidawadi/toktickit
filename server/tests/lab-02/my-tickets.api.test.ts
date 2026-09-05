@@ -44,15 +44,40 @@ describe("GET /api/tickets", () => {
     expect(res.body.error).toContain("Missing x-requester-id");
   });
 
-  it("supports sort by priority_desc", async () => {
+  it("supports sort by priority_desc in logical priority order (URGENT > HIGH > MEDIUM > LOW)", async () => {
     const reqRes = await request(app).get("/api/requesters");
     const requesterId = reqRes.body[0].id;
 
+    const catRes = await request(app).get("/api/categories");
+    const categoryId = catRes.body[0].id;
+
+    const sysRes = await request(app).get(`/api/related-systems?categoryId=${categoryId}`);
+    const relatedSystemId = sysRes.body[0].id;
+
+    const testKey = `PrioSortTest_${Date.now()}`;
+    const priorities = ["LOW", "URGENT", "MEDIUM", "HIGH"];
+    for (const prio of priorities) {
+      const createRes = await request(app)
+        .post("/api/tickets")
+        .set("x-requester-id", String(requesterId))
+        .send({
+          summary: `${testKey} priority ${prio}`,
+          description: `Detailed description for priority test ${prio} with enough length`,
+          requestedPriority: prio,
+          categoryId,
+          relatedSystemId,
+        });
+      expect(createRes.status).toBe(201);
+    }
+
     const res = await request(app)
-      .get("/api/tickets?sort=priority_desc")
+      .get(`/api/tickets?sort=priority_desc&search=${testKey}`)
       .set("x-requester-id", String(requesterId));
 
     expect(res.status).toBe(200);
     expect(res.body.tickets).toBeDefined();
+
+    const returnedPriorities = res.body.tickets.map((t: { requestedPriority: string }) => t.requestedPriority);
+    expect(returnedPriorities).toEqual(["URGENT", "HIGH", "MEDIUM", "LOW"]);
   });
 });

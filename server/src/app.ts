@@ -247,8 +247,50 @@ app.get("/api/tickets", async (req: Request, res: Response) => {
     let orderBy: any = { createdAt: "desc" };
     if (sort === "createdAt_asc" || sort === "asc") {
       orderBy = { createdAt: "asc" };
-    } else if (sort === "priority_desc") {
-      orderBy = { requestedPriority: "desc" };
+    }
+
+    const PRIORITY_RANK: Record<string, number> = {
+      URGENT: 4,
+      HIGH: 3,
+      MEDIUM: 2,
+      LOW: 1,
+    };
+
+    if (sort === "priority_desc" || sort === "priority_asc") {
+      const [total, allTickets] = await Promise.all([
+        getPrisma().ticket.count({ where }),
+        getPrisma().ticket.findMany({
+          where,
+          include: {
+            category: { select: { id: true, name: true } },
+            relatedSystem: { select: { id: true, name: true } },
+            attachments: {
+              where: { isRemoved: false },
+              select: { id: true, filename: true, originalName: true, size: true, mimeType: true },
+            },
+          },
+        }),
+      ]);
+
+      allTickets.sort((a, b) => {
+        const rankA = PRIORITY_RANK[a.requestedPriority] || 0;
+        const rankB = PRIORITY_RANK[b.requestedPriority] || 0;
+        if (rankA !== rankB) {
+          return sort === "priority_desc" ? rankB - rankA : rankA - rankB;
+        }
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+
+      const tickets = allTickets.slice(skip, skip + limitNum);
+      const totalPages = Math.ceil(total / limitNum) || 1;
+
+      return res.status(200).json({
+        tickets,
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages,
+      });
     }
 
     const [total, tickets] = await Promise.all([
@@ -271,7 +313,7 @@ app.get("/api/tickets", async (req: Request, res: Response) => {
 
     const totalPages = Math.ceil(total / limitNum) || 1;
 
-    res.status(200).json({
+    return res.status(200).json({
       tickets,
       total,
       page: pageNum,

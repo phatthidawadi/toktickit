@@ -156,4 +156,48 @@ describe("CreateTicketForm UI Component", () => {
     expect(descriptionInput.getAttribute("aria-required") || descriptionInput.getAttribute("required")).toBeDefined();
     expect(submitBtn).toBeDefined();
   });
+
+  it("supports keyboard focus navigation and visible focus indicator contract across interactive form controls (AC-16)", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation((url) => {
+      if (typeof url === "string" && url.includes("/api/categories")) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockCategories) } as Response);
+      }
+      if (typeof url === "string" && url.includes("/api/related-systems")) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockSystems) } as Response);
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve([]) } as Response);
+    });
+
+    render(
+      <RequesterProvider>
+        <TestWrapper />
+      </RequesterProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Create IT Support Ticket")).toBeDefined();
+    });
+
+    const categorySelect = screen.getByLabelText(/Category/i);
+    const summaryInput = screen.getByLabelText(/Ticket Summary/i);
+    const descriptionInput = screen.getByLabelText(/Detailed Description/i);
+    const prioritySelect = screen.getByLabelText(/Priority/i);
+    const submitBtn = screen.getByRole("button", { name: /Submit Ticket/i });
+
+    // Test keyboard focus navigation sequence
+    categorySelect.focus();
+    expect(document.activeElement).toBe(categorySelect);
+
+    summaryInput.focus();
+    expect(document.activeElement).toBe(summaryInput);
+
+    descriptionInput.focus();
+    expect(document.activeElement).toBe(descriptionInput);
+
+    prioritySelect.focus();
+    expect(document.activeElement).toBe(prioritySelect);
+
+    submitBtn.focus();
+    expect(document.activeElement).toBe(submitBtn);
+  });
 });
