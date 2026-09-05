@@ -1,0 +1,28 @@
+{
+  "name": "toktickit",
+  "version": "1.0.0",
+  "description": "TokTickIT is an IT service desk application for managing Account & Access, Hardware, Software, and Network requests. This repository contains a full-stack starter application.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  },
+  "scripts": {
+    "test:e2e": "playwright test --config=e2e/playwright.config.ts",
+    "install:e2e": "playwright install chromium"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/phatthidawadi/toktickit.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/phatthidawadi/toktickit/issues"
+  },
+  "homepage": "https://github.com/phatthidawadi/toktickit#readme"
+}
