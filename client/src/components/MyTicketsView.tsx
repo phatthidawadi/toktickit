@@ -37,11 +37,12 @@ export const MyTicketsView: React.FC<MyTicketsViewProps> = ({ onCreateClick, onT
     }
   }
 
-  // Filter States
+  // Filter & Sort States
   const [search, setSearch] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedPriority, setSelectedPriority] = useState<string>("");
   const [selectedStatus, setSelectedStatus] = useState<string>("");
+  const [selectedSort, setSelectedSort] = useState<string>("desc");
   const [page, setPage] = useState<number>(1);
 
   // Load Categories once
@@ -51,7 +52,7 @@ export const MyTicketsView: React.FC<MyTicketsViewProps> = ({ onCreateClick, onT
       .catch(() => {});
   }, []);
 
-  // Fetch Tickets on Filter/Page Change
+  // Fetch Tickets on Filter/Sort/Page Change
   useEffect(() => {
     if (!selectedRequester) return;
 
@@ -64,6 +65,7 @@ export const MyTicketsView: React.FC<MyTicketsViewProps> = ({ onCreateClick, onT
         categoryId: selectedCategory,
         status: selectedStatus,
         priority: selectedPriority,
+        sort: selectedSort,
         page,
         limit: 10,
       },
@@ -77,13 +79,14 @@ export const MyTicketsView: React.FC<MyTicketsViewProps> = ({ onCreateClick, onT
         setError(err.message || "Failed to load tickets");
         setLoading(false);
       });
-  }, [selectedRequester, search, selectedCategory, selectedPriority, selectedStatus, page]);
+  }, [selectedRequester, search, selectedCategory, selectedPriority, selectedStatus, selectedSort, page]);
 
   const handleClearFilters = () => {
     setSearch("");
     setSelectedCategory("");
     setSelectedPriority("");
     setSelectedStatus("");
+    setSelectedSort("desc");
     setPage(1);
   };
 
@@ -360,6 +363,33 @@ export const MyTicketsView: React.FC<MyTicketsViewProps> = ({ onCreateClick, onT
             <option value="IN_PROGRESS">IN_PROGRESS</option>
             <option value="RESOLVED">RESOLVED</option>
             <option value="CLOSED">CLOSED</option>
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="sort-select" style={{ display: "block", fontSize: "12px", fontWeight: "600", color: "#65756E", marginBottom: "4px" }}>
+            Sort By
+          </label>
+          <select
+            id="sort-select"
+            value={selectedSort}
+            onChange={(e) => {
+              setSelectedSort(e.target.value);
+              setPage(1);
+            }}
+            style={{
+              width: "100%",
+              height: "36px",
+              padding: "0 8px",
+              borderRadius: "4px",
+              border: "1px solid #C8D2CC",
+              fontSize: "13px",
+              backgroundColor: "#FFFFFF",
+            }}
+          >
+            <option value="desc">Date (Newest First)</option>
+            <option value="createdAt_asc">Date (Oldest First)</option>
+            <option value="priority_desc">Priority (High to Low)</option>
           </select>
         </div>
 

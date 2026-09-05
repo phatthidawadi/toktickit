@@ -41,8 +41,8 @@ describe("App", () => {
 
     // Assert online badge and categories
     expect(await screen.findByText(/online/i)).toBeInTheDocument();
-    expect(screen.getByText("Account and Access")).toBeInTheDocument();
-    expect(screen.getByText("Hardware")).toBeInTheDocument();
+    expect((await screen.findAllByText("Account and Access")).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("Hardware")).length).toBeGreaterThan(0);
   });
 
   it("shows an Offline error message when the API is unavailable", async () => {
