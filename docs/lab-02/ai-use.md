@@ -2,7 +2,7 @@
 
 ## 1. Overview of AI Involvement
 
-**AI Models Used**: Google Gemini 2.5 Pro, Anthropic Claude (claude-3-5-sonnet)
+**AI Model Used**: Google Gemini 2.5 Pro
 
 AI assistance was utilized during Sprint 2 (Lab 2) for:
 - Architecture planning and decomposition of Sprint 2 requirements into 9 GitHub Issues (Issue 5 to Issue 13).
@@ -15,18 +15,18 @@ AI assistance was utilized during Sprint 2 (Lab 2) for:
 
 ## 2. Key Prompts Table
 
-| # | Prompt Summary | AI Model | Purpose | Output |
-|---|---|---|---|---|
-| 1 | "Change all issue titles to `Issue N: <Description>` starting at Issue 5, omitting any `[Lab 2]` prefix. Strictly prohibit emojis in all Markdown documentation and commit messages." | Gemini 2.5 Pro | Naming convention alignment | Renamed Issues #14-#22, refactored all markdown tools to formal output |
-| 2 | "Peer reviewer recommended clarifying ticket number sequence as 6-digit zero-padded (TKT-YYYY-XXXXXX). Update BR-01 and implement generateTicketNumber helper." | Claude | BR-01 implementation | Updated `specification.md`, `api-spec.md`, created `ticketNumber.ts` with unit test |
-| 3 | "Execute Issue 5 through Issue 12 sequentially using feature branches, commit without emojis, open PRs targeting lab2-staging, and link corresponding GitHub Issues." | Gemini 2.5 Pro | Git workflow execution | Feature branches `feature/5-doc-spec` through `feature/12-attachment-lifecycle`, PRs #23-#30 |
-| 4 | "Implement strict whitelist for file attachments: only image/jpeg, image/png, image/webp, application/pdf. Reject .txt .zip .js .py .mp4 .exe. Validate both MIME type and extension." | Claude | Security fix for attachment upload | Updated multer fileFilter with `ALLOWED_MIME_TYPES` and `ALLOWED_EXTENSIONS` whitelist |
-| 5 | "Maximum 5 active attachments per ticket. Reject the 6th active upload with HTTP 400. Soft-removed attachments must NOT count toward the active limit." | Claude | BR-07 enforcement | Added `activeCount >= 5` check before upload, excluding `isRemoved: false` in count |
-| 6 | "GET /api/tickets/:id must return BOTH active and removed attachments with full metadata including isRemoved, removedReason, removedAt. Remove the where: isRemoved: false filter from the attachments include." | Claude | BR-09 metadata visibility fix | Removed filter from `GET /api/tickets/:id` attachments include, added all metadata fields |
-| 7 | "Fix mobile responsive layout: TokTickIT header must not clip on <768px. All form controls must be full-width. Zero horizontal scrolling." | Gemini 2.5 Pro | AC-08 responsive UI fix | Updated CSS grid, nav overflow, mobile card layout in `MyTicketsView.tsx` and `App.tsx` |
-| 8 | "Write Playwright E2E test covering: requester selection, create ticket with validation failure, success state with ticket number, my tickets sorting, ticket detail with attachment upload and soft-removal." | Gemini 2.5 Pro | E2E test coverage | `e2e/lab-02/requester-ticket-flow.spec.ts` with 3 test scenarios and Playwright screenshots |
-| 9 | "Implement GET /api/tickets/:id to include requester relation with id, name, email per api-spec.md section 3.6." | Claude | AC-01 requester relation | Added `requester: { select: { id, name, email } }` to ticket detail include |
-| 10 | "Review all Lab 2 requirements against specification.md, api-spec.md, and actual implementation. Identify any blocking gaps before merging PR #36." | Claude | Pre-merge audit | Identified and fixed attachment whitelist, 6th-file limit, soft-remove metadata, requester relation gaps |
+| # | Prompt Summary | Purpose | AI Output |
+|---|---|---|---|
+| 1 | "Change all issue titles to `Issue N: <Description>` starting at Issue 5, omitting any `[Lab 2]` prefix. Strictly prohibit emojis in all Markdown documentation, commit messages, PR descriptions, and chat responses." | Naming convention and constraint alignment | Renamed GitHub Issues #14-#22 to Issue 5-Issue 13. Refactored all Markdown generation tools to maintain formal text output without emojis. |
+| 2 | "Peer reviewer recommended clarifying ticket number sequence format as 6-digit zero-padded sequence (TKT-YYYY-XXXXXX). Update BR-01 and implement generateTicketNumber helper function." | Peer review feedback integration for BR-01 | Updated `BR-01` in `specification.md`, updated `api-spec.md`, and implemented `generateTicketNumber` in `server/src/utils/ticketNumber.ts` with unit test. |
+| 3 | "Execute Issue 5 through Issue 12 sequentially using feature branches, commit without emojis, open PRs targeting lab2-staging, and link corresponding GitHub Issues (Closes #N)." | Feature branch and PR workflow execution | Created feature branches `feature/5-doc-spec` to `feature/12-attachment-lifecycle`, opened PRs #23-#30, and verified test execution before peer reviews. |
+| 4 | "Implement GET /api/requesters to return active development requesters. Return id, name, email, department, isActive. Filter isActive: true only." | Requester API implementation (FR-01, BR-04) | Implemented `GET /api/requesters` with `where: { isActive: true }` and Supertest test in `requesters.api.test.ts`. |
+| 5 | "Implement POST /api/tickets with field validation: summary 5-100 chars, description 10-1000 chars, valid categoryId, relatedSystemId, and requestedPriority. Generate TKT-YYYY-XXXXXX ticket number." | Create Ticket API with validation (FR-03, BR-06) | Implemented full validation logic and ticket number generation loop with collision avoidance in `POST /api/tickets`. |
+| 6 | "Implement GET /api/tickets with search (ticketNumber, summary, description), filter by categoryId/priority/status, sort by createdAt_desc/asc/priority_desc, and pagination with limit cap at 50." | My Tickets list API (FR-06, FR-07, FR-08, BR-10) | Implemented full query with `where.OR` search, `orderBy` sort with `PRIORITY_RANK` map for priority sort, and paginated response. |
+| 7 | "Implement Attachment upload: only allow image/jpeg, image/png, image/webp, application/pdf. Max 5MB. Reject 6th active attachment with 400. Soft-removed do not count toward active limit." | Attachment upload with whitelist and 5-file limit (BR-07, AC-04, AC-05) | Implemented `ALLOWED_MIME_TYPES` and `ALLOWED_EXTENSIONS` whitelist in multer fileFilter, `activeCount >= 5` check excluding removed files. |
+| 8 | "Implement DELETE /api/attachments/:id as soft removal. Set isRemoved: true, removedReason, removedAt. Require reason >= 5 chars. Return 410 Gone on download of removed file." | Soft removal with reason and 410 Gone (BR-08, BR-09, AC-06) | Implemented soft delete with reason validation, `isRemoved: true` update, and 410 status on download endpoint. |
+| 9 | "Implement GET /api/tickets/:id to return full ticket details including requester relation (id, name, email), category, relatedSystem, and ALL attachments including removed ones with isRemoved, removedReason, removedAt." | Ticket detail with requester relation and full attachment metadata (FR-09, BR-09) | Added `requester: { select: { id, name, email } }` and removed `where: { isRemoved: false }` from attachments include, returning all attachment metadata. |
+| 10 | "Write Playwright E2E tests: requester selection, create ticket with validation failure state, success state with ticket number, my tickets sort by priority_desc with assertion, ticket detail with PDF upload and soft-removal with reason." | E2E test coverage (E2E-01, E2E-02, E2E-03) | Created `e2e/lab-02/requester-ticket-flow.spec.ts` with 3 test scenarios and 22 screenshots under `artifacts/lab-02/screenshots/`. |
 
 ---
 
@@ -44,10 +44,6 @@ AI assistance was utilized during Sprint 2 (Lab 2) for:
 - **Human Guidance**: Execute Issue 5 through Issue 12 sequentially using feature branches, commit without emojis, open PRs targeting `lab2-staging`, and link corresponding GitHub Issues (`Closes #N`).
 - **AI Action & Response**: Created feature branches (`feature/5-doc-spec` to `feature/12-attachment-lifecycle`), opened PRs #23 through #30, and verified test execution before peer reviews.
 
-### Prompt Set 4: Attachment Security & Business Rule Fixes
-- **Human Guidance**: Fix attachment whitelist to allow only jpeg/png/webp/pdf. Add 6-file limit check. Return soft-removed attachment metadata in ticket detail.
-- **AI Action & Response**: Rewrote multer fileFilter to whitelist, added `activeCount >= 5` rejection, removed `where: isRemoved: false` from GET ticket detail attachments include.
-
 ---
 
 ## 4. Human Verification & Audit Strategy
@@ -55,7 +51,7 @@ AI assistance was utilized during Sprint 2 (Lab 2) for:
 All AI-generated code and documentation passed human verification:
 1. **Schema Integrity**: Verified Prisma models against PostgreSQL via `npx prisma db push` and `npx prisma db seed`.
 2. **Security & Authorization**: Verified HTTP 403 Forbidden enforcement on cross-requester ticket access and HTTP 410 Gone response on soft-removed attachment download.
-3. **Attachment Whitelist**: Manually tested upload of `.txt`, `.zip`, `.exe`, `.js` files — all rejected with HTTP 400. Confirmed `.pdf`, `.jpg`, `.png`, `.webp` accepted.
+3. **Attachment Whitelist**: Manually verified that only `.jpg`, `.jpeg`, `.png`, `.webp`, `.pdf` are accepted and all other types (`.txt`, `.zip`, `.exe`, `.js`) are rejected with HTTP 400.
 4. **UI Spec Compliance**: Verified Zen Green color palette (#006B3C Primary, #EAF6EF Pale Green, #F5F7F6 Off-White), font typography, and responsive card rendering (< 768px).
 5. **Automated Testing**: Verified 100% test pass rate across 38 test cases: Server 6 files/23 tests, Client 8 files/12 tests, E2E 1 file/3 scenarios.
 
@@ -63,10 +59,10 @@ All AI-generated code and documentation passed human verification:
 
 ## 5. My Reflection
 
-Using AI assistance throughout Sprint 2 significantly accelerated the development cycle, particularly for boilerplate code generation, documentation drafting, and test scaffolding. However, I learned that AI outputs require careful human review — especially for security-sensitive features like file upload validation.
+Using Google Gemini 2.5 Pro throughout Sprint 2 significantly accelerated the development cycle, particularly for boilerplate code generation, documentation drafting, and test scaffolding. However, working with AI assistance reinforced that human oversight is critical, especially for security-sensitive requirements.
 
-The most valuable lesson was that AI-generated attachment handling initially used a blacklist approach (blocking only known-dangerous extensions like `.exe`), which is a common mistake. After conducting an independent audit, I identified this gap and corrected it to a strict whitelist approach, rejecting all file types except the explicitly permitted ones.
+The most valuable lesson came from the attachment validation feature. The initial implementation used a blacklist approach (blocking only known-dangerous extensions like `.exe`), which meant files like `.txt`, `.zip`, and `.js` were still accepted. After reviewing the lab specification carefully myself, I identified this gap and directed the AI to rewrite the filter as a strict whitelist, which is the correct and safer approach.
 
-I also noticed that AI sometimes generates documentation that claims passing tests before the tests actually exist or pass, which reinforces the importance of running tests manually and reconciling counts before finalizing any documentation. Every number in `tests.md` was verified against actual `vitest run` terminal output before committing.
+I also learned that AI-generated documentation sometimes drifts from actual implementation counts. Before finalizing `tests.md`, I personally ran `vitest run lab-02` on both server and client to confirm the exact numbers, then corrected the document to match reality rather than accepting AI estimates.
 
-Overall, AI assistance is a powerful productivity tool when paired with disciplined human oversight, spec-driven verification, and a clear testing strategy.
+Overall, AI assistance is most effective when the developer has a clear understanding of the requirements and uses AI as an accelerator rather than a decision-maker. Every major architectural choice, security rule, and test result was independently verified before committing.
