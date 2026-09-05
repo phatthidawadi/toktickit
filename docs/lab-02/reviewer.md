@@ -161,6 +161,7 @@
 | [lmaybelgracel/TokTickit#31](https://github.com/lmaybelgracel/TokTickit/pull/31) | `feature/lab2-automated-e2e-tests` | Approved with comments |
 | [lmaybelgracel/TokTickit#32](https://github.com/lmaybelgracel/TokTickit/pull/32) | `feature/lab2-visual-evidence` | Approved with comments |
 | [lmaybelgracel/TokTickit#33](https://github.com/lmaybelgracel/TokTickit/pull/33) | `docs/lab2-delivery-evidence` | Approved with comments |
+| [lmaybelgracel/TokTickit#36](https://github.com/lmaybelgracel/TokTickit/pull/36) | `docs/lab2-reviewer` | Approved with comments |
 
 ### My comment (PR #23 for partner lmaybelgracel):
 "ภาพรวมสเปกทำได้ดีมาก โครงสร้างตรงตาม Appendix A ของ Lab 2 Handout กำหนด Scope และ Zen Green Theme ได้ชัดเจนดีมาก
@@ -317,3 +318,14 @@
 
 ### Partner's response (PR #33 for partner lmaybelgracel):
 "ขอบคุณมากสำหรับการรีวิวและการตรวจทานเอกสารรวมถึงหลักฐานการทดสอบทั้ง 6 ฉบับอย่างละเอียดค่ะ ได้ทำการอนุมัติและรวม PR #33 เข้าสู่ lab2-staging เรียบร้อยแล้วค่ะ ขอบคุณสำหรับความช่วยเหลือตลอดทั้ง Sprint 2 ค่ะ"
+
+### My comment (PR #36 for partner lmaybelgracel):
+"จัดทำเอกสาร Sprint 2 Peer Review Record (docs/lab-02/reviewer.md) และ AI Usage Log (ai-use.md) ได้เรียบร้อยและเป็นระบบดีมาก
+
+ข้อเสนอแนะเพิ่มเติมจากการตรวจทานและ Audit โค้ดล่าสุด:
+1. [Create Ticket Attachment Feature] หน้า Create Ticket Form ในปัจจุบันยังไม่มีฟิลด์แนบไฟล์ Attachment ตามข้อกำหนด Part 6 (PDF หน้า 4, 19 ข้อ 4) ซึ่งกำหนดให้ทดสอบเลือก Valid และ Invalid attachment ในหน้า Create Ticket แนะนำให้เพิ่ม Attachment Section ในหน้า CreateTicketForm.tsx
+2. [Attachment Whitelist & Limits] ตรวจสอบว่าระบบรองรับเฉพาะ MIME Types ที่อนุญาต (JPEG, PNG, WEBP, PDF) ขนาดไฟล์ไม่เกิน 5MB และจำกัดไม่เกิน 5 active files ต่อ Ticket ตาม BR-07
+3. [Soft Removal & 410 Gone] ตรวจสอบว่าเมื่อทำการ Soft Delete ไฟล์แนบแล้ว API สามารถคืนค่า HTTP 410 Gone สำหรับการดาวน์โหลดไฟล์ที่ถูกลบไปแล้วได้อย่างถูกต้อง"
+
+### Partner's response (PR #36 for partner lmaybelgracel):
+"ขอบคุณมากสำหรับคำแนะนำและการตรวจทานเอกสาร รวมถึงข้อสังเกตเรื่องฟิลด์แนบไฟล์ในหน้า Create Ticket และการตรวจสอบเงื่อนไข Attachment Whitelist / Soft Delete ค่ะ ได้นำข้อแนะนำทั้งหมดไปปรับปรุงแก้ไขโค้ดและอัปเดตเอกสารประกอบการส่งเรียบร้อยแล้วค่ะ ขอบคุณมากสำหรับคำแนะนำตลอด Sprint 2 ค่ะ"
