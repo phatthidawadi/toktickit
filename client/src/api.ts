@@ -54,6 +54,7 @@ export interface Ticket {
   relatedSystemId: number;
   createdAt: string;
   updatedAt: string;
+  requester?: { id: number; name: string; email: string };
   category?: Category;
   relatedSystem?: RelatedSystem;
   attachments?: AttachmentSummary[];
@@ -192,10 +193,11 @@ export async function uploadAttachment(
     throw new Error("File size exceeds maximum limit of 5MB");
   }
 
-  const disallowed = [".exe", ".bat", ".cmd", ".sh"];
+  const allowedExts = [".jpg", ".jpeg", ".png", ".webp", ".pdf"];
+  const allowedMimes = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
   const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
-  if (disallowed.includes(ext)) {
-    throw new Error("File type not allowed (executable files are rejected)");
+  if (!allowedExts.includes(ext) || (file.type && !allowedMimes.includes(file.type))) {
+    throw new Error("File type not allowed (only JPG, PNG, WEBP, and PDF files are accepted)");
   }
 
   const formData = new FormData();

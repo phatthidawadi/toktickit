@@ -479,6 +479,10 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({ ticketId, on
           }}
         >
           <div>
+            <span style={{ color: "#65756E", display: "block", marginBottom: "2px" }}>Requester</span>
+            <strong style={{ color: "#1F2925" }}>{ticket.requester ? `${ticket.requester.name} (${ticket.requester.email})` : "N/A"}</strong>
+          </div>
+          <div>
             <span style={{ color: "#65756E", display: "block", marginBottom: "2px" }}>Category</span>
             <strong style={{ color: "#1F2925" }}>{ticket.category?.name || "N/A"}</strong>
           </div>
@@ -538,25 +542,21 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({ ticketId, on
             File Attachments
           </h3>
 
-          <label
-            style={{
-              backgroundColor: uploading ? "#65756E" : "#006B3C",
-              color: "#FFFFFF",
-              padding: "6px 14px",
-              borderRadius: "6px",
-              fontSize: "13px",
-              fontWeight: "600",
-              cursor: uploading ? "not-allowed" : "pointer",
-            }}
-          >
-            {uploading ? "Uploading..." : "+ Upload File"}
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
             <input
+              id="ticket-detail-file-input"
               type="file"
               onChange={handleFileUpload}
               disabled={uploading}
-              style={{ display: "none" }}
+              style={{
+                fontSize: "13px",
+                padding: "4px 8px",
+                borderRadius: "4px",
+                border: "1px solid #C8D2CC",
+                backgroundColor: "#FFFFFF",
+              }}
             />
-          </label>
+          </div>
         </div>
 
         {uploadError && (

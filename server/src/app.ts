@@ -161,11 +161,22 @@ app.post("/api/tickets", async (req: Request, res: Response) => {
 
     // Generate Ticket Number (TKT-YYYY-XXXXXX)
     const currentYear = new Date().getFullYear();
-    const lastTicket = await getPrisma().ticket.findFirst({
-      orderBy: { id: "desc" },
-    });
-    const nextSeq = lastTicket ? lastTicket.id + 1 : 1;
-    const ticketNumber = generateTicketNumber(nextSeq, currentYear);
+    let ticketNumber = "";
+    let attempts = 0;
+    while (attempts < 30) {
+      const count = await getPrisma().ticket.count();
+      const seq = count + 1 + attempts * 10 + Math.floor(Math.random() * 10000);
+      const candidate = generateTicketNumber(seq, currentYear);
+      const existing = await getPrisma().ticket.findUnique({ where: { ticketNumber: candidate } });
+      if (!existing) {
+        ticketNumber = candidate;
+        break;
+      }
+      attempts++;
+    }
+    if (!ticketNumber) {
+      ticketNumber = `TKT-${currentYear}-${Math.floor(100000 + Math.random() * 900000)}`;
+    }
 
     const newTicket = await getPrisma().ticket.create({
       data: {
@@ -181,8 +192,9 @@ app.post("/api/tickets", async (req: Request, res: Response) => {
     });
 
     res.status(201).json(newTicket);
-  } catch (error) {
-    res.status(500).json({ error: "Internal Server Error" });
+  } catch (error: any) {
+    console.error("Create ticket error:", error);
+    res.status(500).json({ error: error?.message || "Internal Server Error" });
   }
 });
 
@@ -205,7 +217,7 @@ app.get("/api/tickets", async (req: Request, res: Response) => {
     const { search, categoryId, status, priority, sort = "desc", page = "1", limit = "10" } = req.query;
 
     const pageNum = Math.max(1, Number(page) || 1);
-    const limitNum = Math.max(1, Math.min(100, Number(limit) || 10));
+    const limitNum = Math.max(1, Math.min(50, Number(limit) || 10));
     const skip = (pageNum - 1) * limitNum;
 
     const where: any = {
@@ -229,10 +241,58 @@ app.get("/api/tickets", async (req: Request, res: Response) => {
       where.OR = [
         { ticketNumber: { contains: searchTerm, mode: "insensitive" } },
         { summary: { contains: searchTerm, mode: "insensitive" } },
+        { description: { contains: searchTerm, mode: "insensitive" } },
       ];
     }
 
-    const sortOrder = sort === "asc" ? "asc" : "desc";
+    let orderBy: any = { createdAt: "desc" };
+    if (sort === "createdAt_asc" || sort === "asc") {
+      orderBy = { createdAt: "asc" };
+    }
+
+    const PRIORITY_RANK: Record<string, number> = {
+      URGENT: 4,
+      HIGH: 3,
+      MEDIUM: 2,
+      LOW: 1,
+    };
+
+    if (sort === "priority_desc" || sort === "priority_asc") {
+      const [total, allTickets] = await Promise.all([
+        getPrisma().ticket.count({ where }),
+        getPrisma().ticket.findMany({
+          where,
+          include: {
+            category: { select: { id: true, name: true } },
+            relatedSystem: { select: { id: true, name: true } },
+            attachments: {
+              where: { isRemoved: false },
+              select: { id: true, filename: true, originalName: true, size: true, mimeType: true },
+            },
+          },
+        }),
+      ]);
+
+      allTickets.sort((a, b) => {
+        const rankA = PRIORITY_RANK[a.requestedPriority] || 0;
+        const rankB = PRIORITY_RANK[b.requestedPriority] || 0;
+        if (rankA !== rankB) {
+          return sort === "priority_desc" ? rankB - rankA : rankA - rankB;
+        }
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+
+      const tickets = allTickets.slice(skip, skip + limitNum);
+      const totalPages = Math.ceil(total / limitNum) || 1;
+
+      return res.status(200).json({
+        tickets,
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages,
+      });
+    }
 
     const [total, tickets] = await Promise.all([
       getPrisma().ticket.count({ where }),
@@ -240,7 +300,7 @@ app.get("/api/tickets", async (req: Request, res: Response) => {
         where,
         skip,
         take: limitNum,
-        orderBy: { createdAt: sortOrder },
+        orderBy,
         include: {
           category: { select: { id: true, name: true } },
           relatedSystem: { select: { id: true, name: true } },
@@ -254,7 +314,7 @@ app.get("/api/tickets", async (req: Request, res: Response) => {
 
     const totalPages = Math.ceil(total / limitNum) || 1;
 
-    res.status(200).json({
+    return res.status(200).json({
       tickets,
       total,
       page: pageNum,
@@ -290,18 +350,22 @@ app.get("/api/tickets/:id", async (req: Request, res: Response) => {
     const ticket = await getPrisma().ticket.findUnique({
       where: { id: ticketId },
       include: {
+        requester: { select: { id: true, name: true, email: true } },
         category: { select: { id: true, name: true, description: true } },
         relatedSystem: { select: { id: true, name: true, description: true } },
         attachments: {
-          where: { isRemoved: false },
           select: {
             id: true,
             filename: true,
             originalName: true,
             size: true,
             mimeType: true,
+            isRemoved: true,
+            removedReason: true,
+            removedAt: true,
             createdAt: true,
           },
+          orderBy: { id: "asc" },
         },
       },
     });
@@ -345,7 +409,8 @@ const storage = multer.diskStorage({
   },
 });
 
-const DISALLOWED_EXTENSIONS = [".exe", ".bat", ".cmd", ".sh"];
+const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".pdf"];
 
 const upload = multer({
   storage,
@@ -354,8 +419,8 @@ const upload = multer({
   },
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    if (DISALLOWED_EXTENSIONS.includes(ext)) {
-      return cb(new Error("File type not allowed (e.g. executable files are rejected)"));
+    if (!ALLOWED_EXTENSIONS.includes(ext) || !ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+      return cb(new Error("File type not allowed (only JPG, PNG, WEBP, and PDF files are accepted)"));
     }
     cb(null, true);
   },
@@ -396,6 +461,15 @@ app.post("/api/tickets/:id/attachments", (req: Request, res: Response) => {
         return res.status(400).json({ error: "No file uploaded" });
       }
 
+      // BR-07: Maximum 5 active attachments per ticket
+      const activeCount = await getPrisma().attachment.count({
+        where: { ticketId, isRemoved: false },
+      });
+
+      if (activeCount >= 5) {
+        return res.status(400).json({ error: "Maximum active attachments limit (5 per ticket) reached" });
+      }
+
       const attachment = await getPrisma().attachment.create({
         data: {
           ticketId,
@@ -407,11 +481,42 @@ app.post("/api/tickets/:id/attachments", (req: Request, res: Response) => {
         },
       });
 
-      res.status(201).json(attachment);
-    } catch (error) {
-      res.status(500).json({ error: "Internal Server Error" });
+      return res.status(201).json(attachment);
+    } catch (error: any) {
+      console.error("Attachment upload error:", error);
+      res.status(500).json({ error: error?.message || "Internal Server Error" });
     }
   });
+});
+
+// GET /api/attachments/:id — Retrieve Attachment Metadata
+app.get("/api/attachments/:id", async (req: Request, res: Response) => {
+  try {
+    const requesterHeader = req.headers["x-requester-id"];
+    if (!requesterHeader) {
+      return res.status(400).json({ error: "Missing x-requester-id header" });
+    }
+
+    const requesterId = Number(requesterHeader);
+    const attachmentId = Number(req.params.id);
+
+    const attachment = await getPrisma().attachment.findUnique({
+      where: { id: attachmentId },
+      include: { ticket: true },
+    });
+
+    if (!attachment) {
+      return res.status(404).json({ error: "Attachment not found" });
+    }
+
+    if (attachment.ticket.requesterId !== requesterId) {
+      return res.status(403).json({ error: "Access denied. You can only view metadata for attachments on your own tickets." });
+    }
+
+    res.json(attachment);
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
 // GET /api/attachments/:id/download — Download Attachment (410 Gone if removed)
@@ -491,7 +596,7 @@ app.delete("/api/attachments/:id", async (req: Request, res: Response) => {
       },
     });
 
-    res.status(200).json({ message: "Attachment removed successfully", attachment: updated });
+    res.status(200).json(updated);
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
   }

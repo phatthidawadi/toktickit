@@ -23,6 +23,7 @@ This document specifies the REST API contract for Sprint 2 (Lab 2) of the TokTic
 | `GET` | `/api/tickets` | List tickets owned by current Requester (with search/filter/sort/pagination) | Yes |
 | `GET` | `/api/tickets/:id` | Retrieve owned ticket details | Yes |
 | `POST` | `/api/tickets/:id/attachments` | Upload an attachment file | Yes |
+| `GET` | `/api/attachments/:id` | Retrieve single attachment metadata | Yes |
 | `GET` | `/api/attachments/:id/download` | Download an active attachment file | Yes |
 | `DELETE` | `/api/attachments/:id` | Soft-remove an attachment with reason | Yes |
 
@@ -49,6 +50,20 @@ Retrieve all active Development Requesters available for selection in the simula
     "name": "Michael Brown",
     "email": "michael.b@example.com",
     "department": "Finance",
+    "isActive": true
+  },
+  {
+    "id": 3,
+    "name": "Sarah Johnson",
+    "email": "sarah.j@example.com",
+    "department": "Marketing",
+    "isActive": true
+  },
+  {
+    "id": 4,
+    "name": "David Lee",
+    "email": "david.l@example.com",
+    "department": "Engineering",
     "isActive": true
   }
 ]
@@ -77,10 +92,13 @@ Retrieve active related systems.
 - **Success Response (200 OK)**:
 ```json
 [
-  { "id": 1, "name": "Corporate Laptop", "categoryId": 2, "isActive": true },
-  { "id": 2, "name": "Campus Wi-Fi", "categoryId": 4, "isActive": true },
-  { "id": 3, "name": "VPN Service", "categoryId": 4, "isActive": true },
-  { "id": 4, "name": "LEB2 App", "categoryId": 3, "isActive": true }
+  { "id": 1, "name": "Email", "categoryId": 1, "isActive": true },
+  { "id": 2, "name": "Corporate Laptop", "categoryId": 2, "isActive": true },
+  { "id": 3, "name": "Printer", "categoryId": 2, "isActive": true },
+  { "id": 4, "name": "LEB2 App", "categoryId": 3, "isActive": true },
+  { "id": 5, "name": "Grade Submission App", "categoryId": 3, "isActive": true },
+  { "id": 6, "name": "Campus Wi-Fi", "categoryId": 4, "isActive": true },
+  { "id": 7, "name": "VPN Service", "categoryId": 4, "isActive": true }
 ]
 ```
 
@@ -97,7 +115,7 @@ Create a new support ticket for the selected Requester.
   "summary": "Laptop battery drains quickly",
   "description": "My laptop battery is draining much faster than usual even when the system is idle.",
   "categoryId": 2,
-  "relatedSystemId": 1,
+  "relatedSystemId": 2,
   "requestedPriority": "MEDIUM"
 }
 ```
@@ -112,7 +130,7 @@ Create a new support ticket for the selected Requester.
   "currentStatus": "NEW",
   "requesterId": 1,
   "categoryId": 2,
-  "relatedSystemId": 1,
+  "relatedSystemId": 2,
   "createdAt": "2026-09-01T10:15:00.000Z",
   "updatedAt": "2026-09-01T10:15:00.000Z"
 }
@@ -130,16 +148,23 @@ Query tickets owned exclusively by the currently selected Requester.
   `x-requester-id: 1`
 - **Query Parameters**:
   - `search` (optional string): Keyword matching `ticketNumber`, `summary`, or `description`.
-  - `category` (optional number): Filter by Category ID.
+  - `categoryId` (optional number): Filter by Category ID.
   - `priority` (optional enum): `LOW`, `MEDIUM`, `HIGH`, `URGENT`.
   - `status` (optional enum): `NEW`.
   - `sort` (optional string): `createdAt_desc` (default), `createdAt_asc`, `priority_desc`.
   - `page` (optional number): Page index (default: 1).
   - `limit` (optional number): Page size (default: 10, max: 50).
+
+#### Invalid Query Parameter Behavior (§6.1)
+- If `page` < 1 or invalid string, system sanitizes value to default `page = 1`.
+- If `limit` < 1 or > 50, system sanitizes value to bounds (`limit = 10` or capped at 50).
+- If `sort` is invalid or omitted, system defaults to `createdAt DESC`.
+- Invalid filter parameters that produce no database matches safely return HTTP 200 OK with an empty array `data: []` and `totalItems: 0`.
+
 - **Success Response (200 OK)**:
 ```json
 {
-  "data": [
+  "tickets": [
     {
       "id": 12,
       "ticketNumber": "TKT-2026-000012",
@@ -149,15 +174,13 @@ Query tickets owned exclusively by the currently selected Requester.
       "createdAt": "2026-09-01T10:15:00.000Z",
       "updatedAt": "2026-09-01T10:15:00.000Z",
       "category": { "id": 2, "name": "Hardware" },
-      "relatedSystem": { "id": 1, "name": "Corporate Laptop" }
+      "relatedSystem": { "id": 2, "name": "Corporate Laptop" }
     }
   ],
-  "pagination": {
-    "page": 1,
-    "limit": 10,
-    "totalItems": 1,
-    "totalPages": 1
-  }
+  "total": 1,
+  "page": 1,
+  "limit": 10,
+  "totalPages": 1
 }
 ```
 
@@ -180,7 +203,7 @@ Retrieve detailed information for a single owned ticket.
   "requesterId": 1,
   "requester": { "id": 1, "name": "Jennifer Anderson", "email": "jennifer.a@example.com" },
   "category": { "id": 2, "name": "Hardware" },
-  "relatedSystem": { "id": 1, "name": "Corporate Laptop" },
+  "relatedSystem": { "id": 2, "name": "Corporate Laptop" },
   "attachments": [
     {
       "id": 5,
@@ -216,6 +239,7 @@ Upload a permitted attachment to an existing ticket owned by the Requester.
   "id": 5,
   "ticketId": 12,
   "filename": "battery_diagnostic.pdf",
+  "originalName": "battery_diagnostic.pdf",
   "mimeType": "application/pdf",
   "size": 1048576,
   "isRemoved": false,
@@ -230,7 +254,31 @@ Upload a permitted attachment to an existing ticket owned by the Requester.
 
 ---
 
-### 3.8 GET /api/attachments/:id/download
+### 3.8 GET /api/attachments/:id
+Retrieve metadata for a single attachment on an owned ticket.
+
+- **Headers**:
+  `x-requester-id: 1`
+- **Success Response (200 OK)**:
+```json
+{
+  "id": 5,
+  "ticketId": 12,
+  "filename": "battery_diagnostic.pdf",
+  "originalName": "battery_diagnostic.pdf",
+  "mimeType": "application/pdf",
+  "size": 1048576,
+  "isRemoved": false,
+  "createdAt": "2026-09-01T10:16:00.000Z"
+}
+```
+- **Error Responses**:
+  - `403 Forbidden`: Requester does not own the ticket associated with this attachment.
+  - `404 Not Found`: Attachment ID does not exist.
+
+---
+
+### 3.9 GET /api/attachments/:id/download
 Download an active attachment file.
 
 - **Headers**:
@@ -244,7 +292,7 @@ Download an active attachment file.
 
 ---
 
-### 3.9 DELETE /api/attachments/:id
+### 3.10 DELETE /api/attachments/:id
 Soft-remove an attachment with mandatory reason input.
 
 - **Headers**:

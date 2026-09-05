@@ -62,6 +62,7 @@ model Ticket {
   attachments   Attachment[]
 
   @@index([requesterId])
+  @@index([requesterId, createdAt])
   @@index([categoryId])
   @@index([requestedPriority])
   @@index([currentStatus])

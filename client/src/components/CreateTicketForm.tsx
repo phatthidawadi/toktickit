@@ -3,6 +3,7 @@ import {
   fetchCategories,
   fetchRelatedSystems,
   createTicket,
+  uploadAttachment,
   Category,
   RelatedSystem,
   Ticket,
@@ -27,6 +28,7 @@ export const CreateTicketForm: React.FC<CreateTicketFormProps> = ({ onSuccess, o
   const [requestedPriority, setRequestedPriority] = useState<"LOW" | "MEDIUM" | "HIGH" | "URGENT">("MEDIUM");
   const [summary, setSummary] = useState<string>("");
   const [description, setDescription] = useState<string>("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // UI / Validation State
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -122,6 +124,10 @@ export const CreateTicketForm: React.FC<CreateTicketFormProps> = ({ onSuccess, o
         selectedRequester.id
       );
 
+      if (selectedFile) {
+        await uploadAttachment(ticket.id, selectedFile, selectedRequester.id);
+      }
+
       setCreatedTicket(ticket);
       setSubmitting(false);
       if (onSuccess) onSuccess(ticket);
@@ -135,6 +141,7 @@ export const CreateTicketForm: React.FC<CreateTicketFormProps> = ({ onSuccess, o
     setCreatedTicket(null);
     setSummary("");
     setDescription("");
+    setSelectedFile(null);
     setErrors({});
     setFormError(null);
   };
@@ -264,7 +271,7 @@ export const CreateTicketForm: React.FC<CreateTicketFormProps> = ({ onSuccess, o
         padding: "32px",
       }}
     >
-      <div style={{ marginBottom: "24px", borderBottom: "1px solid #E0E6E2", pb: "16px" }}>
+      <div style={{ marginBottom: "24px", borderBottom: "1px solid #E0E6E2", paddingBottom: "16px" }}>
         <h2 style={{ fontSize: "22px", fontWeight: "bold", color: "#1F2925", margin: "0 0 6px 0" }}>
           Create IT Support Ticket
         </h2>
@@ -499,6 +506,45 @@ export const CreateTicketForm: React.FC<CreateTicketFormProps> = ({ onSuccess, o
             {errors.description && (
               <div style={{ color: "#C5221F", fontSize: "12px", marginTop: "4px" }}>{errors.description}</div>
             )}
+          </div>
+
+          {/* Optional Attachment Upload */}
+          <div style={{ marginBottom: "24px" }}>
+            <label
+              htmlFor="create-attachment-input"
+              style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#1F2925", marginBottom: "4px" }}
+            >
+              Optional File Attachment (PDF, JPG, PNG, WEBP max 5MB)
+            </label>
+            <input
+              id="create-attachment-input"
+              type="file"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const ext = "." + file.name.split(".").pop()?.toLowerCase();
+                  const allowed = [".jpg", ".jpeg", ".png", ".webp", ".pdf"];
+                  if (!allowed.includes(ext)) {
+                    setFormError(`File type ${ext} is prohibited for security reasons (AC-04)`);
+                    setSelectedFile(null);
+                    e.target.value = "";
+                  } else {
+                    setFormError(null);
+                    setSelectedFile(file);
+                  }
+                } else {
+                  setSelectedFile(null);
+                }
+              }}
+              style={{
+                width: "100%",
+                padding: "8px 12px",
+                borderRadius: "6px",
+                border: "1px solid #C8D2CC",
+                fontSize: "13px",
+                backgroundColor: "#FFFFFF",
+              }}
+            />
           </div>
 
           {/* Action Buttons */}

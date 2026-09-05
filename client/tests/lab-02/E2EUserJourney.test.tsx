@@ -113,7 +113,7 @@ describe("End-to-End User Journey (E2E Verification)", () => {
       expect(screen.getByText("Select Development Requester")).toBeDefined();
     });
 
-    const continueButton = screen.getByText("Continue");
+    const continueButton = await screen.findByText("Continue");
     fireEvent.click(continueButton);
 
     // Step 2: Verify Selected Requester appears in Header
