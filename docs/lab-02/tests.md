@@ -88,7 +88,7 @@ Sprint 2 (Lab 2) applies Spec-Driven Development (Spec DD) and Test-Driven Devel
 | **AC-13** (Empty and no-results states with Clear Filters CTA) | `UI-06`, `E2E-02` | 100% Covered |
 | **AC-14** (Requester context switching reloads ticket list) | `API-04`, `UI-04`, `E2E-01` | 100% Covered |
 | **AC-15** (Form values preserved on API failure) | `UI-06`, `E2E-01` | 100% Covered |
-| **AC-16** (Accessibility focus rings & ARIA labels) | `UI-07`, `UI-01`, `UI-02` | 100% Covered |
+| **AC-16** (Accessibility focus rings & ARIA labels) | `UI-07` | 100% Covered |
 
 ---
 
@@ -130,3 +130,4 @@ npx playwright test --config=e2e/playwright.config.ts
 
 ## 7. Known Limitations or Deferred Tests
 - Authentication security (passwords, tokens, sessions) and IT Staff workflow tests are explicitly deferred to Lab 3 as specified in the handout scope.
+- Keyboard focus navigation order and ARIA accessibility contracts are programmatically verified via Vitest & React Testing Library (`UI-07`), while visible focus ring styling (`2px solid #0B7A46`) is visually verified via Playwright E2E screenshots.
