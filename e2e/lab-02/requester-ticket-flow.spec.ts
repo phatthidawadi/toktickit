@@ -120,6 +120,30 @@ test.describe('Lab 2 Requester Ticket Flow E2E & Visual Screenshot Suite', () =>
     await page.unroute('**/api/tickets');
 
     // 8. create-ticket-invalid-attachment.png
+    // Explicitly attach disallowed .exe file and observe error state before capturing screenshot
+    const invalidExePath = path.join(process.cwd(), 'scratch', 'malware_script.exe');
+    if (!fs.existsSync(path.dirname(invalidExePath))) {
+      fs.mkdirSync(path.dirname(invalidExePath), { recursive: true });
+    }
+    fs.writeFileSync(invalidExePath, 'MZ binary executable content');
+
+    const ticketRow = page.locator('table tbody tr, .ticket-card').first();
+    // Navigate to ticket detail to upload file
+    const myTicketsNav = page.locator('button:has-text("My Tickets"), a:has-text("My Tickets")').first();
+    if (await myTicketsNav.isVisible().catch(() => false)) {
+      await myTicketsNav.click({ force: true });
+      await page.waitForTimeout(500);
+    }
+    if (await ticketRow.isVisible().catch(() => false)) {
+      await ticketRow.click({ force: true });
+      await page.waitForTimeout(500);
+    }
+
+    const fileInput = page.locator('input[type="file"]').first();
+    if (await fileInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await fileInput.setInputFiles(invalidExePath);
+      await page.waitForTimeout(500);
+    }
     await page.screenshot({ path: path.join(screenshotsBase, 'create-ticket', 'create-ticket-invalid-attachment.png') });
   });
 
@@ -149,10 +173,10 @@ test.describe('Lab 2 Requester Ticket Flow E2E & Visual Screenshot Suite', () =>
       await page.screenshot({ path: path.join(screenshotsBase, 'my-tickets', 'my-tickets-search-filter.png') });
     }
 
-    // 12. my-tickets-sorting.png
-    const prioritySelect = page.locator('select#priority-filter').first();
-    if (await prioritySelect.isVisible().catch(() => false)) {
-      await prioritySelect.selectOption({ value: 'URGENT' });
+    // 12. my-tickets-sorting.png (Explicitly select Sort By control)
+    const sortSelect = page.locator('select#sort-select').first();
+    if (await sortSelect.isVisible().catch(() => false)) {
+      await sortSelect.selectOption({ value: 'priority_desc' });
       await page.waitForTimeout(500);
       await page.screenshot({ path: path.join(screenshotsBase, 'my-tickets', 'my-tickets-sorting.png') });
     }
@@ -199,7 +223,6 @@ test.describe('Lab 2 Requester Ticket Flow E2E & Visual Screenshot Suite', () =>
     await page.setViewportSize({ width: 1280, height: 800 });
     await ensureRequesterSelected(page, 1);
 
-    // Create a fresh ticket first to guarantee ticket detail exists
     const createNav = page.locator('button:has-text("Create Ticket"), a:has-text("Create Ticket")').first();
     if (await createNav.isVisible().catch(() => false)) {
       await createNav.click({ force: true });
