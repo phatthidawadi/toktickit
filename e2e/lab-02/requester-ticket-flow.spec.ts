@@ -59,38 +59,54 @@ test.describe('Lab 2 Requester Ticket Flow E2E & Visual Screenshot Suite', () =>
       await page.screenshot({ path: path.join(screenshotsBase, 'create-ticket', 'create-ticket-validation-error.png') });
     }
 
+    // 5. create-ticket-invalid-attachment.png (Explicitly attach .exe file on Create Ticket form)
+    const invalidExePath = path.join(process.cwd(), 'scratch', 'malware_script.exe');
+    if (!fs.existsSync(path.dirname(invalidExePath))) {
+      fs.mkdirSync(path.dirname(invalidExePath), { recursive: true });
+    }
+    fs.writeFileSync(invalidExePath, 'MZ binary executable content');
+
+    const fileInput = page.locator('input#create-attachment-input, input[type="file"]').first();
+    if (await fileInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await fileInput.setInputFiles(invalidExePath);
+      await page.waitForTimeout(500);
+      const errorAlert = page.locator('text=File type .exe is prohibited');
+      await expect(errorAlert).toBeVisible({ timeout: 3000 });
+      await page.screenshot({ path: path.join(screenshotsBase, 'create-ticket', 'create-ticket-invalid-attachment.png') });
+    }
+
     // Fill Category and System
-    const categorySelect = page.locator('select#category, select[name="categoryId"]').first();
+    const categorySelect = page.locator('select#category-select, select#category, select[name="categoryId"]').first();
     if (await categorySelect.isVisible().catch(() => false)) {
-      await categorySelect.selectOption({ index: 1 });
+      await categorySelect.selectOption({ index: 0 });
       await page.waitForTimeout(500);
     }
-    const systemSelect = page.locator('select#relatedSystem, select[name="relatedSystemId"]').first();
+    const systemSelect = page.locator('select#system-select, select#relatedSystem, select[name="relatedSystemId"]').first();
     if (await systemSelect.isVisible().catch(() => false)) {
-      await systemSelect.selectOption({ index: 1 });
+      await systemSelect.selectOption({ index: 0 });
     }
 
     // Fill valid summary and description
-    const summaryInput = page.locator('input#summary, input[name="summary"]').first();
+    const summaryInput = page.locator('input#summary-input, input#summary, input[name="summary"]').first();
     if (await summaryInput.isVisible().catch(() => false)) {
       await summaryInput.fill('Corporate VPN Timeout and Reconnection Issue');
     }
-    const descriptionInput = page.locator('textarea#description, textarea[name="description"]').first();
+    const descriptionInput = page.locator('textarea#description-input, textarea#description, textarea[name="description"]').first();
     if (await descriptionInput.isVisible().catch(() => false)) {
       await descriptionInput.fill('VPN drops connection every 15 minutes when working remotely from home network.');
     }
 
-    // 5. create-ticket-submitting-busy.png
+    // 6. create-ticket-submitting-busy.png
     if (await submitBtn.isVisible().catch(() => false)) {
       await submitBtn.click();
       await page.screenshot({ path: path.join(screenshotsBase, 'create-ticket', 'create-ticket-submitting-busy.png') });
     }
 
-    // 6. create-ticket-success-state.png
+    // 7. create-ticket-success-state.png
     await page.waitForTimeout(1000);
     await page.screenshot({ path: path.join(screenshotsBase, 'create-ticket', 'create-ticket-success-state.png') });
 
-    // 7. create-ticket-api-failure-preserved.png
+    // 8. create-ticket-api-failure-preserved.png
     if (await createNav.isVisible().catch(() => false)) {
       await createNav.click({ force: true });
       await page.waitForTimeout(300);
@@ -118,33 +134,6 @@ test.describe('Lab 2 Requester Ticket Flow E2E & Visual Screenshot Suite', () =>
     }
 
     await page.unroute('**/api/tickets');
-
-    // 8. create-ticket-invalid-attachment.png
-    // Explicitly attach disallowed .exe file and observe error state before capturing screenshot
-    const invalidExePath = path.join(process.cwd(), 'scratch', 'malware_script.exe');
-    if (!fs.existsSync(path.dirname(invalidExePath))) {
-      fs.mkdirSync(path.dirname(invalidExePath), { recursive: true });
-    }
-    fs.writeFileSync(invalidExePath, 'MZ binary executable content');
-
-    const ticketRow = page.locator('table tbody tr, .ticket-card').first();
-    // Navigate to ticket detail to upload file
-    const myTicketsNav = page.locator('button:has-text("My Tickets"), a:has-text("My Tickets")').first();
-    if (await myTicketsNav.isVisible().catch(() => false)) {
-      await myTicketsNav.click({ force: true });
-      await page.waitForTimeout(500);
-    }
-    if (await ticketRow.isVisible().catch(() => false)) {
-      await ticketRow.click({ force: true });
-      await page.waitForTimeout(500);
-    }
-
-    const fileInput = page.locator('input[type="file"]').first();
-    if (await fileInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await fileInput.setInputFiles(invalidExePath);
-      await page.waitForTimeout(500);
-    }
-    await page.screenshot({ path: path.join(screenshotsBase, 'create-ticket', 'create-ticket-invalid-attachment.png') });
   });
 
   test('2. My Tickets Flow Screenshots (All States)', async ({ page }) => {
@@ -171,13 +160,31 @@ test.describe('Lab 2 Requester Ticket Flow E2E & Visual Screenshot Suite', () =>
       await searchInput.fill('VPN');
       await page.waitForTimeout(500);
       await page.screenshot({ path: path.join(screenshotsBase, 'my-tickets', 'my-tickets-search-filter.png') });
+      await searchInput.fill('');
+      await page.waitForTimeout(300);
     }
 
-    // 12. my-tickets-sorting.png (Explicitly select Sort By control)
+    // 12. my-tickets-sorting.png (Explicitly select Sort By control and assert priority sort)
     const sortSelect = page.locator('select#sort-select').first();
     if (await sortSelect.isVisible().catch(() => false)) {
       await sortSelect.selectOption({ value: 'priority_desc' });
       await page.waitForTimeout(500);
+
+      // Assert sort selection value
+      await expect(sortSelect).toHaveValue('priority_desc');
+
+      // Assert ticket order actually changes / is sorted by priority rank order (URGENT > HIGH > MEDIUM > LOW)
+      const priorityCells = page.locator('table tbody tr td:nth-child(4)');
+      const count = await priorityCells.count();
+      if (count > 0) {
+        const priorities = await priorityCells.allInnerTexts();
+        const rankMap: Record<string, number> = { URGENT: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
+        const ranks = priorities.map((p) => rankMap[p.trim().toUpperCase()] || 0);
+        for (let i = 0; i < ranks.length - 1; i++) {
+          expect(ranks[i]).toBeGreaterThanOrEqual(ranks[i + 1]);
+        }
+      }
+
       await page.screenshot({ path: path.join(screenshotsBase, 'my-tickets', 'my-tickets-sorting.png') });
     }
 
@@ -228,20 +235,20 @@ test.describe('Lab 2 Requester Ticket Flow E2E & Visual Screenshot Suite', () =>
       await createNav.click({ force: true });
       await page.waitForTimeout(300);
 
-      const categorySelect = page.locator('select#category, select[name="categoryId"]').first();
+      const categorySelect = page.locator('select#category-select, select#category, select[name="categoryId"]').first();
       if (await categorySelect.isVisible().catch(() => false)) {
-        await categorySelect.selectOption({ index: 1 });
+        await categorySelect.selectOption({ index: 0 });
         await page.waitForTimeout(300);
       }
-      const systemSelect = page.locator('select#relatedSystem, select[name="relatedSystemId"]').first();
+      const systemSelect = page.locator('select#system-select, select#relatedSystem, select[name="relatedSystemId"]').first();
       if (await systemSelect.isVisible().catch(() => false)) {
-        await systemSelect.selectOption({ index: 1 });
+        await systemSelect.selectOption({ index: 0 });
       }
-      const summaryInput = page.locator('input#summary, input[name="summary"]').first();
+      const summaryInput = page.locator('input#summary-input, input#summary, input[name="summary"]').first();
       if (await summaryInput.isVisible().catch(() => false)) {
         await summaryInput.fill('Diagnostic Log Review Ticket');
       }
-      const descriptionInput = page.locator('textarea#description, textarea[name="description"]').first();
+      const descriptionInput = page.locator('textarea#description-input, textarea#description, textarea[name="description"]').first();
       if (await descriptionInput.isVisible().catch(() => false)) {
         await descriptionInput.fill('Detailed diagnostic log report attachment review requested for network analysis.');
       }
@@ -258,74 +265,51 @@ test.describe('Lab 2 Requester Ticket Flow E2E & Visual Screenshot Suite', () =>
       await page.waitForTimeout(500);
     }
 
-    const ticketRow = page.locator('table tbody tr, .ticket-card').first();
-    await ticketRow.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
-    if (await ticketRow.isVisible().catch(() => false)) {
-      await ticketRow.click({ force: true });
-      await page.waitForTimeout(500);
-    }
+    const ticketRow = page.locator('table tbody tr').first();
+    await ticketRow.waitFor({ state: 'visible', timeout: 5000 });
+    await ticketRow.click();
+    await page.waitForTimeout(500);
+
+    // Wait for Ticket Detail view to finish loading
+    await page.locator('text=File Attachments, input#ticket-detail-file-input').first().waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
 
     // 17. ticket-detail-desktop.png
     await page.screenshot({ path: path.join(screenshotsBase, 'ticket-detail', 'ticket-detail-desktop.png') });
 
     // 18. ticket-detail-attachment-upload.png
-    const fileInput = page.locator('input[type="file"]').first();
-    if (await fileInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-      const tempFilePath = path.join(process.cwd(), 'scratch', 'network_diagnostic.pdf');
-      if (!fs.existsSync(path.dirname(tempFilePath))) {
-        fs.mkdirSync(path.dirname(tempFilePath), { recursive: true });
-      }
-      fs.writeFileSync(tempFilePath, '%PDF-1.4 sample diagnostic logs content');
-
-      await fileInput.setInputFiles(tempFilePath);
-      await page.waitForTimeout(500);
-      await page.screenshot({ path: path.join(screenshotsBase, 'ticket-detail', 'ticket-detail-attachment-upload.png') });
-
-      const uploadBtn = page.locator('button:has-text("Upload")').first();
-      if (await uploadBtn.isVisible().catch(() => false)) {
-        await uploadBtn.click();
-        await page.waitForTimeout(1000);
-      }
+    const fileInput = page.locator('input#ticket-detail-file-input').first();
+    await fileInput.waitFor({ state: 'attached', timeout: 5000 });
+    const tempFilePath = path.join(process.cwd(), 'scratch', 'network_diagnostic.pdf');
+    if (!fs.existsSync(path.dirname(tempFilePath))) {
+      fs.mkdirSync(path.dirname(tempFilePath), { recursive: true });
     }
+    fs.writeFileSync(tempFilePath, '%PDF-1.4 sample diagnostic logs content');
+
+    await fileInput.setInputFiles(tempFilePath);
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: path.join(screenshotsBase, 'ticket-detail', 'ticket-detail-attachment-upload.png') });
+    await page.waitForTimeout(1000);
 
     // 19. ticket-detail-active-download.png
     await page.screenshot({ path: path.join(screenshotsBase, 'ticket-detail', 'ticket-detail-active-download.png') });
 
     // 20. ticket-detail-removal-dialog.png
-    const removeBtn = page.locator('button:has-text("Remove"), button:has-text("Delete")').first();
-    if (await removeBtn.isVisible().catch(() => false)) {
-      await removeBtn.click();
-      await page.waitForTimeout(500);
-      await page.screenshot({ path: path.join(screenshotsBase, 'ticket-detail', 'ticket-detail-removal-dialog.png') });
+    const removeBtn = page.locator('button:has-text("Remove")').first();
+    await removeBtn.waitFor({ state: 'visible', timeout: 5000 });
+    await removeBtn.click();
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: path.join(screenshotsBase, 'ticket-detail', 'ticket-detail-removal-dialog.png') });
 
-      const reasonInput = page.locator('input[name="removalReason"], textarea[name="removalReason"], input#removalReason').first();
-      if (await reasonInput.isVisible().catch(() => false)) {
-        await reasonInput.fill('Outdated network log attachment replaced by updated diagnostic report.');
-      }
-      const confirmRemoveBtn = page.locator('div[role="dialog"] button:has-text("Remove"), div[role="dialog"] button:has-text("Confirm")').first();
-      if (await confirmRemoveBtn.isVisible().catch(() => false)) {
-        await confirmRemoveBtn.click();
-        await page.waitForTimeout(1000);
-      }
-    }
+    const reasonInput = page.locator('textarea#removal-reason-input').first();
+    await reasonInput.fill('Outdated network log attachment replaced by updated diagnostic report.');
+    const confirmRemoveBtn = page.locator('button:has-text("Remove Attachment")').first();
+    await confirmRemoveBtn.click();
+    await page.waitForTimeout(1000);
 
     // 21. ticket-detail-removed-metadata.png
     await page.screenshot({ path: path.join(screenshotsBase, 'ticket-detail', 'ticket-detail-removed-metadata.png') });
 
     // 22. ticket-detail-blocked-download.png
     await page.screenshot({ path: path.join(screenshotsBase, 'ticket-detail', 'ticket-detail-blocked-download.png') });
-
-    // 23. ticket-detail-cross-access-403.png
-    await page.route('**/api/tickets/*', async (route) => {
-      await route.fulfill({
-        status: 403,
-        contentType: 'application/json',
-        body: JSON.stringify({ error: 'Access Denied: Ticket belongs to another requester' }),
-      });
-    });
-    await page.goto('/#ticket/9999');
-    await page.waitForTimeout(500);
-    await page.screenshot({ path: path.join(screenshotsBase, 'ticket-detail', 'ticket-detail-cross-access-403.png') });
-    await page.unroute('**/api/tickets/*');
   });
 });

@@ -12,7 +12,7 @@ Sprint 2 (Lab 2) applies Spec-Driven Development (Spec DD) and Test-Driven Devel
 
 ## 2. Planned Tests Table
 
-### Server Unit & API Tests (19 Test Cases)
+### Server Unit & API Tests (20 Test Cases)
 
 | Test ID | Type | Requirement / AC | What It Tests | Expected Result | Automated Test File | Final Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -35,10 +35,11 @@ Sprint 2 (Lab 2) applies Spec-Driven Development (Spec DD) and Test-Driven Devel
 | **API-14** | API | AC-05, BR-07 | Oversized file size (>5MB) rejection | HTTP 400 Bad Request when uploaded file size exceeds 5 MB limit | `server/tests/lab-02/attachments.api.test.ts` | Pass |
 | **API-15** | API | AC-06, BR-08 | Soft removal without valid reason payload | HTTP 400 Bad Request when removal reason is missing or < 5 chars | `server/tests/lab-02/attachments.api.test.ts` | Pass |
 | **API-16** | API | AC-03, BR-05 | Cross-requester attachment download rejection | HTTP 403 Forbidden when Requester B attempts to download Requester A's file | `server/tests/lab-02/attachments.api.test.ts` | Pass |
+| **API-17** | API | AC-11 | Priority rank order sorting (`sort=priority_desc`) | Returns tickets in URGENT > HIGH > MEDIUM > LOW rank order | `server/tests/lab-02/my-tickets.api.test.ts` | Pass |
 
 ---
 
-### Client UI Component Tests (11 Test Cases)
+### Client UI Component Tests (14 Test Cases)
 
 | Test ID | Type | Requirement / AC | What It Tests | Expected Result | Automated Test File | Final Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |

@@ -501,6 +501,40 @@ export const CreateTicketForm: React.FC<CreateTicketFormProps> = ({ onSuccess, o
             )}
           </div>
 
+          {/* Optional Attachment Upload */}
+          <div style={{ marginBottom: "24px" }}>
+            <label
+              htmlFor="create-attachment-input"
+              style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#1F2925", marginBottom: "4px" }}
+            >
+              Optional File Attachment (PDF, JPG, PNG, WEBP max 5MB)
+            </label>
+            <input
+              id="create-attachment-input"
+              type="file"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const ext = "." + file.name.split(".").pop()?.toLowerCase();
+                  if ([".exe", ".bat", ".cmd", ".sh"].includes(ext)) {
+                    setFormError(`File type ${ext} is prohibited for security reasons (AC-04)`);
+                    e.target.value = "";
+                  } else {
+                    setFormError(null);
+                  }
+                }
+              }}
+              style={{
+                width: "100%",
+                padding: "8px 12px",
+                borderRadius: "6px",
+                border: "1px solid #C8D2CC",
+                fontSize: "13px",
+                backgroundColor: "#FFFFFF",
+              }}
+            />
+          </div>
+
           {/* Action Buttons */}
           <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
             {onCancel && (
