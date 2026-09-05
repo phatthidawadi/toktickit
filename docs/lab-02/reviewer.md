@@ -15,6 +15,7 @@
 | [PR #29](https://github.com/phatthidawadi/toktickit/pull/29) | `feature/11-ticket-detail` | Approved with comments |
 | [PR #30](https://github.com/phatthidawadi/toktickit/pull/30) | `feature/12-attachment-lifecycle` | Approved with comments |
 | [PR #31](https://github.com/phatthidawadi/toktickit/pull/31) | `feature/13-e2e-staging` | Approved with comments |
+| [PR #36](https://github.com/phatthidawadi/toktickit/pull/36) | `docs/lab2-reviewer` | Pending |
 
 ### Reviewer comment I received (PR #23):
 "ทำส่วน Sprint 2 Engineering Specification และ UI Specification (Zen Green Theme) ได้สมบูรณ์และละเอียดมาก
@@ -134,6 +135,12 @@
 
 ### How I responded (PR #31):
 "ขอบคุณมากสำหรับคำรีวิวและการตรวจทานสรุปภาพรวมทั้งหมดของ Sprint 2 ยินดีอย่างยิ่งที่ผลการทดสอบ E2E User Journey, เอกสาร QA Summary (reviewer.md) และ AI Audit Trail (ai-use.md) ครบถ้วนตามมาตรฐานและ Definition of Done ของรายวิชา หลังจากเพื่อนกด Approve และ Merge PR #31 แล้ว ฉันจะทำการรวม branch lab2-staging เข้าสู่ main เพื่อเสร็จสิ้น Sprint 2 (Lab 2) อย่างสมบูรณ์ ขอบคุณสำหรับคำรีวิวและความช่วยเหลือตลอดทั้ง Sprint"
+
+### Reviewer comment I received (PR #36):
+"Pending peer review."
+
+### How I responded (PR #36):
+"Pending peer response."
 
 ## Pull Requests I reviewed for my partner
 | PR | Branch | Reviewer verdict |
