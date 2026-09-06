@@ -10,7 +10,7 @@ TokTickIT is an IT service desk application for managing Account & Access, Hardw
 
 ---
 
-## 🚀 Detailed Setup Guide for Team Members
+## Detailed Setup Guide for Team Members
 
 Follow these steps to clone the project and get your local development environment running.
 
@@ -71,7 +71,7 @@ npx prisma db seed
 
 ---
 
-## 🏃‍♂️ Running the Project Locally
+## Running the Project Locally
 
 You will need to start both the backend server and the frontend development server simultaneously (in separate terminal windows).
 
@@ -91,7 +91,7 @@ npm run dev
 
 ---
 
-## 🧪 Running Automated Tests
+## Running Automated Tests
 
 The project includes pre-configured tests to verify functionality.
 
