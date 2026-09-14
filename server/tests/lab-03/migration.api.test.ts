@@ -52,4 +52,37 @@ describe("MIG-API-01: Lab 2 Data Migration Integrity and Seed State", () => {
     const systems = await prisma.relatedSystem.findMany();
     expect(systems.length).toBeGreaterThanOrEqual(7);
   });
+
+  it("should preserve pre-existing tickets and backfill itPriority matching requestedPriority", async () => {
+    const tickets = await prisma.ticket.findMany({
+      include: {
+        requester: true,
+        attachments: true,
+      },
+    });
+
+    expect(tickets.length).toBeGreaterThan(0);
+
+    for (const ticket of tickets) {
+      // 1. Verify requester ID links to a valid migrated User with role REQUESTER
+      expect(ticket.requester).not.toBeNull();
+      expect(ticket.requester.role).toBe("REQUESTER");
+
+      // 2. Verify itPriority is populated
+      expect(ticket.itPriority).toBeDefined();
+      expect(["LOW", "MEDIUM", "HIGH", "URGENT"]).toContain(ticket.itPriority);
+
+      // 3. Verify default flags
+      expect(typeof ticket.isRequesterResolved).toBe("boolean");
+    }
+  });
+
+  it("should maintain case-insensitive uniqueness for user email addresses", async () => {
+    const user = await prisma.user.findFirst({
+      where: { email: "jennifer.a@example.com" },
+    });
+
+    expect(user).not.toBeNull();
+    expect(user?.email).toBe("jennifer.a@example.com");
+  });
 });

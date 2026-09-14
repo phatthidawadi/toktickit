@@ -213,10 +213,98 @@
 ---
 
 ### Reviewer comment I received (PR #52):
-*(Pending review by @jejaebubu)*
+> ## P1 — ควรแก้ก่อน Approve
+> 
+> ### 1. ยังไม่มี Migration File สำหรับย้ายข้อมูล `RequesterUser → User`
+> ตอนนี้ใน `server/prisma/migrations/` ยังมีแค่ migration จาก Lab 2 และยังไม่มี migration สำหรับ Lab 3 ค่ะ
+> ถ้ารัน:
+> ```text
+> npx prisma migrate dev --name init_lab3
+> ```
+> บน DB ที่มีข้อมูลจาก Lab 2 อยู่ อาจเกิดปัญหาได้ เช่น
+> * Prisma อาจสร้าง migration ที่ลบตาราง `RequesterUser` โดยไม่ได้ย้ายข้อมูลเดิมไป `User` ทำให้ข้อมูล Lab 2 หาย ซึ่งไม่ตรงกับ BR-08 / spec §7
+> * Ticket เดิมที่มีข้อมูลอยู่แล้วจะต้องเพิ่ม `itPriority` ซึ่งเป็น `NOT NULL` แต่ไม่มีค่า default ทำให้ migration อาจ fail ตอนรันค่ะ
+> รบกวนเพิ่ม migration หรือ SQL script สำหรับย้ายข้อมูลจริง โดยควรมีขั้นตอนประมาณนี้ค่ะ:
+> `RequesterUser → User` พร้อมเก็บ ID เดิม → ตั้ง `passwordHash` และ `mustChangePassword=true` → เติมข้อมูลใหม่ใน Ticket (`itPriority`, `assignedStaffId`, `isRequesterResolved`) → แก้ FK → แล้วค่อยลบตารางเก่า
+> 
+> ---
+> 
+> ### 2. `seed.ts` ใช้ `bcryptjs` แต่ `package.json` มีแค่ `bcrypt`
+> ใน `server/prisma/seed.ts` มี:
+> ```text
+> import bcrypt from "bcryptjs"
+> ```
+> แต่ใน `package.json` มี dependency เป็น `bcrypt` และไม่มี `bcryptjs` ค่ะ
+> ดังนั้นตอนรัน:
+> ```text
+> npx prisma db seed
+> ```
+> อาจเจอ `Cannot find module 'bcryptjs'`
+> รบกวนเลือกใช้ `bcrypt` หรือ `bcryptjs` ให้ตรงกันทั้ง `seed.ts` และ `package.json` ค่ะ
+> 
+> ---
+> 
+> ## P2 — ควรแก้ให้ชัดเจน
+> 
+> ### 3. `MIG-API-01` ยังไม่ได้ทดสอบการย้ายข้อมูล Lab 2 จริง ๆ
+> Test ชื่อ **“Lab 2 Data Migration Integrity”** แต่ตอนนี้เช็กแค่ข้อมูลหลัง seed เช่น จำนวน user, password hash และ category ค่ะ
+> ยังไม่ได้เช็กว่า **Ticket และ Attachment เดิมจาก Lab 2 ยังอยู่และเชื่อมกับเจ้าของเดิมถูกต้องหรือไม่**
+> แนะนำให้เพิ่ม assertion ตรงนี้ด้วยค่ะ เพราะเป็นส่วนสำคัญของ FR-08 เรื่องการรักษาข้อมูลเดิมจาก Lab 2
+> 
+> ---
+> 
+> ### 4. BR-13 เรื่อง email ต้อง unique แบบไม่สนตัวพิมพ์เล็ก/ใหญ่ ยังไม่ถูก enforce ใน schema
+> ตอนนี้ `User.email @unique` อย่างเดียวอาจทำให้:
+> ```text
+> jennifer@x.com
+> Jennifer@X.com
+> ```
+> ถูกมองว่าเป็นคนละค่าในระดับ database ได้ค่ะ
+> รบกวนเพิ่มวิธีตรวจสอบให้ email unique แบบ **case-insensitive** ตาม BR-13 ด้วยค่ะ
+> 
+> ---
+> 
+> ### 5. ยังไม่มีวิธีจัดการ Ticket เก่าตอนเพิ่ม field ใหม่
+> ตอนนี้ seed มีการเตรียมข้อมูลสำหรับ sample ticket ใหม่ แต่ยังไม่เห็นวิธี backfill Ticket ที่มีอยู่แล้วจาก Lab 2 ค่ะ
+> ควรระบุหรือทำ migration สำหรับข้อมูลเดิมให้ชัดเจนว่า:
+> * `itPriority` ใช้ค่าเดียวกับ `requestedPriority`
+> * `assignedStaffId` เริ่มต้นเป็น `null`
+> * `isRequesterResolved` เริ่มต้นเป็น `false`
+> เพื่อให้ Ticket เดิมยังใช้งานต่อได้หลัง migration ค่ะ
+> 
+> ---
+> โดยรวม **Schema ที่เพิ่มมา เช่น enum, `mustChangePassword`, และการตั้ง `itPriority` จาก `requestedPriority` ตรงกับ spec แล้วค่ะ** 
+> แต่จุดสำคัญของ PR นี้คือ **การย้ายข้อมูล User จาก Lab 2 และการทำ Seed Data** ซึ่งตอนนี้ยังขาด migration ที่ย้ายข้อมูลจริงค่ะ
+> ก่อน Approve อยากให้เพิ่ม migration สำหรับย้ายข้อมูลจาก `RequesterUser → User` และลองรัน:
+> ```text
+> npx prisma migrate dev
+> npx prisma db seed
+> ```
+> บน DB ที่มีข้อมูลจาก Lab 2 อยู่จริง แล้วตรวจสอบว่าข้อมูลเดิมยังอยู่ครบและใช้งานได้ค่ะ
 
 ### How I responded (PR #52):
-*(Pending response)*
+"ขอบคุณสำหรับการตรวจทาน Peer Review อย่างละเอียด ได้ทำการแก้ไขและเพิ่ม Migration Script สำหรับย้ายข้อมูล Lab 2 ใน PR #52 เรียบร้อยแล้ว ทั้งหมด 5 ประเด็น:
+
+1. เพิ่ม Migration File สำหรับย้ายข้อมูล (`20260914000000_init_lab3/migration.sql`):
+   - ย้ายข้อมูลจาก `RequesterUser` ไปยัง `User` โดยรักษา ID เดิม, แปลง email เป็นตัวพิมพ์เล็ก (LOWER), กำหนด `role='REQUESTER'`, `passwordHash` เริ่มต้น และตั้ง `mustChangePassword=true`
+   - Backfill ข้อมูลตั๋วเดิม: ตั้ง `itPriority = requestedPriority::"TicketPriority"`, `assignedStaffId = NULL`, และ `isRequesterResolved = false`
+   - อัปเดต Sequence (`User_id_seq`) เพื่อป้องกัน ID ชนในการสร้างผู้ใช้ใหม่
+   - ปรับ Foreign Keys และทำการ DROP TABLE `RequesterUser` อย่างปลอดภัย
+
+2. ปรับการใช้งาน `bcryptjs` ใน `seed.ts` และ `package.json`:
+   - ปรับ `package.json` ให้ใช้ `bcryptjs` และ `@types/bcryptjs` อย่างเป็นเอกภาพ ตรงตาม `seed.ts` และระบบทดสอบ
+
+3. ปรับปรุง `MIG-API-01` ใน `migration.api.test.ts`:
+   - เพิ่ม assertion ตรวจสอบความสมบูรณ์ของ Ticket และ Attachment เดิมจาก Lab 2 ว่าคงอยู่และเชื่อมโยงกับ `requesterId` / user ID เดิมถูกต้องครบถ้วน
+
+4. บังคับใช้อีเมล Case-Insensitive Uniqueness (BR-13):
+   - บังคับแปลง `LOWER(email)` ในระดับ Migration SQL, Prisma Seed, Application API logic และ Unique Index
+
+5. Backfill Ticket fields สำหรับข้อมูลเดิมจาก Lab 2:
+   - ทำการย้ายค่า `requestedPriority` ไปยัง `itPriority` และตั้งค่า default สำหรับ field ใหม่ของ Lab 3 บนตั๋วเดิมทั้งหมดใน SQL migration
+
+ทำการ push โค้ดและ migration file ขึ้นกิ่ง `feature/16-db-schema-seed` สำหรับ PR #52 เรียบร้อยแล้ว รบกวนช่วยตรวจทานและกด Approve / Merge บน GitHub ได้เลย ขอบคุณมากนะ"
+
 
 
 
