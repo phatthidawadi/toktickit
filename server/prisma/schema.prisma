@@ -1,4 +1,4 @@
-// Prisma schema for TokTickIT Lab 2
+// Prisma schema for TokTickIT Lab 3
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,15 +8,28 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model RequesterUser {
-  id          Int      @id @default(autoincrement())
-  name        String
-  email       String   @unique
-  department  String
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  tickets     Ticket[]
+enum Role {
+  REQUESTER
+  IT_STAFF
+  ADMINISTRATOR
+}
+
+model User {
+  id                 Int        @id @default(autoincrement())
+  name               String
+  email              String     @unique
+  passwordHash       String
+  role               Role       @default(REQUESTER)
+  department         String?
+  isActive           Boolean    @default(true)
+  mustChangePassword Boolean    @default(false)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  submittedTickets   Ticket[]             @relation("TicketRequester")
+  assignedTickets    Ticket[]             @relation("TicketAssignee")
+  publicComments     TicketComment[]
+  internalNotes      TicketInternalNote[]
 }
 
 model Category {
@@ -44,28 +57,37 @@ model RelatedSystem {
 }
 
 model Ticket {
-  id                Int      @id @default(autoincrement())
-  ticketNumber      String   @unique
-  summary           String
-  description       String
-  requestedPriority String
-  currentStatus     String   @default("NEW")
-  requesterId       Int
-  categoryId        Int
-  relatedSystemId   Int
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                  Int      @id @default(autoincrement())
+  ticketNumber        String   @unique
+  summary             String
+  description         String
+  requestedPriority   String
+  itPriority          String   @default("MEDIUM")
+  currentStatus       String   @default("NEW")
+  isRequesterResolved Boolean  @default(false)
+  
+  requesterId         Int
+  assignedStaffId     Int?
+  categoryId          Int
+  relatedSystemId     Int
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
-  requester     RequesterUser @relation(fields: [requesterId], references: [id], onDelete: Restrict)
-  category      Category      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  relatedSystem RelatedSystem @relation(fields: [relatedSystemId], references: [id], onDelete: Restrict)
-  attachments   Attachment[]
+  requester           User                 @relation("TicketRequester", fields: [requesterId], references: [id], onDelete: Restrict)
+  assignedStaff       User?                @relation("TicketAssignee", fields: [assignedStaffId], references: [id], onDelete: SetNull)
+  category            Category             @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  relatedSystem       RelatedSystem        @relation(fields: [relatedSystemId], references: [id], onDelete: Restrict)
+  attachments         Attachment[]
+  comments            TicketComment[]
+  internalNotes       TicketInternalNote[]
 
   @@index([requesterId])
-  @@index([requesterId, createdAt])
-  @@index([categoryId])
-  @@index([requestedPriority])
+  @@index([assignedStaffId])
   @@index([currentStatus])
+  @@index([requestedPriority])
+  @@index([itPriority])
+  @@index([requesterId, createdAt])
 }
 
 model Attachment {
@@ -82,6 +104,32 @@ model Attachment {
   createdAt     DateTime  @default(now())
 
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+}
+
+model TicketComment {
+  id        Int      @id @default(autoincrement())
+  ticketId  Int
+  authorId  Int
+  content   String
+  createdAt DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author User   @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([ticketId])
+}
+
+model TicketInternalNote {
+  id        Int      @id @default(autoincrement())
+  ticketId  Int
+  authorId  Int
+  content   String
+  createdAt DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author User   @relation(fields: [authorId], references: [id], onDelete: Restrict)
 
   @@index([ticketId])
 }

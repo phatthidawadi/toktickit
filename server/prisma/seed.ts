@@ -1,4 +1,5 @@
 import { getPrisma } from "../src/prisma.js";
+import bcrypt from "bcryptjs";
 
 async function main() {
   const prisma = getPrisma();
@@ -60,23 +61,112 @@ async function main() {
   }
   console.log("Related Systems seeded successfully.");
 
-  // 3. Seed Development Requesters (4 Active, 1 Inactive)
-  const requesterData = [
-    { name: "Jennifer Anderson", email: "jennifer.a@example.com", department: "Human Resources", isActive: true },
-    { name: "Michael Brown", email: "michael.b@example.com", department: "Finance", isActive: true },
-    { name: "Sarah Johnson", email: "sarah.j@example.com", department: "Marketing", isActive: true },
-    { name: "David Lee", email: "david.l@example.com", department: "Engineering", isActive: true },
-    { name: "Alex Taylor", email: "alex.t@example.com", department: "Operations", isActive: false },
+  // Hash initial default password "Password123!" for all seed users
+  const defaultPasswordHash = await bcrypt.hash("Password123!", 10);
+
+  // 3. Seed Users per Section 5.3
+  // 4 Active Requesters + 1 Inactive Requester
+  // 3 Active IT Staff + 1 Inactive IT Staff
+  // 1 Active Administrator
+  const seedUsers = [
+    // Requesters (4 active, 1 inactive)
+    {
+      name: "Jennifer Anderson",
+      email: "jennifer.a@example.com",
+      role: "REQUESTER" as const,
+      department: "Human Resources",
+      isActive: true,
+    },
+    {
+      name: "Michael Brown",
+      email: "michael.b@example.com",
+      role: "REQUESTER" as const,
+      department: "Finance",
+      isActive: true,
+    },
+    {
+      name: "Sarah Johnson",
+      email: "sarah.j@example.com",
+      role: "REQUESTER" as const,
+      department: "Marketing",
+      isActive: true,
+    },
+    {
+      name: "David Lee",
+      email: "david.l@example.com",
+      role: "REQUESTER" as const,
+      department: "Engineering",
+      isActive: true,
+    },
+    {
+      name: "Alex Taylor",
+      email: "alex.t@example.com",
+      role: "REQUESTER" as const,
+      department: "Operations",
+      isActive: false,
+    },
+
+    // IT Staff (3 active, 1 inactive)
+    {
+      name: "Somchai Staff",
+      email: "staff.somchai@example.com",
+      role: "IT_STAFF" as const,
+      department: "IT Operations",
+      isActive: true,
+    },
+    {
+      name: "Somsri Staff",
+      email: "staff.somsri@example.com",
+      role: "IT_STAFF" as const,
+      department: "IT Infrastructure",
+      isActive: true,
+    },
+    {
+      name: "Wichai Staff",
+      email: "staff.wichai@example.com",
+      role: "IT_STAFF" as const,
+      department: "IT Helpdesk",
+      isActive: true,
+    },
+    {
+      name: "Inactive Staff",
+      email: "staff.inactive@example.com",
+      role: "IT_STAFF" as const,
+      department: "IT Support",
+      isActive: false,
+    },
+
+    // Administrator (1 active)
+    {
+      name: "System Administrator",
+      email: "admin.toktickit@example.com",
+      role: "ADMINISTRATOR" as const,
+      department: "IT Management",
+      isActive: true,
+    },
   ];
 
-  for (const req of requesterData) {
-    await prisma.requesterUser.upsert({
-      where: { email: req.email },
-      update: { name: req.name, department: req.department, isActive: req.isActive },
-      create: { name: req.name, email: req.email, department: req.department, isActive: req.isActive },
+  for (const user of seedUsers) {
+    await prisma.user.upsert({
+      where: { email: user.email },
+      update: {
+        name: user.name,
+        role: user.role,
+        department: user.department,
+        isActive: user.isActive,
+      },
+      create: {
+        name: user.name,
+        email: user.email,
+        passwordHash: defaultPasswordHash,
+        role: user.role,
+        department: user.department,
+        isActive: user.isActive,
+        mustChangePassword: true,
+      },
     });
   }
-  console.log("Development Requesters seeded successfully.");
+  console.log("Users seeded successfully (5 Requesters, 4 IT Staff, 1 Administrator).");
 }
 
 main()
