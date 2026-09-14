@@ -18,7 +18,7 @@ Sprint 3 (Lab 3) applies Spec-Driven Development (Spec DD) and Test-Driven Devel
 
 ## 2. Planned Tests Table
 
-### 2.1 Server Unit & API Integration Tests (31 Test Cases)
+### 2.1 Server Unit & API Integration Tests (33 Test Cases)
 
 | Test ID | Coverage Layer | Requirement / AC | What It Tests | Expected Result | Automated Test File | Final Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
