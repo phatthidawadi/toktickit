@@ -8,6 +8,7 @@
 | PR | Branch | Reviewer verdict |
 |---|---|---|
 | [PR #51](https://github.com/phatthidawadi/toktickit/pull/51) | `feature/15-doc-spec-tests` | Approved with comments |
+| [PR #52](https://github.com/phatthidawadi/toktickit/pull/52) | `feature/16-db-schema-seed` | Pending |
 
 ---
 
@@ -208,6 +209,15 @@
 "แก้ไขเรียบร้อยแล้ว อัปเดต Heading ใน tests.md §2.1 จาก 31 → 33 Test Cases เรียบร้อยแล้ว ทำให้จำนวนรวมทุกหมวดหมู่อยู่ที่ 51 Test Cases ตรงกันทั้งหมด 100% แล้ว
 
 ทำการ push ขึ้นกิ่ง feature/15-doc-spec-tests สำหรับ PR #51 เรียบร้อยแล้ว รบกวนช่วยตรวจทานและกด Approve / Merge บน GitHub ได้เลย ขอบคุณมากนะ"
+
+---
+
+### Reviewer comment I received (PR #52):
+*(Pending review by @jejaebubu)*
+
+### How I responded (PR #52):
+*(Pending response)*
+
 
 
 
