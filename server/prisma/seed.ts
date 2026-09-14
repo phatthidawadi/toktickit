@@ -1,7 +1,9 @@
 import { getPrisma } from "../src/prisma.js";
+import bcrypt from "bcryptjs";
 
 async function main() {
   const prisma = getPrisma();
+  const defaultPasswordHash = await bcrypt.hash("Password123!", 10);
 
   // 1. Seed Categories
   const categoryData = [
@@ -34,6 +36,8 @@ async function main() {
     { name: "VPN Service", categoryName: "Network", description: "Secure remote network access" },
   ];
 
+  const systemMap = new Map<string, number>();
+
   for (const sys of relatedSystemData) {
     const categoryId = categoryMap.get(sys.categoryName);
     if (!categoryId) continue;
@@ -43,12 +47,13 @@ async function main() {
     });
 
     if (existing) {
-      await prisma.relatedSystem.update({
+      const record = await prisma.relatedSystem.update({
         where: { id: existing.id },
         data: { description: sys.description, isActive: true },
       });
+      systemMap.set(sys.name, record.id);
     } else {
-      await prisma.relatedSystem.create({
+      const record = await prisma.relatedSystem.create({
         data: {
           name: sys.name,
           description: sys.description,
@@ -56,27 +61,94 @@ async function main() {
           isActive: true,
         },
       });
+      systemMap.set(sys.name, record.id);
     }
   }
   console.log("Related Systems seeded successfully.");
 
-  // 3. Seed Development Requesters (4 Active, 1 Inactive)
-  const requesterData = [
-    { name: "Jennifer Anderson", email: "jennifer.a@example.com", department: "Human Resources", isActive: true },
-    { name: "Michael Brown", email: "michael.b@example.com", department: "Finance", isActive: true },
-    { name: "Sarah Johnson", email: "sarah.j@example.com", department: "Marketing", isActive: true },
-    { name: "David Lee", email: "david.l@example.com", department: "Engineering", isActive: true },
-    { name: "Alex Taylor", email: "alex.t@example.com", department: "Operations", isActive: false },
+  // 3. Seed Users (Requesters, IT Staff, Administrators)
+  const userData = [
+    // Requesters (4 Active, 1 Inactive)
+    { name: "Jennifer Anderson", email: "jennifer.a@example.com", role: "REQUESTER" as const, isActive: true },
+    { name: "Michael Brown", email: "michael.b@example.com", role: "REQUESTER" as const, isActive: true },
+    { name: "Sarah Johnson", email: "sarah.j@example.com", role: "REQUESTER" as const, isActive: true },
+    { name: "David Lee", email: "david.l@example.com", role: "REQUESTER" as const, isActive: true },
+    { name: "Alex Taylor", email: "alex.t@example.com", role: "REQUESTER" as const, isActive: false },
+    // IT Staff (3 Active, 1 Inactive)
+    { name: "Staff Somchai", email: "staff.somchai@example.com", role: "IT_STAFF" as const, isActive: true },
+    { name: "Staff Somsri", email: "staff.somsri@example.com", role: "IT_STAFF" as const, isActive: true },
+    { name: "Staff Wichai", email: "staff.wichai@example.com", role: "IT_STAFF" as const, isActive: true },
+    { name: "Staff Inactive", email: "staff.inactive@example.com", role: "IT_STAFF" as const, isActive: false },
+    // Administrator (1 Active)
+    { name: "Admin TokTickIT", email: "admin.toktickit@example.com", role: "ADMINISTRATOR" as const, isActive: true },
   ];
 
-  for (const req of requesterData) {
-    await prisma.requesterUser.upsert({
-      where: { email: req.email },
-      update: { name: req.name, department: req.department, isActive: req.isActive },
-      create: { name: req.name, email: req.email, department: req.department, isActive: req.isActive },
+  const userMap = new Map<string, number>();
+
+  for (const user of userData) {
+    const record = await prisma.user.upsert({
+      where: { email: user.email },
+      update: {
+        name: user.name,
+        role: user.role,
+        isActive: user.isActive,
+      },
+      create: {
+        name: user.name,
+        email: user.email,
+        passwordHash: defaultPasswordHash,
+        role: user.role,
+        isActive: user.isActive,
+        mustChangePassword: true,
+      },
     });
+    userMap.set(user.email, record.id);
   }
-  console.log("Development Requesters seeded successfully.");
+  console.log("Users seeded successfully.");
+
+  // 4. Seed Initial Sample Tickets
+  const reqId = userMap.get("jennifer.a@example.com")!;
+  const staffId = userMap.get("staff.somchai@example.com")!;
+  const catId = categoryMap.get("Account and Access")!;
+  const sysId = systemMap.get("Email")!;
+
+  const existingTicket = await prisma.ticket.findUnique({
+    where: { ticketNumber: "TKT-2026-000001" },
+  });
+
+  if (!existingTicket) {
+    const ticket = await prisma.ticket.create({
+      data: {
+        ticketNumber: "TKT-2026-000001",
+        summary: "Cannot access corporate email account",
+        description: "Encountering invalid credentials error when signing into Outlook web portal.",
+        requestedPriority: "HIGH",
+        itPriority: "HIGH",
+        currentStatus: "IN_PROGRESS",
+        requesterId: reqId,
+        assignedStaffId: staffId,
+        categoryId: catId,
+        relatedSystemId: sysId,
+      },
+    });
+
+    await prisma.ticketComment.create({
+      data: {
+        ticketId: ticket.id,
+        authorId: reqId,
+        content: "Please look into this urgently as I need access for morning meetings.",
+      },
+    });
+
+    await prisma.ticketInternalNote.create({
+      data: {
+        ticketId: ticket.id,
+        authorId: staffId,
+        content: "Verified account status in Active Directory. Resetting password token.",
+      },
+    });
+    console.log("Sample ticket and notes seeded.");
+  }
 }
 
 main()

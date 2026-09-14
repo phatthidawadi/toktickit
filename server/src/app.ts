@@ -49,13 +49,12 @@ app.get("/api/categories", async (_req: Request, res: Response) => {
 // ---------------------------------------------------------------------------
 app.get("/api/requesters", async (_req: Request, res: Response) => {
   try {
-    const requesters = await getPrisma().requesterUser.findMany({
-      where: { isActive: true },
+    const requesters = await getPrisma().user.findMany({
+      where: { role: "REQUESTER", isActive: true },
       select: {
         id: true,
         name: true,
         email: true,
-        department: true,
         isActive: true,
       },
       orderBy: { id: "asc" },
@@ -113,8 +112,8 @@ app.post("/api/tickets", async (req: Request, res: Response) => {
     }
 
     // Verify requester exists and is active
-    const requester = await getPrisma().requesterUser.findFirst({
-      where: { id: requesterId, isActive: true },
+    const requester = await getPrisma().user.findFirst({
+      where: { id: requesterId, role: "REQUESTER", isActive: true },
     });
     if (!requester) {
       return res.status(400).json({ error: "Inactive or invalid requester" });
@@ -183,7 +182,8 @@ app.post("/api/tickets", async (req: Request, res: Response) => {
         ticketNumber,
         summary: summary.trim(),
         description: description.trim(),
-        requestedPriority,
+        requestedPriority: requestedPriority as any,
+        itPriority: requestedPriority as any,
         currentStatus: "NEW",
         requesterId,
         categoryId,
