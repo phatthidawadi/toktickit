@@ -97,17 +97,19 @@ Security controls must be strictly enforced on the server; hidden or disabled UI
 
 ### Ticket Lifecycle & Workflow Rules
 - **BR-08**: **Ticket Ownership Assignment**: A ticket's primary owner (`assignedStaffId`) must be an active user with role `IT_STAFF` or `ADMINISTRATOR`. Unassigned tickets have `assignedStaffId = null`.
-- **BR-09**: **IT Priority Management**: `requestedPriority` is set by the Requester upon creation and is read-only thereafter. `itPriority` is initially copied from `requestedPriority` upon creation and can subsequently be updated only by IT Staff or Administrators.
+- **BR-09**: **IT Priority Management**: `requestedPriority` is set by the Requester upon creation (using `TicketPriority` enum: `LOW`, `MEDIUM`, `HIGH`, `URGENT`) and is read-only thereafter. `itPriority` is initialized to match `requestedPriority` upon ticket creation in application logic and can subsequently be updated only by IT Staff or Administrators.
 - **BR-10**: **Ticket Status Transition Matrix & Role Permissions**:
   - Requesters are strictly prohibited from changing ticket status fields (`currentStatus`). Requesters may only signal resolution via `isRequesterResolved = true` (BR-11).
+  - **Automatic Transition on Requester Comment**: When a Requester posts a Public Comment on a ticket currently in `WAITING_FOR_REQUESTER` status, the server automatically updates `currentStatus` to `IN_PROGRESS`.
+  - **Automatic Claim Behavior**: When IT Staff or Administrator transitions a ticket from `NEW` to `OPEN` or `IN_PROGRESS` while `assignedStaffId` is `null`, the server automatically assigns `assignedStaffId` to the current staff member's user ID (auto-claim).
   - IT Staff and Administrators may execute status transitions strictly following the permitted transition matrix table below:
 
 | From Status | Permitted To Status | Permitted Roles | Required Conditions & Validation |
 | :--- | :--- | :--- | :--- |
-| `NEW` | `OPEN`, `IN_PROGRESS`, `CANCELLED` | `IT_STAFF`, `ADMINISTRATOR` | Transitioning to `OPEN` or `IN_PROGRESS` optional auto-claim. |
+| `NEW` | `OPEN`, `IN_PROGRESS`, `CANCELLED` | `IT_STAFF`, `ADMINISTRATOR` | Auto-claims ticket to staff member if currently unassigned. |
 | `OPEN` | `IN_PROGRESS`, `WAITING_FOR_REQUESTER`, `RESOLVED`, `CANCELLED` | `IT_STAFF`, `ADMINISTRATOR` | `RESOLVED` requires IT Staff or Admin action. |
 | `IN_PROGRESS` | `WAITING_FOR_REQUESTER`, `RESOLVED`, `CANCELLED` | `IT_STAFF`, `ADMINISTRATOR` | `RESOLVED` requires resolution summary notes. |
-| `WAITING_FOR_REQUESTER` | `IN_PROGRESS`, `RESOLVED`, `CANCELLED` | `IT_STAFF`, `ADMINISTRATOR` | Returns to `IN_PROGRESS` when Requester comments. |
+| `WAITING_FOR_REQUESTER` | `IN_PROGRESS`, `RESOLVED`, `CANCELLED` | `IT_STAFF`, `ADMINISTRATOR` | Auto-transitions to `IN_PROGRESS` when Requester posts a comment. |
 | `RESOLVED` | `CLOSED`, `REOPENED` | `IT_STAFF`, `ADMINISTRATOR` | `CLOSED` finalizes resolution; `REOPENED` resets workflow. |
 | `REOPENED` | `IN_PROGRESS`, `RESOLVED`, `CANCELLED` | `IT_STAFF`, `ADMINISTRATOR` | Re-activates investigation queue. |
 | `CLOSED` | `REOPENED` (Admin only) | `ADMINISTRATOR` ONLY | Final state. IT Staff cannot reopen `CLOSED` tickets. |
@@ -146,6 +148,24 @@ enum Role {
   ADMINISTRATOR
 }
 
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TicketStatus {
+  NEW
+  OPEN
+  IN_PROGRESS
+  WAITING_FOR_REQUESTER
+  RESOLVED
+  CLOSED
+  REOPENED
+  CANCELLED
+}
+
 model User {
   id                 Int        @id @default(autoincrement())
   name               String
@@ -153,7 +173,7 @@ model User {
   passwordHash       String
   role               Role       @default(REQUESTER)
   isActive           Boolean    @default(true)
-  mustChangePassword Boolean    @default(false)
+  mustChangePassword Boolean    @default(true)
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
 
@@ -165,27 +185,27 @@ model User {
 
 // Updated Ticket Model
 model Ticket {
-  id                  Int      @id @default(autoincrement())
-  ticketNumber        String   @unique
+  id                  Int            @id @default(autoincrement())
+  ticketNumber        String         @unique
   summary             String
   description         String
-  requestedPriority   String
-  itPriority          String   @default("MEDIUM")
-  currentStatus       String   @default("NEW")
-  isRequesterResolved Boolean  @default(false)
+  requestedPriority   TicketPriority
+  itPriority          TicketPriority
+  currentStatus       TicketStatus   @default(NEW)
+  isRequesterResolved Boolean        @default(false)
   
   requesterId         Int
   assignedStaffId     Int?
   categoryId          Int
   relatedSystemId     Int
   
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
 
-  requester           User     @relation("TicketRequester", fields: [requesterId], references: [id], onDelete: Restrict)
-  assignedStaff       User?    @relation("TicketAssignee", fields: [assignedStaffId], references: [id], onDelete: SetNull)
-  category            Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  relatedSystem       RelatedSystem @relation(fields: [relatedSystemId], references: [id], onDelete: Restrict)
+  requester           User           @relation("TicketRequester", fields: [requesterId], references: [id], onDelete: Restrict)
+  assignedStaff       User?          @relation("TicketAssignee", fields: [assignedStaffId], references: [id], onDelete: SetNull)
+  category            Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  relatedSystem       RelatedSystem  @relation(fields: [relatedSystemId], references: [id], onDelete: Restrict)
   attachments         Attachment[]
   comments            TicketComment[]
   internalNotes       TicketInternalNote[]
@@ -225,9 +245,10 @@ model TicketInternalNote {
 ```
 
 ### Data Migration Plan
-1. **Migration Script**: Create a Prisma migration (`npx prisma migrate dev --name init_lab3`) that renames/migrates `RequesterUser` records to `User` with `role = REQUESTER`, sets initial `passwordHash` (hashed `Password123!`), and sets `mustChangePassword = true`.
-2. **ForeignKey Preservation**: Ensure all existing Lab 2 `Ticket.requesterId` foreign keys map directly to the newly populated `User.id` primary keys.
-3. **Default Field Values**: Set `itPriority = requestedPriority` for all existing tickets and set `assignedStaffId = null`.
+1. **Prisma DDL Migration**: Execute `npx prisma migrate dev --name init_lab3`. The migration SQL script migrates the scaffold `RequesterUser` table data into the unified `User` table, setting `role = 'REQUESTER'`, `isActive = true`, `mustChangePassword = true`, and backfilling `passwordHash` with a bcrypt hash of `Password123!`.
+2. **Field and Key Preservation**: Primary key `id`, `name`, `email`, `createdAt`, and `updatedAt` are copied directly from `RequesterUser`. Existing `Ticket.requesterId` foreign keys remain valid without orphaned tickets.
+3. **Priority & Assignment Backfill**: For existing tickets, `itPriority` is backfilled from `requestedPriority` (`itPriority = requestedPriority`), and `assignedStaffId` is initialized to `null`.
+4. **Email Integrity Check**: Case-insensitive unique check on `User.email` is verified during migration to prevent duplicate email entries.
 
 ### Required Seed Data (`seed.ts`)
 - **Requesters**: 4 Active (`jennifer.a@example.com`, `michael.b@example.com`, `sarah.j@example.com`, `david.l@example.com`), 1 Inactive (`alex.t@example.com`). Initial password: `Password123!`.
@@ -290,7 +311,7 @@ Full endpoint signatures, schemas, and HTTP status codes are documented in `docs
 
 ### Product Completion
 - All Functional Requirements (FR-01 to FR-21) and Business Rules (BR-01 to BR-16) fully implemented.
-- All Acceptance Criteria (AC-01 to AC-20) verified via automated test suites (100% pass rate).
+- All Acceptance Criteria (AC-01 to AC-21) verified via automated test suites (100% pass rate).
 - Database migration script executed cleanly without data loss of Lab 2 tickets/attachments.
 - Zero horizontal scrolling or visual clipping on Desktop (≥ 992px), Tablet (768px - 991px), and Mobile (< 768px).
 

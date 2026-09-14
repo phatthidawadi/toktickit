@@ -6,9 +6,10 @@
 - Authentication uses a signed JWT token stored in an **HTTP-only, SameSite=Strict** cookie named `toktickit_session`.
 - The client does NOT pass manual auth headers (`Authorization` or `x-requester-id`). The server automatically extracts and validates the session cookie on protected requests.
 - **JWT Expiration Duration**: Tokens expire in **8 hours** (28,800 seconds) from issuance (`expiresIn: "8h"`). The cookie header sets `Max-Age=28800`.
-- **Logout Behavior**:
-  - **Client-side**: On `POST /api/auth/logout`, the server sends a response header clearing the cookie (`Set-Cookie: toktickit_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Strict; Max-Age=0`).
-  - **Server-side**: Returns HTTP 200 OK with `{ "message": "Successfully logged out" }`. Stateless token validation rejects subsequent requests without cookie as HTTP 401 Unauthorized.
+- **Stateless Logout & Session Invalidation Mechanism**:
+  - **Client-side Invalidation**: On `POST /api/auth/logout`, the server responds with a cookie-clearing header (`Set-Cookie: toktickit_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Strict; Max-Age=0`).
+  - **Server-side Session Handling**: The server operates on stateless JWT verification. Because the cookie is cleared with `Max-Age=0`, client browsers immediately drop the credential token. Subsequent HTTP requests arrive without the session cookie, resulting in server-side authentication failure (`401 Unauthorized`). Short 8-hour token lifetime guarantees bound token validity windows.
+  - **Response**: Server returns HTTP 200 OK with `{ "message": "Successfully logged out" }`.
 
 ### Password Security & Hashing
 - Passwords are hashed using `bcrypt` (salt rounds = 10). Plaintext passwords are never logged, returned in API responses, or stored in the database.
@@ -105,7 +106,7 @@ All error responses adhere to a consistent JSON format:
   - `requestedPriority` (string): Filter by `LOW`, `MEDIUM`, `HIGH`, `URGENT`.
   - `itPriority` (string): Filter by `LOW`, `MEDIUM`, `HIGH`, `URGENT`.
   - `assignedStaffId` (string/number): `unassigned` (null), `me` (current staff ID), or specific User ID.
-  - `sort` (string): `createdAt_desc` (default), `createdAt_asc`, `priority_desc`.
+  - `sort` (string): `createdAt_desc` (default), `createdAt_asc`, `priority_desc` (sorts by operational `itPriority` descending: `URGENT` > `HIGH` > `MEDIUM` > `LOW`, falling back to `requestedPriority` if `itPriority` is identical or unassigned).
   - `page` (number, default 1), `limit` (number, default 10, max 50).
 - **Responses**:
   - `200 OK`: Returns paginated tickets with total metrics.
@@ -179,7 +180,7 @@ All error responses adhere to a consistent JSON format:
 }
 ```
 - **Responses**:
-  - `201 Created`: Returns created `TicketComment`.
+  - `201 Created`: Returns created `TicketComment`. If the ticket was in `WAITING_FOR_REQUESTER` status and the author is the ticket Requester, the server automatically updates ticket `currentStatus` to `IN_PROGRESS` (BR-10).
   - `400 Bad Request`: Content is empty or exceeds 1000 characters.
 
 #### `GET /api/tickets/:id/notes`
@@ -258,6 +259,7 @@ All error responses adhere to a consistent JSON format:
 ```
 - **Responses**:
   - `200 OK`: Returns updated user object.
+  - `409 Conflict`: Updated email address already exists on another active or inactive user account (case-insensitive check, BR-13).
   - `400 Bad Request`: Admin attempting to deactivate own account or deactivating the last active Admin.
 
 #### `POST /api/admin/users/:id/reset-password`
@@ -271,3 +273,18 @@ All error responses adhere to a consistent JSON format:
 ```
 - **Responses**:
   - `200 OK`: Resets password hash, sets `mustChangePassword = true`.
+
+---
+
+## 3. Lab 2 Requester API Compatibility & Session Authentication Upgrade
+
+All Requester endpoints implemented in Lab 2 remain fully supported and active in Lab 3. Identity and authentication are upgraded from the temporary Lab 2 development header (`x-requester-id`) to the server-validated JWT session cookie (`toktickit_session`).
+
+### Supported Requester Endpoints
+1. `POST /api/tickets`: Create support ticket (Identity extracted from active session).
+2. `GET /api/tickets`: List owned tickets for current authenticated Requester.
+3. `GET /api/tickets/:id`: Fetch ticket detail for owned ticket (Returns 403 if requested by non-owner Requester).
+4. `POST /api/tickets/:id/attachments`: Upload attachment for owned ticket.
+5. `GET /api/attachments/:id/download`: Download permitted attachment.
+6. `DELETE /api/attachments/:id`: Soft-remove attachment with mandatory `reason` payload.
+

@@ -9,7 +9,7 @@
 | 1 | Produce Stage 1 specifications docs/lab-03/ (specification.md, ui-spec.md, api-spec.md) translating Lab 3 PDF handout into concise engineering specs. Strictly prohibit emojis. | Reviewed and validated that all FRs, BRs, ACs, schema evolution, migration, and Zen Green tokens match handout scope. |
 | 2 | Confirm JWT expiration duration and logout server/client behavior in api-spec.md before proceeding to Stage 2. | Verified 8h expiration and cookie clearing header implementation details. |
 | 3 | Enhance BR-10 status matrix into explicit table specifying permitted roles per transition, and ensure BRs cover Admin self-deactivation block and last Admin protection. | Verified BR-10 matrix table and BR-14/BR-15 rule definitions. |
-| 4 | Produce Stage 2 docs/lab-03/tests.md covering 8 explicit test coverage layers with AC traceability matrix. | Reviewed test IDs, 41 planned test cases, and execution commands. |
+| 4 | Produce Stage 2 docs/lab-03/tests.md covering 8 explicit test coverage layers with AC traceability matrix. | Reviewed test IDs, 51 planned test cases across 8 testing layers, and execution commands. |
 | 5 | Propose breakdown of GitHub Issues starting at Issue 15 with title, scope mapping, ACs, and dependencies. | Reviewed and refined Issue 16 seed requirements to match Section 5.3 split. |
 | 6 | Create 11 GitHub Issues on repository phatthidawadi/toktickit via gh CLI. | Verified created issues #38 to #48 on GitHub. |
 
