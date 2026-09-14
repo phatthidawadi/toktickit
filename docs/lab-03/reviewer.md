@@ -173,23 +173,30 @@
 > เพราะ 3 จุดนี้กระทบทั้ง **Database design, Authentication และ Test Traceability** โดยตรงค่ะ
 
 ### How I responded (PR #51):
-"ขอบคุณมากสำหรับการตรวจทานอย่างละเอียดและคำแนะนำที่มีประโยชน์มากครับ ผมได้ดำเนินการแก้ไขและปรับปรุงตามที่แจ้งครบทั้ง 15 ข้อในเอกสารทุกฉบับเรียบร้อยแล้ว:
+"ขอบคุณสำหรับการตรวจทาน Peer Review อย่างละเอียด ได้ทำการแก้ไขและอัปเดตเอกสารสเปกใน PR #51 ครบถ้วนทั้ง 15 ประเด็นเรียบร้อยแล้ว:
 
-1. **specification.md (§7 Ticket Model & Enums)**: ได้เพิ่ม Prisma `enum TicketPriority` (`LOW`, `MEDIUM`, `HIGH`, `URGENT`) และ `enum TicketStatus` โดยปรับประเภทของ `requestedPriority` และ `itPriority` ให้ใช้ Enum และลบ `@default("MEDIUM")` ออกจาก `itPriority` แล้วกำหนดใน BR-09 ให้ `itPriority` ถูกคัดลอกจาก `requestedPriority` ใน application code เมื่อสร้างตั๋ว
-2. **tests.md (AC Traceability Matrix)**: ได้เพิ่มรายการ test ID `UI-LOGIN-02`, `UI-NOTE-01`, และ `UI-ADMIN-02` ลงใน §2.2 และอัปเดตตาราง AC Traceability ให้ตรงกับ test ID ที่มีจริงครบถ้วน
-3. **tests.md / PR description (จำนวน Test Cases)**: ได้ปรับปรุงและเพิ่ม Test Cases ให้ครอบคลุมครบ **51 Test Cases** (Unit: 3, API: 28, UI Component: 10, Style: 3, Responsive: 2, E2E: 3) พร้อมอัปเดตตัวเลขใน `tests.md`, `ai-use.md` และ PR description ให้ตรงกันทุกจุด
-4. **api-spec.md (Stateless JWT Logout Mechanism)**: ได้เพิ่มคำอธิบายใน Section 1 ว่าเมื่อขอล็อกเอาต์ผ่าน `POST /api/auth/logout` เซิร์ฟเวอร์จะส่ง Response Header `Set-Cookie: toktickit_session=; Max-Age=0` เพื่อลบ Cookie ฝั่ง Client ทันที และเนื่องจาก JWT มีอายุ 8 ชั่วโมง (Stateless) การลบ Cookie จะทำให้คำขอถัดไปไม่มี Cookie ถูกส่งมา เซิร์ฟเวอร์จึงปฏิเสธเป็น 401 Unauthorized
-5. **specification.md (Definition of Done)**: ได้ปรับปรุงขอบเขต Acceptance Criteria ใน DoD จาก `AC-01 to AC-20` เป็น `AC-01 to AC-21`
-6. **api-spec.md (Requester APIs Compatibility)**: ได้เพิ่ม Section 3 "Lab 2 Requester API Compatibility & Session Authentication Upgrade" ระบุการรองรับ API เดิมจาก Lab 2 (Create Ticket, My Tickets, Ticket Detail, Attachments) โดยอัปเกรดการระบุตัวตนมาใช้ `toktickit_session` cookie
-7. **specification.md (BR-10 Requester Comment Status Transition)**: ได้ระบุใน BR-10 และ `api-spec.md` ว่าเมื่อ Requester ส่ง Public Comment ในตั๋วสถานะ `WAITING_FOR_REQUESTER` ระบบจะปรับสถานะตั๋วเป็น `IN_PROGRESS` ให้อัตโนมัติ (พร้อมเพิ่ม test case `API-COMM-03`)
-8. **api-spec.md (`priority_desc` Sorting)**: ได้ระบุใน query parameter `sort` ว่า `priority_desc` จะเรียงตาม `itPriority` จากสูงไปต่ำ (`URGENT` > `HIGH` > `MEDIUM` > `LOW`) และใช้ `requestedPriority` เป็น fallback
-9. **api-spec.md (Edit User 409 Conflict)**: ได้เพิ่ม `409 Conflict` ใน `PATCH /api/admin/users/:id` สำหรับกรณีแก้ไขอีเมลแล้วซ้ำกับผู้ใช้อื่น
-10. **ui-spec.md (Requester Screen Specs)**: ได้เพิ่ม Section 3.6 สำหรับ Requester My Tickets List และ Ticket Detail Screen Specification
-11. **specification.md (Data Migration Strategy)**: ได้ขยายรายละเอียดขั้นตอน Data Migration คัดลอกข้อมูลจาก `RequesterUser` ไปยัง `User` (id, name, email, dates), กำหนด `role = REQUESTER`, `isActive = true`, `mustChangePassword = true`, และ backfill `passwordHash` ด้วย bcrypt hash ของ `Password123!` โดยรักษา Foreign Key `Ticket.requesterId` ให้สมบูรณ์
-12. **tests.md (MIG-API-01 Reference)**: ได้แก้ไข requirement reference ของ `MIG-API-01` เป็น `FR-08, BR-01, BR-02`
-13. **tests.md (เพิ่ม Test Cases)**: ได้เพิ่ม `SEC-AUTH-03` (Invalid Login Attempts & Brute Force), `API-ADM-05` (Edit User Duplicate Email), และ `API-REQ-REG-01` (Requester Ticket Creation Regression)
-14. **specification.md (`mustChangePassword` Default)**: ได้ปรับ Prisma Schema ให้ `mustChangePassword` เป็น `@default(true)` ตรงตาม Assumption #4
-15. **specification.md (BR-10 Auto-claim)**: ได้ระบุใน BR-10 ว่าเมื่อ IT Staff เปลี่ยนสถานะตั๋วจาก `NEW` เป็น `OPEN` หรือ `IN_PROGRESS` โดยที่ตั๋วยังไม่มีผู้รับผิดชอบ (`assignedStaffId = null`) ระบบจะทำการกำหนด `assignedStaffId` เป็น ID ของ IT Staff ท่านนั้นให้อัตโนมัติ (Auto-claim)
+1. specification.md:
+   - กำหนด Prisma TicketPriority และ TicketStatus Enum, ลบ default("MEDIUM") บน itPriority และตั้งค่า itPriority ให้ตรงกับ requestedPriority ตอนสร้างตั๋ว
+   - ปรับ mustChangePassword default เป็น true ให้ตรงกับข้อกำหนด
+   - อธิบายกลไก Auto-claim และการปรับสถานะตั๋วเป็น IN_PROGRESS อัตโนมัติเมื่อ Requester ส่ง comment ใน BR-10
+   - ขยายรายละเอียด Data Migration Plan และปรับ DoD เป็น AC-01 to AC-21
 
-อัปเดตไฟล์ทั้งหมดและดันขึ้นกิ่ง `feature/15-doc-spec-tests` สำหรับ PR #51 แล้วครับ พร้อมให้พาร์ทเนอร์ตรวจทานและ Approve / Merge ครับ"
+2. api-spec.md:
+   - อธิบายกลไก Stateless JWT Logout และการส่ง Header Clear Cookie (Set-Cookie: toktickit_session=; Max-Age=0)
+   - กำหนดว่า priority_desc เรียงตาม itPriority จากสูงไปต่ำ
+   - เพิ่ม 409 Conflict สำหรับกรณีแก้ไขอีเมลแล้วซ้ำใน PATCH /api/admin/users/:id
+   - เพิ่ม Section 3 รองรับ Requester APIs Compatibility จาก Lab 2
+
+3. ui-spec.md:
+   - เพิ่ม Section 3.6 รายละเอียด Requester My Tickets & Ticket Detail Screen Specification
+
+4. tests.md:
+   - เพิ่ม test IDs ที่ขาดหายไป (UI-LOGIN-02, UI-NOTE-01, UI-ADMIN-02, SEC-AUTH-03, API-ADM-05, API-REQ-REG-01)
+   - ปรับจำนวน Test Cases รวมเป็น 51 เคสตรงกันทุกจุด และแก้ MIG-API-01 requirement reference
+
+5. reviewer.md & ai-use.md:
+   - อัปเดต Peer Review Record สรุปคอมเมนต์และคำตอบ รวมถึง AI Usage Log เรียบร้อย
+
+อัปเดตไฟล์ขึ้นกิ่ง feature/15-doc-spec-tests ใน PR #51 เรียบร้อยแล้ว รบกวนช่วยตรวจทานและกด Approve / Merge เข้า lab3-staging ได้เลย ขอบคุณนะ"
+
 
