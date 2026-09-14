@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { getPrisma } from "../../src/prisma.js";
+import bcrypt from "bcryptjs";
 
 describe("MIG-API-01: Lab 2 Data Migration Integrity and Seed State", () => {
   const prisma = getPrisma();
@@ -43,6 +44,9 @@ describe("MIG-API-01: Lab 2 Data Migration Integrity and Seed State", () => {
     expect(jennifer?.mustChangePassword).toBe(true);
     expect(jennifer?.passwordHash).toBeDefined();
     expect(jennifer?.passwordHash.length).toBeGreaterThan(20);
+
+    const isPasswordValid = await bcrypt.compare("Password123!", jennifer!.passwordHash);
+    expect(isPasswordValid).toBe(true);
   });
 
   it("should preserve category and related system relations", async () => {
@@ -84,5 +88,18 @@ describe("MIG-API-01: Lab 2 Data Migration Integrity and Seed State", () => {
 
     expect(user).not.toBeNull();
     expect(user?.email).toBe("jennifer.a@example.com");
+
+    const duplicateEmail = "Jennifer.A@Example.com".trim().toLowerCase();
+    await expect(
+      prisma.user.create({
+        data: {
+          name: "Duplicate User",
+          email: duplicateEmail,
+          passwordHash: user!.passwordHash,
+          role: "REQUESTER",
+        },
+      })
+    ).rejects.toThrow();
   });
 });
+

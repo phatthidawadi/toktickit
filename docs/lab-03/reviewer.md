@@ -305,6 +305,39 @@
 
 ทำการ push โค้ดและ migration file ขึ้นกิ่ง `feature/16-db-schema-seed` สำหรับ PR #52 เรียบร้อยแล้ว รบกวนช่วยตรวจทานและกด Approve / Merge บน GitHub ได้เลย ขอบคุณมากนะ"
 
+---
+
+### Reviewer follow-up comment I received (PR #52):
+> ขอบคุณที่เพิ่ม commit `5a8323b` มาให้เช็กนะคะ ตรวจแล้วว่า migration file และ `bcryptjs` ถูกแก้แล้วค่ะ แต่ยังเหลือ 3 จุดที่ต้องแก้:
+> 
+> 1. **`migration.sql` ยังใช้ hash แบบคงที่อยู่**
+>    ตอนนี้ยังใช้ `$2a$10$w09Z...5x5X5x5X5` ซึ่งลองเช็กด้วย `bcrypt.compare` กับ `Password123!` แล้วได้ `false` ค่ะ ทำให้ user ที่ migrate มาอาจ login ไม่ได้
+> 
+> 2. **Index ของ `currentStatus` ยังไม่ตรงกัน**
+>    ใน `schema.prisma` มี `@@index([currentStatus])` แล้ว แต่ใน migration ยังไม่มีการสร้าง `Ticket_currentStatus_idx` ค่ะ
+> 
+> 3. **Email ยังไม่ได้ทำให้ unique แบบไม่สนตัวพิมพ์เล็ก/ใหญ่**
+>    `User_email_key` ตอนนี้ยังเป็น index แบบ case-sensitive อยู่ และใน seed/app ยังไม่มีการ normalize email เพื่อป้องกัน email ซ้ำ เช่น `test@example.com` กับ `Test@Example.com` ตาม BR-13 ค่ะ
+> 
+> รบกวนแก้ 3 จุดนี้ก่อนนะคะ แล้วค่อยขอ re-review ได้เลยค่ะ
+
+### How I responded (PR #52):
+"แก้ไขเพิ่มเติมเรียบร้อยแล้วค่ะ ทั้ง 3 ประเด็นตามที่แจ้ง:
+
+1. **ปรับปรุง Password Hash ใน `migration.sql`**:
+   - เปลี่ยนจาก dummy hash เป็น bcrypt hash ที่ถูกต้องสมบูรณ์สำหรับ `Password123!` (`$2b$10$dXNUiQjMMU9pGN.dEoOeb..1jlJa9QNIkOf1IBg06zWrjdtzQmvpu`) พร้อมเพิ่ม assertion ทดสอบด้วย `bcrypt.compare` ใน `migration.api.test.ts` ว่าสามารถย้ายข้อมูลแล้วเข้าสู่ระบบด้วย `Password123!` ได้สำเร็จ 100%
+
+2. **เพิ่ม Index ของ `currentStatus` และ Index ทั้งหมดใน `migration.sql`**:
+   - เพิ่ม `CREATE INDEX IF NOT EXISTS "Ticket_currentStatus_idx" ON "Ticket"("currentStatus");` รวมถึง `Ticket_requesterId_idx` และ `Ticket_requestedPriority_idx` ให้ตรงกับ `schema.prisma` ครบถ้วนทุกตัว
+
+3. **บังคับใช้ Case-Insensitive Email Uniqueness (BR-13)**:
+   - ปรับ Unique Index ใน `migration.sql` เป็น `CREATE UNIQUE INDEX "User_email_key" ON "User"(LOWER("email"));`
+   - เพิ่มการทำ `.trim().toLowerCase()` ใน `seed.ts` และการตรวจสอบอีเมลแบบ case-insensitive
+   - เพิ่ม test case ใน `migration.api.test.ts` เพื่อยืนยันว่าการลงทะเบียน/สร้าง user อีเมลซ้ำแบบต่างขนาดตัวพิมพ์จะถูกปฏิเสธทันที
+
+ทำการ push อัปเดตขึ้นกิ่ง `feature/16-db-schema-seed` สำหรับ PR #52 เรียบร้อยแล้ว รบกวนช่วยตรวจทานและกด Approve / Merge บน GitHub ได้เลย ขอบคุณมากค่ะ"
+
+
 
 
 

@@ -86,8 +86,9 @@ async function main() {
   const userMap = new Map<string, number>();
 
   for (const user of userData) {
+    const normalizedEmail = user.email.trim().toLowerCase();
     const record = await prisma.user.upsert({
-      where: { email: user.email },
+      where: { email: normalizedEmail },
       update: {
         name: user.name,
         role: user.role,
@@ -95,14 +96,14 @@ async function main() {
       },
       create: {
         name: user.name,
-        email: user.email,
+        email: normalizedEmail,
         passwordHash: defaultPasswordHash,
         role: user.role,
         isActive: user.isActive,
         mustChangePassword: true,
       },
     });
-    userMap.set(user.email, record.id);
+    userMap.set(normalizedEmail, record.id);
   }
   console.log("Users seeded successfully.");
 

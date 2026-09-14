@@ -18,8 +18,8 @@ CREATE TABLE "User" (
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
 
--- Create Unique Index on User.email
-CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+-- Create Unique Index on User.email (case-insensitive)
+CREATE UNIQUE INDEX "User_email_key" ON "User"(LOWER("email"));
 
 -- 3. Data Migration: Copy existing RequesterUser data into User table if RequesterUser exists
 DO $$
@@ -30,7 +30,7 @@ BEGIN
             "id", 
             "name", 
             LOWER("email"), 
-            '$2a$10$w09Z9mGqLMB3G6Xo7P9Tle2z3VnJz0w/YvQ0Z2V3mXgZ5x5X5x5X5',
+            '$2b$10$dXNUiQjMMU9pGN.dEoOeb..1jlJa9QNIkOf1IBg06zWrjdtzQmvpu',
             'REQUESTER'::"Role", 
             "isActive", 
             true, 
@@ -92,10 +92,14 @@ ALTER TABLE "TicketInternalNote" ADD CONSTRAINT "TicketInternalNote_ticketId_fke
 ALTER TABLE "TicketInternalNote" ADD CONSTRAINT "TicketInternalNote_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- 8. Create Indexes
+CREATE INDEX IF NOT EXISTS "Ticket_requesterId_idx" ON "Ticket"("requesterId");
 CREATE INDEX IF NOT EXISTS "Ticket_assignedStaffId_idx" ON "Ticket"("assignedStaffId");
+CREATE INDEX IF NOT EXISTS "Ticket_currentStatus_idx" ON "Ticket"("currentStatus");
+CREATE INDEX IF NOT EXISTS "Ticket_requestedPriority_idx" ON "Ticket"("requestedPriority");
 CREATE INDEX IF NOT EXISTS "Ticket_itPriority_idx" ON "Ticket"("itPriority");
 CREATE INDEX IF NOT EXISTS "TicketComment_ticketId_idx" ON "TicketComment"("ticketId");
 CREATE INDEX IF NOT EXISTS "TicketInternalNote_ticketId_idx" ON "TicketInternalNote"("ticketId");
 
 -- 9. Drop old RequesterUser table if exists
 DROP TABLE IF EXISTS "RequesterUser";
+
