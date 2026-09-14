@@ -7,7 +7,7 @@
 
 | PR | Branch | Reviewer verdict |
 |---|---|---|
-| [PR #51](https://github.com/phatthidawadi/toktickit/pull/51) | `feature/15-doc-spec-tests` | Pending |
+| [PR #51](https://github.com/phatthidawadi/toktickit/pull/51) | `feature/15-doc-spec-tests` | Approved with comments |
 
 ---
 
