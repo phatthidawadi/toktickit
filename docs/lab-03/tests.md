@@ -18,7 +18,7 @@ Sprint 3 (Lab 3) applies Spec-Driven Development (Spec DD) and Test-Driven Devel
 
 ## 2. Planned Tests Table
 
-### 2.1 Server Unit & API Integration Tests (29 Test Cases)
+### 2.1 Server Unit & API Integration Tests (31 Test Cases)
 
 | Test ID | Coverage Layer | Requirement / AC | What It Tests | Expected Result | Automated Test File | Final Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -32,6 +32,7 @@ Sprint 3 (Lab 3) applies Spec-Driven Development (Spec DD) and Test-Driven Devel
 | **AUTH-API-05** | API | AC-03, BR-03 | Password change validation rules (`POST /api/auth/change-password`) | HTTP 400 Bad Request if < 8 chars, missing uppercase/lowercase/number | `server/tests/lab-03/auth.api.test.ts` | Planned |
 | **AUTH-API-06** | API | AC-04, FR-04 | Logout session invalidation (`POST /api/auth/logout`) | HTTP 200 OK; clears `toktickit_session` cookie (`Max-Age=0`) | `server/tests/lab-03/auth.api.test.ts` | Planned |
 | **AUTH-API-07** | API | FR-05 | Current user context (`GET /api/auth/me`) | HTTP 200 OK; returns authenticated profile; HTTP 401 if unauthenticated | `server/tests/lab-03/auth.api.test.ts` | Planned |
+| **SEC-AUTH-03** | Security/Auth | AC-21, BR-01 | Invalid login attempts & brute force rejection | HTTP 401 Unauthorized for repeated bad password attempts | `server/tests/lab-03/auth.api.test.ts` | Planned |
 | **AUTHZ-API-01**| Security/Auth | AC-05, BR-04 | Requester ownership spoofing rejection | Ignores client `requesterId` header; extracts identity solely from cookie | `server/tests/lab-03/authorization.api.test.ts` | Planned |
 | **AUTHZ-API-02**| Security/Auth | AC-06, FR-07 | Unauthenticated request to protected endpoints | HTTP 401 Unauthorized for all protected routes without valid session cookie | `server/tests/lab-03/authorization.api.test.ts` | Planned |
 | **AUTHZ-API-03**| Security/Auth | AC-06, BR-06 | Role-based forbidden access | HTTP 403 Forbidden when Requester accesses `/api/admin/users` or `/api/staff/tickets` | `server/tests/lab-03/authorization.api.test.ts` | Planned |
@@ -42,29 +43,35 @@ Sprint 3 (Lab 3) applies Spec-Driven Development (Spec DD) and Test-Driven Devel
 | **STAFF-API-03**| API | AC-10, FR-15 | Valid status transition (`NEW` -> `IN_PROGRESS`) | HTTP 200 OK; updates `currentStatus` adhering to BR-10 matrix | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
 | **STAFF-API-04**| API | AC-11, BR-10 | Invalid status transition rejection (`NEW` -> `CLOSED`) | HTTP 400 Bad Request when attempting unpermitted transition | `server/tests/lab-03/staff-ticket-detail.api.test.ts` | Planned |
 | **COMMENT-API-01**| API | AC-12, FR-10 | Public Comment creation & retrieval (`POST /api/tickets/:id/comments`) | HTTP 201 Created; appends comment visible to Requester, IT Staff, Admin | `server/tests/lab-03/comments-notes.api.test.ts` | Planned |
+| **API-COMM-03** | API | BR-10 | Requester comment status auto-transition | Auto transitions status from `WAITING_FOR_REQUESTER` to `IN_PROGRESS` on Requester comment | `server/tests/lab-03/comments-notes.api.test.ts` | Planned |
 | **NOTE-API-01** | API | AC-13, FR-16 | Internal Note creation & retrieval (`POST /api/tickets/:id/notes`) | HTTP 201 Created; saves note visible ONLY to IT Staff and Admin | `server/tests/lab-03/comments-notes.api.test.ts` | Planned |
 | **NOTE-API-02** | Security/Auth | AC-14, BR-07 | Requester access rejection to Internal Notes | HTTP 403 Forbidden when Requester requests notes endpoint | `server/tests/lab-03/comments-notes.api.test.ts` | Planned |
 | **REQ-API-01**  | API | AC-15, FR-11 | Requester "Problem Appears Resolved" toggle (`PATCH /api/tickets/:id/resolve-ack`)| HTTP 200 OK; sets `isRequesterResolved=true` without altering `currentStatus` | `server/tests/lab-03/requester-workflow.api.test.ts` | Planned |
+| **API-REQ-REG-01**| Migration/Reg| FR-09 | Requester Ticket Creation & Owned Tickets Regression | HTTP 201 Created; verifies Lab 2 ticket creation and list functions under session auth | `server/tests/lab-03/requester-workflow.api.test.ts` | Planned |
 | **ADMIN-API-01**| API | AC-16, FR-17 | Admin user list retrieval (`GET /api/admin/users`) | HTTP 200 OK; returns user accounts with search (name/email) and role filter | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
 | **ADMIN-API-02**| API | AC-17, BR-13 | Admin duplicate email creation rejection | HTTP 409 Conflict when creating user with an existing email | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
+| **API-ADM-05**  | API | BR-13 | Admin edit user duplicate email rejection (`PATCH /api/admin/users/:id`) | HTTP 409 Conflict when updating user email to an existing email | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
 | **ADMIN-API-03**| Security/Auth | AC-18, BR-14 | Admin self-deactivation rejection | HTTP 400 Bad Request when Admin attempts to deactivate own account | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
 | **ADMIN-API-04**| Security/Auth | AC-19, BR-15 | Admin last active administrator deactivation rejection | HTTP 400 Bad Request when attempting to deactivate the last active Admin | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
 | **ADMIN-API-05**| API | FR-20 | Admin set new initial password (`POST /api/admin/users/:id/reset-password`) | HTTP 200 OK; resets password hash and sets `mustChangePassword=true` | `server/tests/lab-03/users-admin.api.test.ts` | Planned |
-| **MIG-API-01**  | Migration/Reg | FR-08, BR-14| Lab 2 Data Migration Integrity check | Verifies all pre-existing Lab 2 tickets & attachments remain readable under new `User` model | `server/tests/lab-03/migration.api.test.ts` | Planned |
+| **MIG-API-01**  | Migration/Reg | FR-08, BR-01, BR-02 | Lab 2 Data Migration Integrity check | Verifies all pre-existing Lab 2 tickets & attachments remain readable under new `User` model | `server/tests/lab-03/migration.api.test.ts` | Planned |
 
 ---
 
-### 2.2 Client UI Component Tests (7 Test Cases)
+### 2.2 Client UI Component Tests (10 Test Cases)
 
 | Test ID | Coverage Layer | Requirement / AC | What It Tests | Expected Result | Automated Test File | Final Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **UI-LOGIN-01** | UI Component | AC-01, AC-21 | Login form rendering & validation | Displays email/password inputs, red validation messages, busy state on submit | `client/tests/lab-03/Login.test.tsx` | Planned |
+| **UI-LOGIN-02** | UI Component | AC-02 | Inactive user login error message display | Renders error callout banner and resets password field on inactive user attempt | `client/tests/lab-03/Login.test.tsx` | Planned |
 | **UI-PASS-01**  | UI Component | AC-03 | Password Change screen rendering & checklist | Displays current/new/confirm password fields and complexity rule checklist | `client/tests/lab-03/ChangePassword.test.tsx` | Planned |
 | **UI-HEADER-01**| UI Component | AC-04, FR-04 | Role-authenticated header navigation | Renders User Name, Role Badge (`Requester`/`IT Staff`/`Admin`), and Logout button | `client/tests/lab-03/Header.test.tsx` | Planned |
 | **UI-QUEUE-01** | UI Component | AC-07 | Staff Ticket Queue table & filters | Displays search, filter bars, status/priority pills, ownership badges | `client/tests/lab-03/StaffTicketQueue.test.tsx` | Planned |
 | **UI-DETAIL-01**| UI Component | AC-08, AC-09, AC-10 | Staff Ticket Detail operational controls | Displays Claim/Reassign dropdown, IT Priority dropdown, permitted status matrix dropdown | `client/tests/lab-03/StaffTicketDetail.test.tsx` | Planned |
 | **UI-COMMENT-01**| UI Component | AC-12 | Public Comments stream component | Renders Public Comment list with author profile, role badge, timestamp, and append form | `client/tests/lab-03/PublicComments.test.tsx` | Planned |
-| **UI-ADMIN-01** | UI Component | AC-16, AC-17 | Admin User Management user table & creation modal | Displays user listing, search, role filters, user creation modal, edit modal | `client/tests/lab-03/UserManagement.test.tsx` | Planned |
+| **UI-NOTE-01**  | UI Component | AC-13, AC-14 | Internal Note form & amber highlight container rendering | Renders amber-styled Internal Notes component for Staff/Admin | `client/tests/lab-03/InternalNotes.test.tsx` | Planned |
+| **UI-ADMIN-01** | UI Component | AC-16, AC-17 | Admin User Management user table & creation modal | Displays user listing, search, role filters, user creation modal | `client/tests/lab-03/UserManagement.test.tsx` | Planned |
+| **UI-ADMIN-02** | UI Component | AC-18, AC-19 | Admin User Edit & Role/Status Toggle modal | Displays edit user modal, self-deactivation warning, last admin warning | `client/tests/lab-03/UserManagement.test.tsx` | Planned |
 
 ---
 
@@ -121,7 +128,7 @@ Sprint 3 (Lab 3) applies Spec-Driven Development (Spec DD) and Test-Driven Devel
 | **AC-18** (Admin self-deactivation block) | `ADMIN-API-03`, `UI-ADMIN-02`, `E2E-03` | 100% Covered |
 | **AC-19** (Admin last active administrator block) | `ADMIN-API-04`, `UI-ADMIN-02`, `E2E-03` | 100% Covered |
 | **AC-20** (Zen Green UI, focus rings & mobile responsiveness) | `STYLE-01`, `STYLE-02`, `STYLE-03`, `RESP-01`, `RESP-02`, `E2E-01`, `E2E-02`, `E2E-03` | 100% Covered |
-| **AC-21** (Invalid credentials login rejection) | `AUTH-API-03`, `UI-LOGIN-01` | 100% Covered |
+| **AC-21** (Invalid credentials login rejection) | `AUTH-API-03`, `SEC-AUTH-03`, `UI-LOGIN-01` | 100% Covered |
 
 ---
 

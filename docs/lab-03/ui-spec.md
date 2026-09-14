@@ -127,3 +127,21 @@ The interface strictly reuses the **Zen Green Theme** visual language establishe
 - Interactive controls feature visible focus rings (`2px solid #0B7A46`, `outline-offset: 2px`).
 - Status badges use text labels alongside background color styling (never color alone).
 - Modal dialogs trap focus, handle `Escape` key close, and return focus upon closure.
+
+---
+
+### 3.6 Requester My Tickets & Ticket Detail View (`/tickets`, `/tickets/:id`)
+
+- **My Tickets List (`/tickets`)**:
+  - **Layout**: Centered container (`max-width: 1000px`).
+  - **Header**: Title "My Support Tickets", "+ Create Ticket" Primary Button (`#006B3C`).
+  - **Toolbar**: Status filter (`All`, `Active`, `Resolved`), keyword search input.
+  - **Ticket List**: Card/table view showing Ticket #, Summary, Date Created, Requested Priority, Status Pill, and "View Detail" button.
+- **Requester Ticket Detail View (`/tickets/:id`)**:
+  - **Header**: Ticket # (`TKT-YYYY-XXXXXX`), Date Created, Status Pill, "Back to My Tickets" button.
+  - **Read-Only Ticket Metadata**: Summary, Description, Category, Related System, Requested Priority. Note: `itPriority` and `assignedStaffId` are hidden from Requesters.
+  - **Problem Appears Resolved Toggle Button**: Prominent callout banner with button "Mark Problem as Appears Resolved" (sets `isRequesterResolved = true`).
+  - **Public Comments Stream**: Read/write stream for Requesters. Textarea form (`1-1000` chars) with "Post Comment" button.
+  - **Internal Notes Block**: Confidential Internal Notes tab/section is strictly hidden and omitted from Requester UI.
+  - **Attachment Management**: Active attachments list with Download button + Soft-Remove button (modal dialog requiring mandatory reason text).
+
