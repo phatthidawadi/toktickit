@@ -21,14 +21,18 @@ function getCookieHeader(res: supertest.Response): string {
 describe("Staff Ticket Detail & Operational Endpoints (STAFF-API-01 to STAFF-API-04, NOTE-API-01, NOTE-API-02)", () => {
   const prisma = getPrisma();
   let staffCookie: string;
+  let adminCookie: string;
   let requesterCookie: string;
   let staffUserId: number;
+  let somsriUserId: number;
+  let requesterUserId: number;
   let testTicketId: number;
+  let autoClaimTicketId: number;
 
   beforeAll(async () => {
-    // Ensure Staff & Requester have mustChangePassword = false
+    // Ensure Staff, Admin & Requester have mustChangePassword = false
     await prisma.user.updateMany({
-      where: { email: { in: ["staff.somchai@example.com", "jennifer.a@example.com"] } },
+      where: { email: { in: ["staff.somchai@example.com", "staff.somsri@example.com", "admin.toktickit@example.com", "jennifer.a@example.com"] } },
       data: { mustChangePassword: false },
     });
 
@@ -39,15 +43,24 @@ describe("Staff Ticket Detail & Operational Endpoints (STAFF-API-01 to STAFF-API
     staffCookie = getCookieHeader(staffLoginRes);
     staffUserId = staffLoginRes.body.user.id;
 
+    const somsriUser = await prisma.user.findUnique({ where: { email: "staff.somsri@example.com" } });
+    somsriUserId = somsriUser!.id;
+
+    const adminLoginRes = await request.post("/api/auth/login").send({
+      email: "admin.toktickit@example.com",
+      password: "Password123!",
+    });
+    adminCookie = getCookieHeader(adminLoginRes);
+
     const reqLoginRes = await request.post("/api/auth/login").send({
       email: "jennifer.a@example.com",
       password: "Password123!",
     });
     requesterCookie = getCookieHeader(reqLoginRes);
+    requesterUserId = reqLoginRes.body.user.id;
 
     const category = await prisma.category.findFirst({ where: { isActive: true } });
     const relatedSystem = await prisma.relatedSystem.findFirst({ where: { isActive: true } });
-    const jennifer = await prisma.user.findUnique({ where: { email: "jennifer.a@example.com" } });
 
     const ticket = await prisma.ticket.create({
       data: {
@@ -57,24 +70,37 @@ describe("Staff Ticket Detail & Operational Endpoints (STAFF-API-01 to STAFF-API
         requestedPriority: "LOW",
         itPriority: "LOW",
         currentStatus: "NEW",
-        requesterId: jennifer!.id,
+        requesterId: requesterUserId,
         categoryId: category!.id,
         relatedSystemId: relatedSystem!.id,
       },
     });
     testTicketId = ticket.id;
+
+    const autoClaimTicket = await prisma.ticket.create({
+      data: {
+        ticketNumber: `TKT-AUTOCLAIM-${Date.now()}`,
+        summary: "Auto-Claim Test Ticket",
+        description: "Testing auto-claim on NEW -> OPEN status transition",
+        requestedPriority: "MEDIUM",
+        itPriority: "MEDIUM",
+        currentStatus: "NEW",
+        requesterId: requesterUserId,
+        assignedStaffId: null,
+        categoryId: category!.id,
+        relatedSystemId: relatedSystem!.id,
+      },
+    });
+    autoClaimTicketId = autoClaimTicket.id;
   });
 
   afterAll(async () => {
-    if (testTicketId) {
-      await prisma.ticketInternalNote.deleteMany({ where: { ticketId: testTicketId } });
-      await prisma.ticketComment.deleteMany({ where: { ticketId: testTicketId } });
-      await prisma.ticket.delete({ where: { id: testTicketId } }).catch(() => {});
+    const ids = [testTicketId, autoClaimTicketId].filter(Boolean);
+    if (ids.length > 0) {
+      await prisma.ticketInternalNote.deleteMany({ where: { ticketId: { in: ids } } });
+      await prisma.ticketComment.deleteMany({ where: { ticketId: { in: ids } } });
+      await prisma.ticket.deleteMany({ where: { id: { in: ids } } }).catch(() => {});
     }
-    await prisma.user.updateMany({
-      where: { email: { in: ["staff.somchai@example.com"] } },
-      data: { mustChangePassword: true },
-    }).catch(() => {});
     await prisma.$disconnect();
   });
 
@@ -85,6 +111,47 @@ describe("Staff Ticket Detail & Operational Endpoints (STAFF-API-01 to STAFF-API
       .send({ claim: true });
 
     expect(res.status).toBe(200);
+    expect(res.body.assignedStaffId).toBe(staffUserId);
+  });
+
+  it("STAFF-API-01: Reassign ticket ownership to another active IT Staff member", async () => {
+    const res = await request
+      .patch(`/api/staff/tickets/${testTicketId}/assign`)
+      .set("Cookie", staffCookie)
+      .send({ assignedStaffId: somsriUserId });
+
+    expect(res.status).toBe(200);
+    expect(res.body.assignedStaffId).toBe(somsriUserId);
+  });
+
+  it("STAFF-API-01: Unassign ticket ownership by setting assignedStaffId to null", async () => {
+    const res = await request
+      .patch(`/api/staff/tickets/${testTicketId}/assign`)
+      .set("Cookie", staffCookie)
+      .send({ assignedStaffId: null });
+
+    expect(res.status).toBe(200);
+    expect(res.body.assignedStaffId).toBeNull();
+  });
+
+  it("STAFF-API-01: Reject assignment to invalid target (Requester user)", async () => {
+    const res = await request
+      .patch(`/api/staff/tickets/${testTicketId}/assign`)
+      .set("Cookie", staffCookie)
+      .send({ assignedStaffId: requesterUserId });
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe("INVALID_INPUT");
+  });
+
+  it("BR-10 Auto-claim: Transitioning unassigned ticket from NEW to OPEN automatically assigns current staff member", async () => {
+    const res = await request
+      .patch(`/api/staff/tickets/${autoClaimTicketId}/status`)
+      .set("Cookie", staffCookie)
+      .send({ status: "OPEN" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.currentStatus).toBe("OPEN");
     expect(res.body.assignedStaffId).toBe(staffUserId);
   });
 
@@ -119,6 +186,32 @@ describe("Staff Ticket Detail & Operational Endpoints (STAFF-API-01 to STAFF-API
     expect(res.body.code).toBe("INVALID_TRANSITION");
   });
 
+  it("BR-10 Status Transition: IT Staff attempting CLOSED -> REOPENED is rejected (400)", async () => {
+    // Manually set status to RESOLVED then CLOSED for test ticket
+    await prisma.ticket.update({
+      where: { id: testTicketId },
+      data: { currentStatus: "CLOSED" },
+    });
+
+    const res = await request
+      .patch(`/api/staff/tickets/${testTicketId}/status`)
+      .set("Cookie", staffCookie)
+      .send({ status: "REOPENED" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe("INVALID_TRANSITION");
+  });
+
+  it("BR-10 Status Transition: Administrator attempting CLOSED -> REOPENED is allowed (200)", async () => {
+    const res = await request
+      .patch(`/api/staff/tickets/${testTicketId}/status`)
+      .set("Cookie", adminCookie)
+      .send({ status: "REOPENED" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.currentStatus).toBe("REOPENED");
+  });
+
   it("NOTE-API-01: POST /api/tickets/:id/notes creates internal note & GET /api/tickets/:id/notes retrieves notes for Staff", async () => {
     const postRes = await request
       .post(`/api/tickets/${testTicketId}/notes`)
@@ -139,11 +232,6 @@ describe("Staff Ticket Detail & Operational Endpoints (STAFF-API-01 to STAFF-API
   });
 
   it("NOTE-API-02: Requester access to Internal Notes returns 403 Forbidden", async () => {
-    await prisma.user.update({
-      where: { email: "jennifer.a@example.com" },
-      data: { mustChangePassword: false },
-    });
-
     const res = await request
       .get(`/api/tickets/${testTicketId}/notes`)
       .set("Cookie", requesterCookie);

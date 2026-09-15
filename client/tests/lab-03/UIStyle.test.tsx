@@ -66,5 +66,10 @@ describe("Zen Green Design System Style Verification Tests", () => {
 
     const containerElem = container.querySelector("#internal-notes-container") as HTMLElement;
     expect(containerElem).toBeInTheDocument();
+    expect(containerElem.style.backgroundColor).toBe("rgb(254, 243, 199)"); // #FEF3C7
+    expect(containerElem.style.border).toContain("rgb(253, 230, 138)"); // #FDE68A
+
+    const headingElem = screen.getByText(/Confidential Internal Notes/i);
+    expect(headingElem.style.color).toBe("rgb(146, 64, 14)"); // #92400E
   });
 });
