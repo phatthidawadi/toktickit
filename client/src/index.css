@@ -82,6 +82,32 @@ body {
   font-weight: 600;
 }
 
+/* Role Badges (Zen Green Color Tokens: AC-20, STYLE-01) */
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.role-badge-requester {
+  background-color: #DBEAFE;
+  color: #1E40AF;
+}
+
+.role-badge-staff {
+  background-color: #D1FAE5;
+  color: #065F46;
+}
+
+.role-badge-admin {
+  background-color: #E0E7FF;
+  color: #3730A3;
+}
+
 .site-header-requester {
   display: flex;
   align-items: center;

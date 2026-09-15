@@ -70,6 +70,8 @@ export async function authenticateSession(req: Request, res: Response, next: Nex
   }
 }
 
+export const requireAuth = authenticateSession;
+
 export function requireRole(allowedRoles: string[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
@@ -80,6 +82,30 @@ export function requireRole(allowedRoles: string[]) {
     }
 
     if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({
+        error: "Access denied. Insufficient privileges.",
+        code: "FORBIDDEN",
+      });
+    }
+
+    next();
+  };
+}
+
+export function requireSelfOrRole(allowedRoles: string[], getTargetUserId: (req: Request) => number) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({
+        error: "Authentication required.",
+        code: "UNAUTHORIZED",
+      });
+    }
+
+    const targetUserId = getTargetUserId(req);
+    const isSelf = req.user.userId === targetUserId;
+    const hasRole = allowedRoles.includes(req.user.role);
+
+    if (!isSelf && !hasRole) {
       return res.status(403).json({
         error: "Access denied. Insufficient privileges.",
         code: "FORBIDDEN",

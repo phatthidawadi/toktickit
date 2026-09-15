@@ -10,6 +10,7 @@
 | [PR #51](https://github.com/phatthidawadi/toktickit/pull/51) | `feature/15-doc-spec-tests` | Approved with comments |
 | [PR #52](https://github.com/phatthidawadi/toktickit/pull/52) | `feature/16-db-schema-seed` | Approved with comments |
 | [PR #53](https://github.com/phatthidawadi/toktickit/pull/53) | `feature/17-auth-foundation` | Approved with comments |
+| [PR #54](https://github.com/phatthidawadi/toktickit/pull/54) | `feature/18-authorization-header` | Pending |
 
 ---
 
@@ -532,6 +533,67 @@
 > ตรวจสอบการแก้ไข Round 2 เรียบร้อยแล้วค่ะ แก้ไขเรื่อง `x-requester-id` bypass และเพิ่ม test `SEC-AUTH-04` เรียบร้อยแล้ว ถือว่าผ่านทุกข้อกำหนดของ Auth Foundation แล้วค่ะ
 > 
 > **Approved and Merged PR #53** เข้าสู่ `lab3-staging` เรียบร้อยแล้ว ขอบคุณนะคะ!
+
+---
+
+### Reviewer comment I received (PR #54):
+> ### Review — PR #54 (Server-Side Authorization)
+> 
+> โครงสร้างโดยรวมดีค่ะ `requireRole/requireAuth` แยกส่วนชัดเจน และ `AUTHZ-API-01` ก็ทดสอบเรื่องการปลอม `x-requester-id` ได้ตรงจุด เพราะ identity ต้องมาจาก session จริงค่ะ ส่วน Header ก็มี `try/catch` fallback ทำให้ไม่ crash
+> 
+> แต่เจอ **1 bug จริงที่ test ยังจับไม่ได้** และมีบางจุดที่อยากให้ระบุ scope ให้ชัดก่อน Approve ค่ะ
+> 
+> ### P1 — ต้องแก้
+> 
+> **1. `requireRole` ใช้ชื่อ role ผิด**
+> 
+> ใน `server/src/app.ts` ตอนนี้เป็น
+> 
+> ```ts
+> app.get("/api/staff/tickets", authenticateSession, requireRole(["STAFF", "ADMINISTRATOR"]), ...)
+> ```
+> 
+> แต่ role ที่ใช้จริงใน schema/seed คือ `IT_STAFF` ค่ะ
+> 
+> ดังนั้นพนักงาน IT ที่มี role เป็น `IT_STAFF` จะโดน `403` ตอนเรียก `/api/staff/tickets` ทั้งที่ควรเข้าได้ค่ะ
+> 
+> แนะนำให้แก้เป็น `["IT_STAFF", "ADMINISTRATOR"]` และเพิ่ม test ด้วยว่า login ด้วย `IT_STAFF` จาก seed → `/api/staff/tickets` ต้องได้ `200` ค่ะ
+> 
+> ### P2 — อยากให้ชัดเจน/แก้
+> 
+> **1. ตอนนี้ middleware ยังครอบแค่ 2 sample endpoints**
+> 
+> คือ `/api/staff/tickets` และ `/api/admin/users` ซึ่งระบุว่า real data endpoints จะย้ายไปใช้ auth/session ใน PR ถัดไปค่ะ
+> 
+> **2. AUTHZ-API-03 เปลี่ยน `mustChangePassword` ของ Jennifer**
+> 
+> แนะนำให้เก็บค่าเดิมก่อนเปลี่ยน แล้ว restore กลับเป็นค่าเดิม เพื่อป้องกัน test flaky ค่ะ
+> 
+> **3. `App.tsx` ยังไม่ได้ mount `AuthProvider`**
+> 
+> ระบุไว้ว่า UI wiring เป็น follow-up ค่ะ
+> 
+> ### Decision: Not yet
+> 
+> รบกวนแก้ **P1 เรื่อง `IT_STAFF`** ก่อนค่ะ หลังแก้เรียบร้อยแล้วเรียก re-check ได้เลยค่ะ
+
+### How I responded (PR #54):
+"ขอบคุณสำหรับการตรวจทาน Peer Review อย่างละเอียดค่ะ! ได้ทำการแก้ไขและอัปเดตตามคำแนะนำเรียบร้อยแล้วทุกประเด็นใน PR #54:
+
+1. **แก้ไข Role Name จาก `STAFF` เป็น `IT_STAFF` ใน RBAC Middleware (P1 #1)**:
+   - ปรับแก้ไขใน `server/src/app.ts` ให้ `requireRole` บน `/api/staff/tickets` ตรวจสอบ role `["IT_STAFF", "ADMINISTRATOR"]` เพื่อให้สอดคล้องกับ `enum Role` ใน `schema.prisma` และ `seed.ts`
+   - เพิ่ม test case `AUTHZ-API-04` ใน `server/tests/lab-03/authorization.api.test.ts` เพื่อทดสอบว่าผู้ใช้บทบาท `IT_STAFF` (`staff.somchai@example.com`) สามารถเข้าถึง `/api/staff/tickets` ได้สำเร็จและได้รับ HTTP 200 OK
+
+2. **ปรับปรุงการคืนค่า State เดิมใน Test Suite (P2 #2)**:
+   - ปรับปรุง `AUTHZ-API-03` และ `AUTHZ-API-04` ให้สอบถามและบันทึกค่า `mustChangePassword` เดิมของผู้ใช้ก่อนการทดสอบ และทำการคืนค่าเดิมกลับเข้าฐานข้อมูลเสมอใน `finally` block เพื่อป้องกันปัญหา Test Flakiness
+
+3. **ทำความสะอาด Code และ Role Badge Styling (P3)**:
+   - นำ inline styles ออกจาก `getRoleBadge()` ใน `client/src/components/Header.tsx` โดยปรับให้เรียกใช้ CSS Utility Classes (`.role-badge-requester`, `.role-badge-staff`, `.role-badge-admin`) จาก `index.css` อย่างเป็นระเบียบ
+
+4. **การระบุ Scope ใน PR Description (P2 #1 & P2 #3)**:
+   - ระบุใน PR Description ชัดเจนว่า Real Data Endpoints สำหรับ Staff Queue, Admin Users, Requester Workflow รวมถึงการ mount `AuthProvider` ใน `App.tsx` จะดำเนินการใน PR ถัดไป (Issue 19-22) ตามลำดับ Roadmap
+
+ทำการ push อัปเดตขึ้นกิ่ง `feature/18-authorization-header` สำหรับ PR #53 เรียบร้อยแล้ว รบกวนช่วยตรวจทานอีกครั้ง ขอบคุณมากค่ะ"
 
 
 
