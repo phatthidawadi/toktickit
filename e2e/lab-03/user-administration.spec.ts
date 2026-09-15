@@ -1,80 +1,205 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
+
+async function resetDbViaApi(request?: any) {
+  try {
+    if (request) {
+      await request.post('http://localhost:3000/api/test/reset-db');
+      await request.post('http://localhost:3000/api/test/reset-rate-limit');
+    } else {
+      await fetch('http://localhost:3000/api/test/reset-db', { method: 'POST' });
+      await fetch('http://localhost:3000/api/test/reset-rate-limit', { method: 'POST' });
+    }
+  } catch {}
+}
+
+async function loginAndHandlePasswordChange(page: Page, email: string, pass: string = 'Password123!') {
+  await page.context().clearCookies();
+  await page.goto('/');
+
+  await page.locator('#login-email').fill(email);
+  await page.locator('#login-password').fill(pass);
+  await page.locator('#login-submit-btn').click();
+
+  await page.waitForSelector('.change-password-container, .site-brand, #login-error', { timeout: 10000 });
+
+  const errorMsg = page.locator('#login-error');
+  let usedPassword = pass;
+  if (await errorMsg.isVisible()) {
+    usedPassword = 'NewSecurePassword123!';
+    await page.locator('#login-password').fill(usedPassword);
+    await page.locator('#login-submit-btn').click();
+    await page.waitForSelector('.change-password-container, .site-brand', { timeout: 10000 });
+  }
+
+  const changePassHeading = page.locator('h2:has-text("Mandatory Password Update")');
+  if (await changePassHeading.isVisible()) {
+    await page.locator('#current-password').fill(usedPassword);
+    await page.locator('#new-password').fill('NewSecurePassword456!');
+    await page.locator('#confirm-password').fill('NewSecurePassword456!');
+    await page.locator('#change-password-submit-btn').click();
+  }
+
+  await expect(page.locator('.site-brand')).toBeVisible();
+}
 
 test.describe('E2E-03: Admin User Management & Safety Safeguards E2E Journey', () => {
-  test('Log in as Admin, view user portal, search, open create modal, test edit and safety warnings, reset password', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 800 });
+  test.beforeEach(async ({ context, request }) => {
+    await context.clearCookies();
+    await resetDbViaApi(request);
+  });
 
-    await page.goto('/');
-    await page.waitForTimeout(500);
+  test.afterAll(async () => {
+    await resetDbViaApi();
+  });
 
-    // Fill login as Admin if at login screen
-    const emailInput = page.locator('input[type="email"]').first();
-    if (await emailInput.isVisible().catch(() => false)) {
-      await emailInput.fill('admin.toktickit@example.com');
-      await page.locator('input[type="password"]').first().fill('Password123!');
-      await page.locator('button:has-text("Sign In"), button[type="submit"]').first().click();
-      await page.waitForTimeout(800);
+  test('E2E-03-A: Log in as Administrator, access User Management portal, search/filter, and create user account', async ({ page }, testInfo) => {
+    const projectName = testInfo.project.name;
+
+    // 1. Log in as Admin
+    await loginAndHandlePasswordChange(page, 'admin.toktickit@example.com');
+
+    // 2. Navigate to User Management
+    const userMgmtNav = page.locator('button:has-text("User Management")');
+    await expect(userMgmtNav).toBeVisible();
+    await userMgmtNav.click({ force: true });
+
+    // Assert User Management heading loaded
+    const heading = page.locator('h2:has-text("User Management")');
+    await expect(heading).toBeVisible();
+
+    // Search for user
+    const searchInput = page.locator('#user-search-input');
+    await expect(searchInput).toBeVisible();
+    await searchInput.fill('Jennifer');
+    await expect(page.locator('tr:has-text("Jennifer Anderson")')).toBeVisible();
+    await searchInput.fill('');
+
+    // 3. Open Create User Modal
+    const createBtn = page.locator('button:has-text("+ Create User")');
+    await expect(createBtn).toBeVisible();
+    await createBtn.click({ force: true });
+
+    // Fill Create User modal fields
+    const modalHeading = page.locator('h4:has-text("Create New User Account")');
+    await expect(modalHeading).toBeVisible();
+
+    await page.locator('#create-name-input').fill('E2E Test User');
+    await page.locator('#create-email-input').fill('e2e.test.user@example.com');
+    await page.locator('#create-role-select').selectOption('REQUESTER');
+    await page.locator('#create-password-input').fill('Password123!');
+
+    await page.screenshot({
+      path: `artifacts/lab-03/screenshots/user-management/01-create-user-modal-${projectName}.png`,
+      fullPage: true,
+    });
+
+    // Submit Create User form
+    await page.locator('button[type="submit"]:has-text("Create User")').click({ force: true });
+
+    // Assert new user exists in table
+    const newUserRow = page.locator('tr:has-text("e2e.test.user@example.com")');
+    await expect(newUserRow).toBeVisible();
+    await expect(newUserRow).toContainText('E2E Test User');
+
+    await page.screenshot({
+      path: `artifacts/lab-03/screenshots/user-management/02-user-created-table-${projectName}.png`,
+      fullPage: true,
+    });
+  });
+
+  test('E2E-03-B: Edit user role, reset initial password, and enforce self-deactivation & last-admin safety protections', async ({ page }, testInfo) => {
+    const projectName = testInfo.project.name;
+
+    // 1. Log in as Admin
+    await loginAndHandlePasswordChange(page, 'admin.toktickit@example.com');
+
+    // 2. Open User Management
+    await page.locator('button:has-text("User Management")').click({ force: true });
+    await expect(page.locator('h2:has-text("User Management")')).toBeVisible();
+
+    // 3. Edit User Role for Jennifer Anderson
+    const editBtn = page.locator('tr:has-text("jennifer.a@example.com") button:has-text("Edit")').first();
+    await expect(editBtn).toBeVisible();
+    await editBtn.click({ force: true });
+
+    const editModalHeading = page.locator('h4:has-text("Edit User Account")');
+    await expect(editModalHeading).toBeVisible();
+
+    await page.locator('#edit-role-select').selectOption('IT_STAFF');
+    await page.locator('button[type="submit"]:has-text("Save Changes")').click({ force: true });
+
+    // Assert role badge updated to IT Staff
+    const updatedRoleBadge = page.locator('tr:has-text("jennifer.a@example.com") .role-badge-staff');
+    await expect(updatedRoleBadge).toBeVisible();
+
+    // 4. Reset Password for Jennifer Anderson
+    const resetBtn = page.locator('tr:has-text("jennifer.a@example.com") button:has-text("Reset Password")').first();
+    await expect(resetBtn).toBeVisible();
+    await resetBtn.click({ force: true });
+
+    const resetModalHeading = page.locator('h4:has-text("Reset Initial Password")');
+    await expect(resetModalHeading).toBeVisible();
+
+    await page.locator('#reset-password-input').fill('NewInitialPass123!');
+    await page.locator('button[type="submit"]:has-text("Set Initial Password")').click({ force: true });
+
+    const resetSuccessMsg = page.locator('text="Initial password reset successfully!"');
+    await expect(resetSuccessMsg).toBeVisible();
+
+    await page.screenshot({
+      path: `artifacts/lab-03/screenshots/user-management/03-role-edited-password-reset-${projectName}.png`,
+      fullPage: true,
+    });
+
+    // Wait for reset modal to close
+    await expect(resetModalHeading).not.toBeVisible();
+
+    // 5. Safety Safeguard 1: Self-Deactivation Protection (SELF_DEACTIVATION_PROHIBITED)
+    const selfEditBtn = page.locator('tr:has-text("admin.toktickit@example.com") button:has-text("Edit")').first();
+    await expect(selfEditBtn).toBeVisible();
+    await selfEditBtn.click({ force: true });
+
+    await expect(page.locator('h4:has-text("Edit User Account")')).toBeVisible();
+
+    // Uncheck active status checkbox
+    const activeCheckbox = page.locator('#edit-active-check');
+    if (await activeCheckbox.isChecked()) {
+      await activeCheckbox.uncheck();
     }
 
-    // Navigate to User Management
-    const userMgmtNav = page.locator('button:has-text("User Management")').first();
-    if (await userMgmtNav.isVisible().catch(() => false)) {
-      await userMgmtNav.click();
-      await page.waitForTimeout(500);
-    }
+    await page.locator('button[type="submit"]:has-text("Save Changes")').click({ force: true });
 
-    // Verify User Management screen heading
-    const heading = page.locator('h2', { hasText: /User Management/i }).first();
-    if (await heading.isVisible().catch(() => false)) {
-      await expect(heading).toBeVisible();
-    }
+    // Hard Assertion: SELF_DEACTIVATION_PROHIBITED error banner visible
+    const selfDeactError = page.locator('.error-alert, .alert-danger');
+    await expect(selfDeactError).toBeVisible();
+    await expect(selfDeactError).toContainText(/prohibited from deactivating/i);
 
-    // Filter/Search user input
-    const userSearchInput = page.locator('#user-search-input, input[placeholder*="Search by name"]').first();
-    if (await userSearchInput.isVisible().catch(() => false)) {
-      await userSearchInput.fill('Jennifer');
-      await page.waitForTimeout(300);
-      await userSearchInput.fill('');
-      await page.waitForTimeout(300);
-    }
+    await page.screenshot({
+      path: `artifacts/lab-03/screenshots/user-management/04-self-deactivation-warning-${projectName}.png`,
+      fullPage: true,
+    });
 
-    // Open Create User Modal
-    const createBtn = page.locator('button:has-text("+ Create User"), button:has-text("Create User")').first();
-    if (await createBtn.isVisible().catch(() => false)) {
-      await createBtn.click();
-      await page.waitForTimeout(400);
+    // Close self edit modal
+    await page.locator('button:has-text("Cancel")').first().click({ force: true });
 
-      const cancelBtn = page.locator('.modal-card button:has-text("Cancel")').first();
-      if (await cancelBtn.isVisible().catch(() => false)) {
-        await cancelBtn.click();
-        await page.waitForTimeout(300);
-      }
-    }
+    // 6. Safety Safeguard 2: Last-Admin Protection (LAST_ADMIN_PROTECTION)
+    await selfEditBtn.click({ force: true });
+    await expect(page.locator('h4:has-text("Edit User Account")')).toBeVisible();
 
-    // Open Edit User Modal for first user
-    const editBtn = page.locator('.edit-user-btn, button:has-text("Edit")').first();
-    if (await editBtn.isVisible().catch(() => false)) {
-      await editBtn.click();
-      await page.waitForTimeout(400);
+    // Change role from ADMINISTRATOR to REQUESTER
+    await page.locator('#edit-role-select').selectOption('REQUESTER');
+    await page.locator('button[type="submit"]:has-text("Save Changes")').click({ force: true });
 
-      const cancelEditBtn = page.locator('.modal-card button:has-text("Cancel")').first();
-      if (await cancelEditBtn.isVisible().catch(() => false)) {
-        await cancelEditBtn.click();
-        await page.waitForTimeout(300);
-      }
-    }
+    // Hard Assertion: LAST_ADMIN_PROTECTION error banner visible
+    const lastAdminError = page.locator('.error-alert, .alert-danger');
+    await expect(lastAdminError).toBeVisible();
+    await expect(lastAdminError).toContainText(/last active administrator/i);
 
-    // Open Reset Password Modal
-    const resetBtn = page.locator('.reset-password-btn, button:has-text("Reset Password")').first();
-    if (await resetBtn.isVisible().catch(() => false)) {
-      await resetBtn.click();
-      await page.waitForTimeout(400);
+    await page.screenshot({
+      path: `artifacts/lab-03/screenshots/user-management/05-last-admin-protection-warning-${projectName}.png`,
+      fullPage: true,
+    });
 
-      const cancelResetBtn = page.locator('.modal-card button:has-text("Cancel")').first();
-      if (await cancelResetBtn.isVisible().catch(() => false)) {
-        await cancelResetBtn.click();
-        await page.waitForTimeout(300);
-      }
-    }
+    await page.locator('button:has-text("Cancel")').first().click({ force: true });
   });
 });

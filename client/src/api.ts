@@ -263,27 +263,29 @@ export interface UserProfile {
   mustChangePassword: boolean;
 }
 
-export async function loginApi(email: string, password: string): Promise<{ user: UserProfile }> {
+export interface LoginResponse {
+  user: UserProfile;
+}
+
+export async function loginApi(email: string, pass: string): Promise<LoginResponse> {
   const res = await fetch(`${API_URL}/api/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password: pass }),
   });
-
   const data = await res.json().catch(() => ({ error: "Login failed" }));
   if (!res.ok) {
-    throw new Error(data.error || "Invalid credentials");
+    throw new Error(data.error || "Invalid email or password");
   }
   return data;
 }
 
-export async function logoutApi(): Promise<{ message: string }> {
-  const res = await fetch(`${API_URL}/api/auth/logout`, {
+export async function logoutApi(): Promise<void> {
+  await fetch(`${API_URL}/api/auth/logout`, {
     method: "POST",
     credentials: "include",
   });
-  return res.json();
 }
 
 export async function fetchCurrentUserApi(): Promise<{ user: UserProfile }> {

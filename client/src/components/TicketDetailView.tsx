@@ -8,6 +8,7 @@ import {
   AttachmentSummary,
 } from "../api.js";
 import { useRequester } from "../context/RequesterContext.js";
+import { useAuth } from "../context/AuthContext.js";
 
 interface TicketDetailViewProps {
   ticketId: number;
@@ -16,6 +17,10 @@ interface TicketDetailViewProps {
 
 export const TicketDetailView: React.FC<TicketDetailViewProps> = ({ ticketId, onBack }) => {
   const { selectedRequester, setIsSelectorOpen } = useRequester();
+  const authContext = useAuth();
+  const authUser = authContext?.user || null;
+  const effectiveRequesterId = authUser?.id || selectedRequester?.id;
+  const displayRequester = selectedRequester || (authUser ? { name: authUser.name, department: authUser.role } : null);
 
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -30,13 +35,13 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({ ticketId, on
   const [removeError, setRemoveError] = useState<string | null>(null);
 
   const loadDetail = () => {
-    if (!selectedRequester) return;
+    if (!effectiveRequesterId) return;
 
     setLoading(true);
     setError(null);
     setIsForbidden(false);
 
-    fetchTicketDetail(ticketId, selectedRequester.id)
+    fetchTicketDetail(ticketId, effectiveRequesterId)
       .then((data) => {
         setTicket(data);
         setLoading(false);
@@ -53,7 +58,7 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({ ticketId, on
 
   useEffect(() => {
     loadDetail();
-  }, [ticketId, selectedRequester]);
+  }, [ticketId, effectiveRequesterId]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setUploadError(null);
@@ -119,7 +124,7 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({ ticketId, on
     }
   };
 
-  if (!selectedRequester) {
+  if (!displayRequester) {
     return (
       <div
         style={{

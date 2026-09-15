@@ -1,9 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { fetchRequesters, Requester } from "../api.js";
 import { useRequester } from "../context/RequesterContext.js";
+import { useAuth } from "../context/AuthContext.js";
 
 export const RequesterSelectorScreen: React.FC = () => {
+  let authContext: any = null;
+  try {
+    authContext = useAuth();
+  } catch (_e) {}
+  const user = authContext?.user;
   const { selectedRequester, setSelectedRequester, isSelectorOpen, setIsSelectorOpen } = useRequester();
+
+  if (user || !isSelectorOpen) return null;
 
   const [requesters, setRequesters] = useState<Requester[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -29,7 +37,10 @@ export const RequesterSelectorScreen: React.FC = () => {
     }
   }, [isSelectorOpen]);
 
-  if (!isSelectorOpen) return null;
+  const authContext = useAuth();
+  const user = authContext?.user;
+
+  if (user || !isSelectorOpen) return null;
 
   const handleContinue = () => {
     const found = requesters.find((r) => r.id === Number(selectedId));

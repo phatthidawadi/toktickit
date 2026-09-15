@@ -1,9 +1,9 @@
 import { getPrisma } from "../src/prisma.js";
 import bcrypt from "bcryptjs";
 
-async function main() {
+export async function seedDatabase() {
   const prisma = getPrisma();
-  const defaultPasswordHash = await bcrypt.hash("Password123!", 10);
+  const defaultPasswordHash = "$2b$10$PthZkzqA7W9qhEloVjE3n.H/DGBCcw.Ip5GbH4ijbbyHpVKuOp/Hm";
 
   // 1. Seed Categories
   const categoryData = [
@@ -93,6 +93,8 @@ async function main() {
         name: user.name,
         role: user.role,
         isActive: user.isActive,
+        passwordHash: defaultPasswordHash,
+        mustChangePassword: true,
       },
       create: {
         name: user.name,
@@ -113,26 +115,29 @@ async function main() {
   const catId = categoryMap.get("Account and Access")!;
   const sysId = systemMap.get("Email")!;
 
-  const existingTicket = await prisma.ticket.findUnique({
+  const ticketData = {
+    summary: "Cannot access corporate email account",
+    description: "Encountering invalid credentials error when signing into Outlook web portal.",
+    requestedPriority: "HIGH" as const,
+    itPriority: "HIGH" as const,
+    currentStatus: "IN_PROGRESS" as const,
+    requesterId: reqId,
+    assignedStaffId: staffId,
+    categoryId: catId,
+    relatedSystemId: sysId,
+  };
+
+  const ticket = await prisma.ticket.upsert({
     where: { ticketNumber: "TKT-2026-000001" },
+    update: ticketData,
+    create: {
+      ticketNumber: "TKT-2026-000001",
+      ...ticketData,
+    },
   });
 
-  if (!existingTicket) {
-    const ticket = await prisma.ticket.create({
-      data: {
-        ticketNumber: "TKT-2026-000001",
-        summary: "Cannot access corporate email account",
-        description: "Encountering invalid credentials error when signing into Outlook web portal.",
-        requestedPriority: "HIGH",
-        itPriority: "HIGH",
-        currentStatus: "IN_PROGRESS",
-        requesterId: reqId,
-        assignedStaffId: staffId,
-        categoryId: catId,
-        relatedSystemId: sysId,
-      },
-    });
-
+  const existingComment = await prisma.ticketComment.findFirst({ where: { ticketId: ticket.id } });
+  if (!existingComment) {
     await prisma.ticketComment.create({
       data: {
         ticketId: ticket.id,
@@ -140,7 +145,10 @@ async function main() {
         content: "Please look into this urgently as I need access for morning meetings.",
       },
     });
+  }
 
+  const existingNote = await prisma.ticketInternalNote.findFirst({ where: { ticketId: ticket.id } });
+  if (!existingNote) {
     await prisma.ticketInternalNote.create({
       data: {
         ticketId: ticket.id,
@@ -148,11 +156,11 @@ async function main() {
         content: "Verified account status in Active Directory. Resetting password token.",
       },
     });
-    console.log("Sample ticket and notes seeded.");
   }
+  console.log("Sample ticket and notes seeded.");
 }
 
-main()
+seedDatabase()
   .catch((e) => {
     console.error(e);
     process.exit(1);

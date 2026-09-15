@@ -8,6 +8,7 @@ import {
   PaginatedTickets,
 } from "../api.js";
 import { useRequester } from "../context/RequesterContext.js";
+import { useAuth } from "../context/AuthContext.js";
 
 interface MyTicketsViewProps {
   onCreateClick: () => void;
@@ -16,6 +17,9 @@ interface MyTicketsViewProps {
 
 export const MyTicketsView: React.FC<MyTicketsViewProps> = ({ onCreateClick, onTicketClick }) => {
   const { selectedRequester, setIsSelectorOpen } = useRequester();
+  const authContext = useAuth();
+  const authUser = authContext?.user || null;
+  const effectiveRequesterId = authUser?.id || selectedRequester?.id;
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [data, setData] = useState<PaginatedTickets | null>(null);
@@ -54,7 +58,7 @@ export const MyTicketsView: React.FC<MyTicketsViewProps> = ({ onCreateClick, onT
 
   // Fetch Tickets on Filter/Sort/Page Change
   useEffect(() => {
-    if (!selectedRequester) return;
+    if (!effectiveRequesterId) return;
 
     setLoading(true);
     setError(null);
@@ -69,9 +73,10 @@ export const MyTicketsView: React.FC<MyTicketsViewProps> = ({ onCreateClick, onT
         page,
         limit: 10,
       },
-      selectedRequester.id
+      effectiveRequesterId
     )
       .then((res) => {
+        console.log("FETCH MY TICKETS RESULT:", res);
         setData(res);
         setLoading(false);
       })
@@ -79,7 +84,7 @@ export const MyTicketsView: React.FC<MyTicketsViewProps> = ({ onCreateClick, onT
         setError(err.message || "Failed to load tickets");
         setLoading(false);
       });
-  }, [selectedRequester, search, selectedCategory, selectedPriority, selectedStatus, selectedSort, page]);
+  }, [effectiveRequesterId, selectedRequester, search, selectedCategory, selectedPriority, selectedStatus, selectedSort, page]);
 
   const handleClearFilters = () => {
     setSearch("");
@@ -118,7 +123,9 @@ export const MyTicketsView: React.FC<MyTicketsViewProps> = ({ onCreateClick, onT
     }
   };
 
-  if (!selectedRequester) {
+  const displayRequester = selectedRequester || (authUser ? { name: authUser.name, department: authUser.role } : null);
+
+  if (!displayRequester) {
     return (
       <div
         style={{
@@ -182,7 +189,7 @@ export const MyTicketsView: React.FC<MyTicketsViewProps> = ({ onCreateClick, onT
             My IT Support Tickets
           </h2>
           <p style={{ color: "#65756E", fontSize: "14px", margin: 0 }}>
-            Viewing tickets for <strong>{selectedRequester.name}</strong> ({selectedRequester.department})
+            Viewing tickets for <strong>{displayRequester.name}</strong>
           </p>
         </div>
 
