@@ -71,7 +71,7 @@ test.describe('E2E-02: IT Staff Ticket Queue & Lifecycle Workflow E2E Journey', 
     await page.keyboard.press('Enter');
 
     await page.screenshot({
-      path: `artifacts/lab-03/screenshots/staff-queue/01-staff-queue-search-${projectName}.png`,
+      path: `../artifacts/lab-03/screenshots/staff-queue/01-staff-queue-search-${projectName}.png`,
       fullPage: true,
     });
 
@@ -95,7 +95,7 @@ test.describe('E2E-02: IT Staff Ticket Queue & Lifecycle Workflow E2E Journey', 
     await expect(assignedBadge).toBeVisible();
 
     await page.screenshot({
-      path: `artifacts/lab-03/screenshots/staff-ticket-detail/01-staff-ticket-claimed-${projectName}.png`,
+      path: `../artifacts/lab-03/screenshots/staff-ticket-detail/01-staff-ticket-claimed-${projectName}.png`,
       fullPage: true,
     });
   });
@@ -159,7 +159,7 @@ test.describe('E2E-02: IT Staff Ticket Queue & Lifecycle Workflow E2E Journey', 
     await expect(internalNote).toBeVisible();
 
     await page.screenshot({
-      path: `artifacts/lab-03/screenshots/staff-ticket-detail/02-resolved-comment-notes-${projectName}.png`,
+      path: `../artifacts/lab-03/screenshots/staff-ticket-detail/02-resolved-comment-notes-${projectName}.png`,
       fullPage: true,
     });
 
