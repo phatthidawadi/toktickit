@@ -104,9 +104,15 @@ function AuthGate() {
     authContext = useAuth();
   } catch (_e) {}
 
+  let requesterContext: any = null;
+  try {
+    requesterContext = useRequester();
+  } catch (_e) {}
+
   const user = authContext?.user || null;
   const loading = authContext?.loading ?? false;
   const refreshUser = authContext?.refreshUser;
+  const selectedRequester = requesterContext?.selectedRequester;
 
   if (loading) {
     return (
@@ -117,7 +123,15 @@ function AuthGate() {
   }
 
   if (!user) {
-    return <Login onLoginSuccess={() => refreshUser?.()} />;
+    if (selectedRequester) {
+      return <MainContent />;
+    }
+    return (
+      <>
+        <Login onLoginSuccess={() => refreshUser?.()} />
+        <RequesterSelectorScreen />
+      </>
+    );
   }
 
   if (user.mustChangePassword) {

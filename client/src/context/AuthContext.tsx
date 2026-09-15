@@ -38,8 +38,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = async (): Promise<void> => {
-    await logoutApi();
-    setUser(null);
+    try {
+      await logoutApi();
+    } catch (_err) {
+      console.error("Logout error:", _err);
+    } finally {
+      setUser(null);
+    }
   };
 
   return (

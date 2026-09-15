@@ -16,7 +16,7 @@ import {
   SESSION_MAX_AGE_SECONDS,
 } from "./utils/auth.js";
 import { authenticateSession, requireRole } from "./middleware/authMiddleware.js";
-import { loginRateLimiter } from "./middleware/rateLimiter.js";
+import { loginRateLimiter, clearRateLimitStore } from "./middleware/rateLimiter.js";
 import { generateTicketNumber } from "./utils/ticketNumber.js";
 import { isValidStatusTransition } from "./utils/workflow.js";
 
@@ -27,6 +27,30 @@ export const app = express();
 app.use(cors({ credentials: true, origin: true }));          // already wired: lets the Vite dev server call this API
 app.use(express.json());
 app.use(cookieParser());
+
+import { seedDatabase } from "../prisma/seed.js";
+
+// Test route to clear rate limiting store and re-seed database during Playwright test runs
+app.post("/api/test/reset-rate-limit", (_req: Request, res: Response) => {
+  if (process.env.NODE_ENV === "production") {
+    return res.status(403).json({ error: "Forbidden in production", code: "FORBIDDEN" });
+  }
+  clearRateLimitStore();
+  return res.json({ success: true, message: "Rate limit store cleared." });
+});
+
+app.post("/api/test/reset-db", async (_req: Request, res: Response) => {
+  if (process.env.NODE_ENV === "production") {
+    return res.status(403).json({ error: "Forbidden in production", code: "FORBIDDEN" });
+  }
+  try {
+    clearRateLimitStore();
+    await seedDatabase();
+    return res.json({ success: true, message: "Database re-seeded successfully." });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || "Failed to reset database" });
+  }
+});
 
 // ---------------------------------------------------------------------------
 // Lab 3 — Authentication REST Endpoints

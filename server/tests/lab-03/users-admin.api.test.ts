@@ -1,7 +1,9 @@
-import { describe, it, expect, afterAll, beforeAll } from "vitest";
+import { describe, it, expect, afterAll, beforeAll, beforeEach } from "vitest";
 import supertest from "supertest";
 import { app } from "../../src/app.js";
 import { getPrisma } from "../../src/prisma.js";
+import { clearRateLimitStore } from "../../src/middleware/rateLimiter.js";
+import { seedDatabase } from "../../prisma/seed.js";
 
 const request = supertest(app);
 
@@ -25,16 +27,14 @@ describe("Administrator User Management API Endpoints (ADMIN-API-01 to ADMIN-API
   let adminUserId: number;
   let createdUserId: number | null = null;
 
-  beforeAll(async () => {
-    // Ensure leftover test user is cleaned up before beginning
-    await prisma.user.deleteMany({
-      where: { email: { equals: "test.admin.created@example.com", mode: "insensitive" } },
-    });
-
-    // Ensure admin & staff have mustChangePassword = false for testing
+  beforeEach(async () => {
+    clearRateLimitStore();
     await prisma.user.updateMany({
       where: { email: { in: ["admin.toktickit@example.com", "staff.somsri@example.com"] } },
-      data: { mustChangePassword: false },
+      data: {
+        mustChangePassword: false,
+        passwordHash: "$2b$10$PthZkzqA7W9qhEloVjE3n.H/DGBCcw.Ip5GbH4ijbbyHpVKuOp/Hm",
+      },
     });
 
     const adminLoginRes = await request.post("/api/auth/login").send({
@@ -42,13 +42,23 @@ describe("Administrator User Management API Endpoints (ADMIN-API-01 to ADMIN-API
       password: "Password123!",
     });
     adminCookie = getCookieHeader(adminLoginRes);
-    adminUserId = adminLoginRes.body.user.id;
+    if (adminLoginRes.body?.user?.id) {
+      adminUserId = adminLoginRes.body.user.id;
+    }
 
     const staffLoginRes = await request.post("/api/auth/login").send({
       email: "staff.somsri@example.com",
       password: "Password123!",
     });
     staffCookie = getCookieHeader(staffLoginRes);
+  });
+
+  beforeAll(async () => {
+    await seedDatabase();
+    // Ensure leftover test user is cleaned up before beginning
+    await prisma.user.deleteMany({
+      where: { email: { equals: "test.admin.created@example.com", mode: "insensitive" } },
+    });
   });
 
   afterAll(async () => {

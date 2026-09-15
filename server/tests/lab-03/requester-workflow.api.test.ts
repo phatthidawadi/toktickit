@@ -55,10 +55,10 @@ describe("Requester Workflow API Endpoints (REQ-API-01 & API-REQ-REG-01)", () =>
     await prisma.user.update({
       where: { email: "jennifer.a@example.com" },
       data: { mustChangePassword: true },
-    }).catch(() => {});
+    }).catch(() => { });
     if (createdTicketId) {
       await prisma.ticketComment.deleteMany({ where: { ticketId: createdTicketId } });
-      await prisma.ticket.delete({ where: { id: createdTicketId } }).catch(() => {});
+      await prisma.ticket.delete({ where: { id: createdTicketId } }).catch(() => { });
     }
     await prisma.$disconnect();
   });

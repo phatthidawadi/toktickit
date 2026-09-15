@@ -1,9 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { fetchRequesters, Requester } from "../api.js";
 import { useRequester } from "../context/RequesterContext.js";
+import { useAuth } from "../context/AuthContext.js";
 
 export const RequesterSelectorScreen: React.FC = () => {
+  let authContext: any = null;
+  try {
+    authContext = useAuth();
+  } catch (_e) {}
+  const user = authContext?.user;
   const { selectedRequester, setSelectedRequester, isSelectorOpen, setIsSelectorOpen } = useRequester();
+
+  if (user || !isSelectorOpen) return null;
 
   const [requesters, setRequesters] = useState<Requester[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -28,8 +36,6 @@ export const RequesterSelectorScreen: React.FC = () => {
         });
     }
   }, [isSelectorOpen]);
-
-  if (!isSelectorOpen) return null;
 
   const handleContinue = () => {
     const found = requesters.find((r) => r.id === Number(selectedId));
@@ -87,7 +93,7 @@ export const RequesterSelectorScreen: React.FC = () => {
           </h2>
           <p style={{ fontSize: "13px", color: "#65756E", margin: 0 }}>
             Choose a development requester to simulate the current requester context for Lab 2.
-            This is for testing only and is not a login screen.
+            This is for testing only and is not a login screen. Authentication coming in Lab 3.
           </p>
         </div>
 

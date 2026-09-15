@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Requester } from "../api.js";
+import { useAuth } from "./AuthContext.js";
 
 interface RequesterContextType {
   selectedRequester: Requester | null;
@@ -13,6 +14,13 @@ const STORAGE_KEY = "toktickit_selected_requester";
 const RequesterContext = createContext<RequesterContextType | undefined>(undefined);
 
 export const RequesterProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  let authContext: any = null;
+  try {
+    authContext = useAuth();
+  } catch (_e) {}
+
+  const user = authContext?.user;
+
   const [selectedRequester, setSelectedRequesterState] = useState<Requester | null>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -37,6 +45,20 @@ export const RequesterProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setIsSelectorOpen(true);
     }
   };
+
+  useEffect(() => {
+    if (user) {
+      if (!selectedRequester || selectedRequester.id !== user.id) {
+        setSelectedRequester({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          department: user.department || "General",
+          isActive: user.isActive ?? true,
+        });
+      }
+    }
+  }, [user]);
 
   return (
     <RequesterContext.Provider
