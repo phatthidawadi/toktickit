@@ -479,6 +479,53 @@
 
 ทำการ push อัปเดตขึ้นกิ่ง `feature/17-auth-foundation` สำหรับ PR #53 เรียบร้อยแล้ว รบกวนช่วยตรวจทานอีกครั้งได้เลย ขอบคุณมากค่ะ"
 
+---
+
+### Reviewer follow-up comment I received (PR #53 — Round 2):
+> ### Re-review — PR #53 (Round 2)
+> 
+> ตรวจรอบนี้แล้วค่ะ จุดที่ขอไปก่อนหน้านี้แก้ครบหมดแล้วนะคะ 
+> 
+> * ✅ **P1 #1** — เอา hardcoded JWT secret ออกแล้ว และเปลี่ยนเป็น `getJwtSecret()` ที่จะ throw ทันทีถ้าไม่มีค่าใน env
+> * ✅ **P2 #2** — `authenticateSession` เช็กข้อมูล user จาก DB แล้ว ทั้ง `isActive`, `role` และ `mustChangePassword` และมีการบังคับ `MUST_CHANGE_PASSWORD` พร้อม exempt paths
+> * ✅ **P2 #3** — เพิ่ม login rate limit เป็น 5 ครั้ง / 15 นาที ต่อ IP + email และ reset เมื่อ login สำเร็จ พร้อม `429` + `Retry-After` และมี test สำหรับ SEC-AUTH-03 แล้ว
+> * ✅ **P2 #4** — แก้ test ให้ใช้ `try...finally` เพื่อ restore password กลับหลัง test แล้ว
+> * ✅ **P3** — เพิ่ม `secure` cookie ตาม `NODE_ENV` และมี test สำหรับ invalid JWT → `401` และ `mustChangePassword` → `403` แล้วค่ะ
+> 
+> แต่เจอ **P1 ใหม่ 1 จุด** ที่อยากให้แก้ก่อน Approve ค่ะ
+> 
+> ### P1 — ยังมีช่องทาง bypass authentication
+> 
+> ใน `server/src/middleware/authMiddleware.ts` ตอนนี้ถ้าไม่มี session cookie แต่ส่ง header `x-requester-id` มาก็ยังสามารถผ่าน authentication ได้ เช่น
+> 
+> ```ts
+> if (!token) {
+>   const requesterHeader = req.headers["x-requester-id"];
+>   if (requesterHeader) {
+>     req.user = { userId: Number(requesterHeader), role: "REQUESTER", mustChangePassword: false };
+>     return next();
+>   }
+> }
+> ```
+> 
+> ปัญหาคือแค่ส่ง `x-requester-id: <id>` ระบบก็ถือว่า login แล้วค่ะ และสามารถเรียก `/api/auth/me` เพื่อดูข้อมูลของ user ตาม ID ที่ส่งมาได้เลย โดยไม่ต้องมี session และไม่ได้เช็กด้วยว่า user มีอยู่จริงหรือยัง active อยู่ไหม
+> 
+> แนะนำให้เอา `x-requester-id` ออกจาก `authenticateSession` ไปเลยค่ะ
+> 
+> ### Decision: Not yet
+
+### How I responded (PR #53 — Round 2):
+"ขอบคุณสำหรับการตรวจทานเพิ่มเติมค่ะ! ได้ทำการแก้ไขตามคำแนะนำเรียบร้อยแล้ว:
+
+1. **นำ `x-requester-id` Header Fallback ออกจาก `authenticateSession` Middleware**:
+   - ลบการตรวจจับ `x-requester-id` ใน `server/src/middleware/authMiddleware.ts` ออกโดยสมบูรณ์ เพื่อป้องกันช่องทาง bypass และป้องกันปัญหา IDOR โดย `authenticateSession` จะบังคับใช้ JWT Session Cookie เท่านั้น
+   - Endpoints ฝั่ง Authentication ทุกเส้น (`/api/auth/*`) ต้องยืนยันตัวตนด้วย Session Cookie ที่ถูกต้องเท่านั้น
+
+2. **เพิ่ม Security Test Case `SEC-AUTH-04`**:
+   - เพิ่ม test case ใน `server/tests/lab-03/auth.api.test.ts` ตรวจสอบว่าการส่งเฉพาะ `x-requester-id` header โดยไม่มี Session Cookie มายัง Protected Auth Route จะถูกปฏิเสธด้วย HTTP 401 Unauthorized ทันที
+
+ทำการ push อัปเดตขึ้นกิ่ง `feature/17-auth-foundation` สำหรับ PR #53 เรียบร้อยแล้ว รบกวนช่วยตรวจทานอีกครั้ง ขอบคุณมากค่ะ"
+
 
 
 

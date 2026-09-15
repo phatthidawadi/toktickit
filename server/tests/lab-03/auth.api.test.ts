@@ -265,4 +265,13 @@ describe("Authentication & Session API Endpoints (AUTH-API-01 to AUTH-API-07)", 
     expect(rateLimitedRes.status).toBe(429);
     expect(rateLimitedRes.body.code).toBe("TOO_MANY_REQUESTS");
   });
+
+  it("SEC-AUTH-04: Header x-requester-id without session cookie cannot bypass authentication and returns 401", async () => {
+    const res = await request
+      .get("/api/auth/me")
+      .set("x-requester-id", "1");
+
+    expect(res.status).toBe(401);
+    expect(res.body.code).toBe("UNAUTHORIZED");
+  });
 });

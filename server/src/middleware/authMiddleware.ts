@@ -15,15 +15,6 @@ export async function authenticateSession(req: Request, res: Response, next: Nex
   const token = req.cookies?.[SESSION_COOKIE_NAME];
 
   if (!token) {
-    const requesterHeader = req.headers["x-requester-id"];
-    if (requesterHeader) {
-      const requesterId = Number(requesterHeader);
-      if (!isNaN(requesterId) && requesterId > 0) {
-        req.user = { userId: requesterId, email: "", role: "REQUESTER", mustChangePassword: false };
-        return next();
-      }
-    }
-
     return res.status(401).json({
       error: "Authentication required. Session cookie missing.",
       code: "UNAUTHORIZED",
