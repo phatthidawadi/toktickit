@@ -29,17 +29,14 @@ describe("Public Comments API Endpoints (COMMENT-API-01 & API-COMM-03)", () => {
       where: { email: "jennifer.a@example.com" },
       data: { mustChangePassword: false },
     });
-  });
-
-  beforeAll(async () => {
-    // Login as requester (Jennifer)
     const loginRes = await request.post("/api/auth/login").send({
       email: "jennifer.a@example.com",
       password: "Password123!",
     });
     requesterCookie = getCookieHeader(loginRes);
+  });
 
-    // Get Jennifer user & ensure mustChangePassword is false for comment tests
+  beforeAll(async () => {
     const jennifer = await prisma.user.findUnique({ where: { email: "jennifer.a@example.com" } });
     await prisma.user.update({
       where: { id: jennifer!.id },

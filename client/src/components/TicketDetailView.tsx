@@ -17,7 +17,10 @@ interface TicketDetailViewProps {
 
 export const TicketDetailView: React.FC<TicketDetailViewProps> = ({ ticketId, onBack }) => {
   const { selectedRequester, setIsSelectorOpen } = useRequester();
-  const authContext = useAuth();
+  let authContext: any = null;
+  try {
+    authContext = useAuth();
+  } catch (_e) {}
   const authUser = authContext?.user || null;
   const effectiveRequesterId = authUser?.id || selectedRequester?.id;
   const displayRequester = selectedRequester || (authUser ? { name: authUser.name, department: authUser.role } : null);

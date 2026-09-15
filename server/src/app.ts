@@ -32,11 +32,17 @@ import { seedDatabase } from "../prisma/seed.js";
 
 // Test route to clear rate limiting store and re-seed database during Playwright test runs
 app.post("/api/test/reset-rate-limit", (_req: Request, res: Response) => {
+  if (process.env.NODE_ENV === "production") {
+    return res.status(403).json({ error: "Forbidden in production", code: "FORBIDDEN" });
+  }
   clearRateLimitStore();
   return res.json({ success: true, message: "Rate limit store cleared." });
 });
 
 app.post("/api/test/reset-db", async (_req: Request, res: Response) => {
+  if (process.env.NODE_ENV === "production") {
+    return res.status(403).json({ error: "Forbidden in production", code: "FORBIDDEN" });
+  }
   try {
     clearRateLimitStore();
     await seedDatabase();

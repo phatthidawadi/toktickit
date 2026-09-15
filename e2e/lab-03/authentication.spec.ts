@@ -77,7 +77,7 @@ test.describe('E2E-01: Authentication & Mandatory Password Change User Journey',
 
     // Capture screenshot evidence
     await page.screenshot({
-      path: `../artifacts/lab-03/screenshots/authentication/01-invalid-login-${projectName}.png`,
+      path: `artifacts/lab-03/screenshots/authentication/01-invalid-login-${projectName}.png`,
       fullPage: true,
     });
   });
@@ -97,7 +97,7 @@ test.describe('E2E-01: Authentication & Mandatory Password Change User Journey',
     await expect(page.locator('.change-password-container')).toContainText(/requires a new password/i);
 
     await page.screenshot({
-      path: `../artifacts/lab-03/screenshots/authentication/02-mandatory-password-change-${projectName}.png`,
+      path: `artifacts/lab-03/screenshots/authentication/02-mandatory-password-change-${projectName}.png`,
       fullPage: true,
     });
 
@@ -116,7 +116,7 @@ test.describe('E2E-01: Authentication & Mandatory Password Change User Journey',
     await expect(userNameBadge).toContainText('Admin TokTickIT');
 
     await page.screenshot({
-      path: `../artifacts/lab-03/screenshots/authentication/03-authenticated-home-${projectName}.png`,
+      path: `artifacts/lab-03/screenshots/authentication/03-authenticated-home-${projectName}.png`,
       fullPage: true,
     });
   });
@@ -138,7 +138,7 @@ test.describe('E2E-01: Authentication & Mandatory Password Change User Journey',
 
     // Capture screenshot evidence of logged out screen
     await page.screenshot({
-      path: `../artifacts/lab-03/screenshots/authentication/04-logged-out-${projectName}.png`,
+      path: `artifacts/lab-03/screenshots/authentication/04-logged-out-${projectName}.png`,
       fullPage: true,
     });
 

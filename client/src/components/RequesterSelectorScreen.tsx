@@ -37,11 +37,6 @@ export const RequesterSelectorScreen: React.FC = () => {
     }
   }, [isSelectorOpen]);
 
-  const authContext = useAuth();
-  const user = authContext?.user;
-
-  if (user || !isSelectorOpen) return null;
-
   const handleContinue = () => {
     const found = requesters.find((r) => r.id === Number(selectedId));
     if (found) {
@@ -98,7 +93,7 @@ export const RequesterSelectorScreen: React.FC = () => {
           </h2>
           <p style={{ fontSize: "13px", color: "#65756E", margin: 0 }}>
             Choose a development requester to simulate the current requester context for Lab 2.
-            This is for testing only and is not a login screen.
+            This is for testing only and is not a login screen. Authentication coming in Lab 3.
           </p>
         </div>
 

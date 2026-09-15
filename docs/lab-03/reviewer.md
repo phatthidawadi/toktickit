@@ -926,6 +926,50 @@ Push commit แก้ไขขึ้น PR #58 เรียบร้อยแล
 
 Push commit อัปเดตขึ้นกิ่ง `feature/23-e2e-integration-tests` สำหรับ PR #59 เรียบร้อยแล้ว รบกวนช่วย re-check อีกครั้งนะคะ ขอบคุณมากค่ะ"
 
+---
+
+### Reviewer comment I received (PR #59 — Round 2):
+> ## Review — PR #59 (Round 2)
+> 
+> แก้ครบตาม feedback รอบก่อนแล้วค่ะ — ทั้ง hard assertions, idempotency (reset DB ใน `beforeEach/afterAll`), E2E-01/02/03 ครบตามที่เคลม รวมถึง RESOLVED transition, IT priority, note privacy ที่ซ่อนจาก requester และ safety safeguards รวมถึง responsive screenshots ทั้ง 3 viewports ลงครบทั้ง 4 โฟลเดอร์ตาม sheet แล้วค่ะ
+> 
+> แต่เจอ P1 ใหม่ที่ทำให้ claim verification น่าจะยังไม่ตรงกับสถานะจริง:
+> 
+> **P1 — `RequesterSelectorScreen.tsx` มีการประกาศ authContext/user ซ้ำกัน 2 รอบ:**  
+> ที่บรรทัด 7/11 และ 40/41 ทำให้เกิด `SyntaxError: Identifier already declared` → `client npm run build` และ `npm test` ผ่านไม่ได้ค่ะ รบกวนลบ block ที่ซ้ำออกหนึ่งอัน แล้วรันทั้ง build + test จริง ๆ อีกครั้ง พร้อมแจ้งจำนวน test ที่ผ่านเพื่อยืนยันอีกครั้งค่ะ
+> 
+> **P2 — `/api/test/reset-db` + `/api/test/reset-rate-limit` เป็น unauthenticated endpoint ในโค้ด production:**  
+> `reset-rate-limit` อาจเปิดช่องให้ bypass brute-force protection ได้ค่ะ รบกวน guard ด้วย `NODE_ENV !== "production"` หรือ role check
+> 
+> **P3 —** ลบ `console.log` ที่ใช้ debug ใน `MyTicketsView.tsx` และ staff spec รวมถึงปรับ path ของ screenshot ให้เป็นมาตรฐานเดียวกัน (จุด `../artifacts` ถ้ารันจาก repo root จะเขียนไฟล์ออกนอกโฟลเดอร์) และเก็บไว้ที่ `artifacts/` root อันเดียว เพราะตอนนี้มี `e2e/artifacts/` ซ้ำค้างอยู่ค่ะ
+> 
+> **Decision: Not Yet** — รบกวนแก้ P1 (ยังเป็น build-breaker) + P2 แล้ว re-verify ค่ะ ส่วนตัว E2E ตามสเปกที่ทำมา ถือว่าดีมากแล้วค่ะ
+
+---
+
+### Author response & changes (PR #59 — Round 2):
+"เราแก้ไขตาม feedback รอบ 2 สำหรับ PR #59 เรียบร้อยแล้วค่ะ:
+
+1. **P1 — แก้ไข SyntaxError การประกาศตัวแปรซ้ำใน `RequesterSelectorScreen.tsx`**:
+   - ลบ block การประกาศ `authContext` และ `user` ซ้ำซ้อนออก
+   - ยืนยันการรัน build + test จริง:
+     - Client Build (`npm run build`): ผ่านเรียบร้อย 0 errors (`✓ built in 966ms`)
+     - Client Unit Tests (`npm test`): ผ่านครบถ้วน 100% (Lab 3: 8 test files / 20 passed)
+     - Server Unit Tests (`npx vitest run --fileParallelism=false`): ผ่านครบถ้วน 100% (18 test files / 84 passed)
+
+2. **P2 — ป้องกัน Unauthenticated Test Reset Endpoints ใน Production Environment**:
+   - เพิ่ม `process.env.NODE_ENV === "production"` guard ใน `/api/test/reset-db` และ `/api/test/reset-rate-limit` ใน `server/src/app.ts` โดยหากถูกเรียกใน production จะตอบกลับด้วย HTTP 403 Forbidden (`FORBIDDEN`)
+
+3. **P3 — Clean Debug Logs & Standardize Artifact Paths**:
+   - ลบ `console.log` debug ออกจาก `MyTicketsView.tsx` และ Playwright spec files
+   - ปรับ path ของ `page.screenshot()` ให้เป็นมาตรฐานเดียวกันที่ `artifacts/lab-03/screenshots/...` relative จาก repo root เพื่อให้บันทึกภาพหลักฐานลงโฟลเดอร์ `artifacts/` ประจำ repository อย่างถูกต้อง
+
+4. **Re-verification Result**:
+   - Playwright E2E Test Suite (`npx playwright test --config e2e/playwright.config.ts`): ผ่านครบ 21/21 tests (3 viewports: Chromium, Tablet, Mobile)
+   - Responsive Screenshots ถูกสร้างและเก็บใน `artifacts/lab-03/screenshots/{authentication,staff-queue,staff-ticket-detail,user-management}/` ครบทั้ง 39 ภาพเรียบร้อยแล้วค่ะ
+
+Push commit ใหม่ขึ้นกิ่ง `feature/23-e2e-integration-tests` สำหรับ PR #59 เรียบร้อยแล้ว รบกวนช่วย re-check อีกครั้งนะคะ ขอบคุณมากค่ะ"
+
 
 
 

@@ -160,11 +160,13 @@ export async function seedDatabase() {
   console.log("Sample ticket and notes seeded.");
 }
 
-seedDatabase()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await getPrisma().$disconnect();
-  });
+if (process.argv[1]?.includes("seed")) {
+  seedDatabase()
+    .catch((e) => {
+      console.error(e);
+      process.exit(1);
+    })
+    .finally(async () => {
+      await getPrisma().$disconnect();
+    });
+}

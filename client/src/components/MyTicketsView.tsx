@@ -17,7 +17,10 @@ interface MyTicketsViewProps {
 
 export const MyTicketsView: React.FC<MyTicketsViewProps> = ({ onCreateClick, onTicketClick }) => {
   const { selectedRequester, setIsSelectorOpen } = useRequester();
-  const authContext = useAuth();
+  let authContext: any = null;
+  try {
+    authContext = useAuth();
+  } catch (_e) {}
   const authUser = authContext?.user || null;
   const effectiveRequesterId = authUser?.id || selectedRequester?.id;
 
@@ -76,7 +79,6 @@ export const MyTicketsView: React.FC<MyTicketsViewProps> = ({ onCreateClick, onT
       effectiveRequesterId
     )
       .then((res) => {
-        console.log("FETCH MY TICKETS RESULT:", res);
         setData(res);
         setLoading(false);
       })
