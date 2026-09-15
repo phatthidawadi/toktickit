@@ -14,7 +14,7 @@ import {
   SESSION_COOKIE_NAME,
   SESSION_MAX_AGE_SECONDS,
 } from "./utils/auth.js";
-import { authenticateSession } from "./middleware/authMiddleware.js";
+import { authenticateSession, requireRole } from "./middleware/authMiddleware.js";
 import { loginRateLimiter } from "./middleware/rateLimiter.js";
 
 // The Express app is exported separately from app.listen() (see index.ts) so
@@ -179,6 +179,16 @@ app.post("/api/auth/change-password", authenticateSession, async (req: Request, 
 // GET /api/auth/protected-sample — Sample protected endpoint for password change check
 app.get("/api/auth/protected-sample", authenticateSession, (_req: Request, res: Response) => {
   return res.status(200).json({ message: "Access granted to protected sample endpoint" });
+});
+
+// GET /api/staff/tickets — IT Staff Ticket Queue (Protected by RBAC: STAFF, ADMINISTRATOR)
+app.get("/api/staff/tickets", authenticateSession, requireRole(["STAFF", "ADMINISTRATOR"]), (_req: Request, res: Response) => {
+  return res.status(200).json({ tickets: [] });
+});
+
+// GET /api/admin/users — Admin User Management (Protected by RBAC: ADMINISTRATOR)
+app.get("/api/admin/users", authenticateSession, requireRole(["ADMINISTRATOR"]), (_req: Request, res: Response) => {
+  return res.status(200).json({ users: [] });
 });
 
 // ---------------------------------------------------------------------------
