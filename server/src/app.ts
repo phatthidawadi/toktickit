@@ -10,12 +10,14 @@ import {
   hashPassword,
   comparePassword,
   generateToken,
+  verifyToken,
   validatePasswordStrength,
   SESSION_COOKIE_NAME,
   SESSION_MAX_AGE_SECONDS,
 } from "./utils/auth.js";
 import { authenticateSession, requireRole } from "./middleware/authMiddleware.js";
 import { loginRateLimiter } from "./middleware/rateLimiter.js";
+import { generateTicketNumber } from "./utils/ticketNumber.js";
 
 // The Express app is exported separately from app.listen() (see index.ts) so
 // Supertest can import `app` without opening a port. Do not merge these files.
@@ -272,27 +274,47 @@ app.get("/api/related-systems", async (req: Request, res: Response) => {
   }
 });
 
-// ---------------------------------------------------------------------------
-// Lab 2 — Create Ticket
-// POST /api/tickets
-// ---------------------------------------------------------------------------
-import { generateTicketNumber } from "./utils/ticketNumber.js";
+function getRequesterIdFromReq(req: Request): number | null {
+  const token = req.cookies?.[SESSION_COOKIE_NAME];
+  if (token) {
+    const payload = verifyToken(token);
+    if (payload?.userId) {
+      return payload.userId;
+    }
+  }
+
+  const requesterHeader = req.headers["x-requester-id"];
+  if (requesterHeader) {
+    const id = Number(requesterHeader);
+    if (!isNaN(id) && id > 0) return id;
+  }
+
+  return null;
+}
+
+async function getUserFromReq(req: Request): Promise<{ id: number; name: string; email: string; role: string; isActive: boolean } | null> {
+  const requesterId = getRequesterIdFromReq(req);
+  if (!requesterId) return null;
+
+  const user = await getPrisma().user.findUnique({
+    where: { id: requesterId },
+    select: { id: true, name: true, email: true, role: true, isActive: true },
+  });
+
+  if (!user || !user.isActive) return null;
+  return user;
+}
 
 app.post("/api/tickets", async (req: Request, res: Response) => {
   try {
-    const requesterHeader = req.headers["x-requester-id"];
-    if (!requesterHeader) {
+    const requesterId = getRequesterIdFromReq(req);
+    if (!requesterId) {
       return res.status(400).json({ error: "Missing x-requester-id header" });
-    }
-
-    const requesterId = Number(requesterHeader);
-    if (isNaN(requesterId) || requesterId <= 0) {
-      return res.status(400).json({ error: "Invalid x-requester-id header" });
     }
 
     // Verify requester exists and is active
     const requester = await getPrisma().user.findFirst({
-      where: { id: requesterId, role: "REQUESTER", isActive: true },
+      where: { id: requesterId, isActive: true },
     });
     if (!requester) {
       return res.status(400).json({ error: "Inactive or invalid requester" });
@@ -383,14 +405,9 @@ app.post("/api/tickets", async (req: Request, res: Response) => {
 // ---------------------------------------------------------------------------
 app.get("/api/tickets", async (req: Request, res: Response) => {
   try {
-    const requesterHeader = req.headers["x-requester-id"];
-    if (!requesterHeader) {
+    const requesterId = getRequesterIdFromReq(req);
+    if (!requesterId) {
       return res.status(400).json({ error: "Missing x-requester-id header" });
-    }
-
-    const requesterId = Number(requesterHeader);
-    if (isNaN(requesterId) || requesterId <= 0) {
-      return res.status(400).json({ error: "Invalid x-requester-id header" });
     }
 
     const { search, categoryId, status, priority, sort = "desc", page = "1", limit = "10" } = req.query;
@@ -511,14 +528,9 @@ app.get("/api/tickets", async (req: Request, res: Response) => {
 // ---------------------------------------------------------------------------
 app.get("/api/tickets/:id", async (req: Request, res: Response) => {
   try {
-    const requesterHeader = req.headers["x-requester-id"];
-    if (!requesterHeader) {
+    const requesterId = getRequesterIdFromReq(req);
+    if (!requesterId) {
       return res.status(400).json({ error: "Missing x-requester-id header" });
-    }
-
-    const requesterId = Number(requesterHeader);
-    if (isNaN(requesterId) || requesterId <= 0) {
-      return res.status(400).json({ error: "Invalid x-requester-id header" });
     }
 
     const ticketId = Number(req.params.id);
@@ -616,12 +628,10 @@ app.post("/api/tickets/:id/attachments", (req: Request, res: Response) => {
     }
 
     try {
-      const requesterHeader = req.headers["x-requester-id"];
-      if (!requesterHeader) {
+      const requesterId = getRequesterIdFromReq(req);
+      if (!requesterId) {
         return res.status(400).json({ error: "Missing x-requester-id header" });
       }
-
-      const requesterId = Number(requesterHeader);
       const ticketId = Number(req.params.id);
 
       const ticket = await getPrisma().ticket.findUnique({
@@ -671,12 +681,10 @@ app.post("/api/tickets/:id/attachments", (req: Request, res: Response) => {
 // GET /api/attachments/:id — Retrieve Attachment Metadata
 app.get("/api/attachments/:id", async (req: Request, res: Response) => {
   try {
-    const requesterHeader = req.headers["x-requester-id"];
-    if (!requesterHeader) {
+    const requesterId = getRequesterIdFromReq(req);
+    if (!requesterId) {
       return res.status(400).json({ error: "Missing x-requester-id header" });
     }
-
-    const requesterId = Number(requesterHeader);
     const attachmentId = Number(req.params.id);
 
     const attachment = await getPrisma().attachment.findUnique({
@@ -701,12 +709,10 @@ app.get("/api/attachments/:id", async (req: Request, res: Response) => {
 // GET /api/attachments/:id/download — Download Attachment (410 Gone if removed)
 app.get("/api/attachments/:id/download", async (req: Request, res: Response) => {
   try {
-    const requesterHeader = req.headers["x-requester-id"];
-    if (!requesterHeader) {
+    const requesterId = getRequesterIdFromReq(req);
+    if (!requesterId) {
       return res.status(400).json({ error: "Missing x-requester-id header" });
     }
-
-    const requesterId = Number(requesterHeader);
     const attachmentId = Number(req.params.id);
 
     const attachment = await getPrisma().attachment.findUnique({
@@ -740,12 +746,10 @@ app.get("/api/attachments/:id/download", async (req: Request, res: Response) => 
 // DELETE /api/attachments/:id — Soft-Remove Attachment
 app.delete("/api/attachments/:id", async (req: Request, res: Response) => {
   try {
-    const requesterHeader = req.headers["x-requester-id"];
-    if (!requesterHeader) {
+    const requesterId = getRequesterIdFromReq(req);
+    if (!requesterId) {
       return res.status(400).json({ error: "Missing x-requester-id header" });
     }
-
-    const requesterId = Number(requesterHeader);
     const attachmentId = Number(req.params.id);
     const { reason } = req.body || {};
 
@@ -778,6 +782,141 @@ app.delete("/api/attachments/:id", async (req: Request, res: Response) => {
     res.status(200).json(updated);
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// GET /api/tickets/:id/comments — Fetch Public Comments
+app.get("/api/tickets/:id/comments", async (req: Request, res: Response) => {
+  try {
+    const user = await getUserFromReq(req);
+    if (!user) {
+      return res.status(401).json({ error: "Authentication required", code: "UNAUTHORIZED" });
+    }
+
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId) || ticketId <= 0) {
+      return res.status(404).json({ error: "Ticket not found" });
+    }
+
+    const ticket = await getPrisma().ticket.findUnique({
+      where: { id: ticketId },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: "Ticket not found" });
+    }
+
+    // Access control: Ticket owner (REQUESTER) or IT_STAFF / ADMINISTRATOR
+    if (user.role === "REQUESTER" && ticket.requesterId !== user.id) {
+      return res.status(403).json({ error: "Access denied. You can only view comments for your own tickets." });
+    }
+
+    const comments = await getPrisma().ticketComment.findMany({
+      where: { ticketId },
+      include: {
+        author: {
+          select: { id: true, name: true, email: true, role: true },
+        },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+
+    return res.status(200).json(comments);
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// POST /api/tickets/:id/comments — Post a Public Comment
+app.post("/api/tickets/:id/comments", async (req: Request, res: Response) => {
+  try {
+    const user = await getUserFromReq(req);
+    if (!user) {
+      return res.status(401).json({ error: "Authentication required", code: "UNAUTHORIZED" });
+    }
+
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId) || ticketId <= 0) {
+      return res.status(404).json({ error: "Ticket not found" });
+    }
+
+    const ticket = await getPrisma().ticket.findUnique({
+      where: { id: ticketId },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: "Ticket not found" });
+    }
+
+    if (user.role === "REQUESTER" && ticket.requesterId !== user.id) {
+      return res.status(403).json({ error: "Access denied. You can only comment on your own tickets." });
+    }
+
+    const { content } = req.body || {};
+    if (!content || typeof content !== "string" || content.trim().length === 0 || content.trim().length > 1000) {
+      return res.status(400).json({ error: "Comment content is required (1 to 1000 characters)" });
+    }
+
+    const newComment = await getPrisma().ticketComment.create({
+      data: {
+        ticketId,
+        authorId: user.id,
+        content: content.trim(),
+      },
+      include: {
+        author: {
+          select: { id: true, name: true, email: true, role: true },
+        },
+      },
+    });
+
+    // BR-10: Requester comment auto-transition from WAITING_FOR_REQUESTER to IN_PROGRESS
+    if (user.role === "REQUESTER" && ticket.currentStatus === "WAITING_FOR_REQUESTER") {
+      await getPrisma().ticket.update({
+        where: { id: ticketId },
+        data: { currentStatus: "IN_PROGRESS" },
+      });
+    }
+
+    return res.status(201).json(newComment);
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// PATCH /api/tickets/:id/resolve-ack — Requester Problem Appears Resolved toggle
+app.patch("/api/tickets/:id/resolve-ack", async (req: Request, res: Response) => {
+  try {
+    const user = await getUserFromReq(req);
+    if (!user) {
+      return res.status(401).json({ error: "Authentication required", code: "UNAUTHORIZED" });
+    }
+
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId) || ticketId <= 0) {
+      return res.status(404).json({ error: "Ticket not found" });
+    }
+
+    const ticket = await getPrisma().ticket.findUnique({
+      where: { id: ticketId },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: "Ticket not found" });
+    }
+
+    if (ticket.requesterId !== user.id) {
+      return res.status(403).json({ error: "Access denied. You can only acknowledge resolution for your own tickets." });
+    }
+
+    const updatedTicket = await getPrisma().ticket.update({
+      where: { id: ticketId },
+      data: { isRequesterResolved: true },
+    });
+
+    return res.status(200).json(updatedTicket);
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 });
 

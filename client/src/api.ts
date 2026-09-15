@@ -314,3 +314,48 @@ export async function changePasswordApi(
   return data;
 }
 
+export interface PublicComment {
+  id: number;
+  ticketId: number;
+  authorId: number;
+  content: string;
+  createdAt: string;
+  author: {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+  };
+}
+
+export async function fetchPublicCommentsApi(ticketId: number): Promise<PublicComment[]> {
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/comments`, {
+    method: "GET",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to fetch public comments");
+  return res.json();
+}
+
+export async function createPublicCommentApi(ticketId: number, content: string): Promise<PublicComment> {
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/comments`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ content }),
+  });
+  const data = await res.json().catch(() => ({ error: "Failed to post comment" }));
+  if (!res.ok) throw new Error(data.error || "Failed to post comment");
+  return data;
+}
+
+export async function toggleResolveAckApi(ticketId: number): Promise<Ticket> {
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/resolve-ack`, {
+    method: "PATCH",
+    credentials: "include",
+  });
+  const data = await res.json().catch(() => ({ error: "Failed to update resolution status" }));
+  if (!res.ok) throw new Error(data.error || "Failed to update resolution status");
+  return data;
+}
+
