@@ -508,10 +508,7 @@ app.patch("/api/staff/tickets/:id/status", authenticateSession, requireRole(["IT
   }
 });
 
-// GET /api/admin/users — Admin User Management (Protected by RBAC: ADMINISTRATOR)
-app.get("/api/admin/users", authenticateSession, requireRole(["ADMINISTRATOR"]), (_req: Request, res: Response) => {
-  return res.status(200).json({ users: [] });
-});
+
 
 // ---------------------------------------------------------------------------
 // Issue 2 — API health check
@@ -1359,6 +1356,257 @@ app.post("/api/tickets/:id/notes", async (req: Request, res: Response) => {
     });
 
     return res.status(201).json(newNote);
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Lab 3 — Administrator User Management Endpoints (Issue 21)
+// Restricted strictly to ADMINISTRATOR role
+// ---------------------------------------------------------------------------
+
+// GET /api/admin/users — List Users with Search & Role Filter
+app.get("/api/admin/users", authenticateSession, requireRole(["ADMINISTRATOR"]), async (req: Request, res: Response) => {
+  try {
+    const { search, role } = req.query;
+
+    const where: any = {};
+
+    if (role && typeof role === "string" && ["REQUESTER", "IT_STAFF", "ADMINISTRATOR"].includes(role.toUpperCase())) {
+      where.role = role.toUpperCase();
+    }
+
+    if (search && typeof search === "string" && search.trim().length > 0) {
+      const term = search.trim();
+      where.OR = [
+        { name: { contains: term, mode: "insensitive" } },
+        { email: { contains: term, mode: "insensitive" } },
+      ];
+    }
+
+    const users = await getPrisma().user.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isActive: true,
+        mustChangePassword: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: { id: "asc" },
+    });
+
+    return res.status(200).json(users);
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+  }
+});
+
+// POST /api/admin/users — Create User Account
+app.post("/api/admin/users", authenticateSession, requireRole(["ADMINISTRATOR"]), async (req: Request, res: Response) => {
+  try {
+    const { name, email, role, initialPassword, password, isActive } = req.body || {};
+    const rawPassword = initialPassword || password;
+
+    if (!name || typeof name !== "string" || name.trim().length < 2 || name.trim().length > 100) {
+      return res.status(400).json({ error: "User name is required (2 to 100 characters)", code: "INVALID_INPUT" });
+    }
+
+    if (!email || typeof email !== "string" || !email.includes("@")) {
+      return res.status(400).json({ error: "Valid email address is required", code: "INVALID_INPUT" });
+    }
+
+    const validRoles = ["REQUESTER", "IT_STAFF", "ADMINISTRATOR"];
+    if (!role || typeof role !== "string" || !validRoles.includes(role.toUpperCase())) {
+      return res.status(400).json({ error: "Valid role (REQUESTER, IT_STAFF, ADMINISTRATOR) is required", code: "INVALID_INPUT" });
+    }
+
+    if (!rawPassword || typeof rawPassword !== "string" || !validatePasswordStrength(rawPassword)) {
+      return res.status(400).json({
+        error: "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number.",
+        code: "INVALID_PASSWORD",
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // BR-13: Case-insensitive Unique Email Check
+    const existingUser = await getPrisma().user.findFirst({
+      where: { email: { equals: normalizedEmail, mode: "insensitive" } },
+    });
+
+    if (existingUser) {
+      return res.status(409).json({ error: "An account with this email address already exists.", code: "DUPLICATE_EMAIL" });
+    }
+
+    const passwordHash = await hashPassword(rawPassword);
+
+    const newUser = await getPrisma().user.create({
+      data: {
+        name: name.trim(),
+        email: normalizedEmail,
+        role: role.toUpperCase() as any,
+        passwordHash,
+        isActive: isActive !== false,
+        mustChangePassword: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isActive: true,
+        mustChangePassword: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return res.status(201).json(newUser);
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+  }
+});
+
+// PATCH /api/admin/users/:id — Edit User Account
+app.patch("/api/admin/users/:id", authenticateSession, requireRole(["ADMINISTRATOR"]), async (req: Request, res: Response) => {
+  try {
+    const targetId = Number(req.params.id);
+    if (isNaN(targetId) || targetId <= 0) {
+      return res.status(404).json({ error: "User not found", code: "NOT_FOUND" });
+    }
+
+    const targetUser = await getPrisma().user.findUnique({ where: { id: targetId } });
+    if (!targetUser) {
+      return res.status(404).json({ error: "User not found", code: "NOT_FOUND" });
+    }
+
+    const { name, email, role, isActive } = req.body || {};
+
+    // If email is being updated, check case-insensitive uniqueness (BR-13)
+    let normalizedEmail: string | undefined = undefined;
+    if (email && typeof email === "string" && email.trim().length > 0) {
+      if (!email.includes("@")) {
+        return res.status(400).json({ error: "Valid email address is required", code: "INVALID_INPUT" });
+      }
+      normalizedEmail = email.trim().toLowerCase();
+
+      const existingOther = await getPrisma().user.findFirst({
+        where: {
+          email: { equals: normalizedEmail, mode: "insensitive" },
+          NOT: { id: targetId },
+        },
+      });
+
+      if (existingOther) {
+        return res.status(409).json({ error: "An account with this email address already exists.", code: "DUPLICATE_EMAIL" });
+      }
+    }
+
+    // BR-14: Self-Deactivation Prevention
+    if (req.user?.userId === targetId && isActive === false) {
+      return res.status(400).json({
+        error: "Administrators are prohibited from deactivating their own active account.",
+        code: "SELF_DEACTIVATION_PROHIBITED",
+      });
+    }
+
+    // BR-15: Last Administrator Protection
+    const isTargetCurrentlyAdmin = targetUser.role === "ADMINISTRATOR" && targetUser.isActive;
+    const isChangingRoleAwayFromAdmin = role && role.toUpperCase() !== "ADMINISTRATOR";
+    const isDeactivating = isActive === false;
+
+    if (isTargetCurrentlyAdmin && (isChangingRoleAwayFromAdmin || isDeactivating)) {
+      const activeAdminCount = await getPrisma().user.count({
+        where: { role: "ADMINISTRATOR", isActive: true },
+      });
+
+      if (activeAdminCount <= 1) {
+        return res.status(400).json({
+          error: "Prohibited from deactivating or changing role of the last active Administrator in the system.",
+          code: "LAST_ADMIN_PROTECTION",
+        });
+      }
+    }
+
+    const updateData: any = {};
+    if (name && typeof name === "string") updateData.name = name.trim();
+    if (normalizedEmail) updateData.email = normalizedEmail;
+    if (role && typeof role === "string") updateData.role = role.toUpperCase();
+    if (typeof isActive === "boolean") updateData.isActive = isActive;
+
+    const updatedUser = await getPrisma().user.update({
+      where: { id: targetId },
+      data: updateData,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isActive: true,
+        mustChangePassword: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return res.status(200).json(updatedUser);
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+  }
+});
+
+// POST /api/admin/users/:id/reset-password — Reset Initial Password
+app.post("/api/admin/users/:id/reset-password", authenticateSession, requireRole(["ADMINISTRATOR"]), async (req: Request, res: Response) => {
+  try {
+    const targetId = Number(req.params.id);
+    if (isNaN(targetId) || targetId <= 0) {
+      return res.status(404).json({ error: "User not found", code: "NOT_FOUND" });
+    }
+
+    const targetUser = await getPrisma().user.findUnique({ where: { id: targetId } });
+    if (!targetUser) {
+      return res.status(404).json({ error: "User not found", code: "NOT_FOUND" });
+    }
+
+    const { initialPassword, newPassword, password } = req.body || {};
+    const rawPassword = initialPassword || newPassword || password;
+
+    if (!rawPassword || typeof rawPassword !== "string" || !validatePasswordStrength(rawPassword)) {
+      return res.status(400).json({
+        error: "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number.",
+        code: "INVALID_PASSWORD",
+      });
+    }
+
+    const passwordHash = await hashPassword(rawPassword);
+
+    const updatedUser = await getPrisma().user.update({
+      where: { id: targetId },
+      data: {
+        passwordHash,
+        mustChangePassword: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isActive: true,
+        mustChangePassword: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return res.status(200).json({
+      message: "Initial password reset successfully",
+      user: updatedUser,
+    });
   } catch (error) {
     return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
   }
