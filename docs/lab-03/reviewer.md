@@ -12,7 +12,7 @@
 | [PR #53](https://github.com/phatthidawadi/toktickit/pull/53) | `feature/17-auth-foundation` | Approved with comments |
 | [PR #54](https://github.com/phatthidawadi/toktickit/pull/54) | `feature/18-authorization-header` | Approved with comments |
 | [PR #55](https://github.com/phatthidawadi/toktickit/pull/55) | `feature/19-requester-workflow-comments` | Approved with comments |
-| [PR #56](https://github.com/phatthidawadi/toktickit/pull/56) | `feature/20-staff-queue-operations` | Pending review |
+| [PR #56](https://github.com/phatthidawadi/toktickit/pull/56) | `feature/20-staff-queue-operations` | Approved with comments |
 
 ---
 
@@ -650,6 +650,97 @@
 > ผ่านเรียบร้อยแล้วค่ะ merge ได้เลยค่ะ
 > 
 > **Approved and Merged PR #55** เข้าสู่ `lab3-staging` เรียบร้อยแล้ว ขอบคุณสำหรับงานเรียบร้อยค่ะ!
+
+---
+
+### Reviewer comment I received (PR #56):
+> ### Review — PR #56 (IT Staff Ticket Queue & Workflow)
+> 
+> โดยรวม implementation ตรงตามสเปกมากค่ะ — matrix ใน `workflow.ts` ตรงกับตาราง BR-10 ใน specification รวมถึงกรณี `CLOSED → REOPENED` ที่ให้ Admin ทำได้เท่านั้นค่ะ
+> 
+> ทุก staff endpoint มี `authenticateSession + requireRole(["IT_STAFF","ADMINISTRATOR"]) + BR-02 gate` ครบ และการ assign ก็เช็กว่า user ที่จะ assign เป็น active staff ก่อนด้วยค่ะ ส่วน notes ก็แยกสิทธิ์ requester → `403` ถูกต้อง และ amber styling ก็ตรงกับ hex ในสเปกค่ะ
+> 
+> แต่ตอนนี้ **test coverage ยังไม่ครอบคลุม BR-10 จุดสำคัญ** เลยอยากให้เติมก่อน Approve ค่ะ
+> 
+> ### P1 — Auto-claim (BR-10) ยังไม่มี integration test
+> ตอนนี้ test ใน `STAFF-API-01` ทำ `claim:true` ก่อนเปลี่ยนสถานะ แต่ยังไม่ได้ทดสอบ auto-claim ตามที่สเปกระบุค่ะ
+> 
+> กรณีที่อยากให้เพิ่มคือ:
+> 
+> ```text
+> สร้าง ticket ที่เป็น NEW และ assignedStaffId = null
+> → PATCH /api/staff/tickets/:id/status
+>    { status: "OPEN" } ด้วย staffCookie
+> → expect assignedStaffId === staffUserId
+> ```
+> 
+> เพื่อยืนยันว่าเมื่อ staff เปลี่ยนสถานะจาก `NEW → OPEN/IN_PROGRESS` ขณะที่ยังไม่ได้ assign ระบบจะ assign ticket ให้ staff คนปัจจุบันอัตโนมัติค่ะ
+> 
+> ### P2 — Assign ควรทดสอบให้ครบ
+> อยากให้เพิ่ม test ให้ครอบคลุม:
+> 
+> * Reassign → `assignedStaffId: <id>`
+> * Unassign → `assignedStaffId: null`
+> * Invalid target เช่น inactive user หรือ requester → `400 INVALID_INPUT`
+> 
+> ### P2 — เพิ่ม test สำหรับ status transition
+> ตอนนี้ทดสอบแค่ `NEW → IN_PROGRESS` ค่ะ อยากให้เพิ่มกรณีที่เป็น admin-only ด้วย:
+> 
+> * `CLOSED → REOPENED` โดย `IT_STAFF` → ต้องได้ `400`
+> * `CLOSED → REOPENED` โดย `ADMINISTRATOR` → ต้องได้ `200`
+> 
+> เพื่อให้แน่ใจว่า status transition ตาม BR-10 ถูกบังคับจริงค่ะ
+> 
+> ### P3 — จุดเล็ก ๆ
+> * ตอนนี้มีการสลับ `mustChangePassword` ของ `jennifer/somchai` ร่วมกันหลายไฟล์ แนะนำให้ทำ isolation โดยย้าย AUTHZ ไปใช้ `staff.somsri` ให้ครบทุกไฟล์ เพื่อป้องกัน test flaky ค่ะ
+> * `/api/admin/users` ยังเป็น stub อยู่ แนะนำให้ใส่ scope note ใน description ว่า admin functionality จะทำใน PR ถัดไปค่ะ
+> * `STYLE-02` ตอนนี้เช็กแค่ว่า element มีอยู่ ถ้าอยากให้ test design ได้แน่นขึ้น แนะนำให้ assert hex สีด้วยค่ะ
+> 
+> ### Decision: Not Yet
+> ตัว code โดยรวมแก้ถูกต้องแล้วค่ะ แต่ขอให้เติม test 3 จุดหลักก่อนนะคะ คือ **auto-claim, assign paths และ admin-only reopen** เพราะเป็นส่วนสำคัญของ BR-10 ตามสเปกค่ะ
+> 
+> แก้เสร็จแล้วเรียกมาให้ re-check ได้เลยค่ะ
+
+### How I responded (PR #56):
+"ขอบคุณสำหรับการตรวจทาน Peer Review อย่างละเอียด ได้ดำเนินการแก้ไขและเพิ่ม Test Cases ตามคำแนะนำเรียบร้อยแล้วทุกประเด็นใน PR #56:
+
+1. เพิ่ม BR-10 Auto-claim Integration Test (P1):
+   - เพิ่ม test case ใน server/tests/lab-03/staff-ticket-detail.api.test.ts ทดสอบเมื่อ IT Staff เปลี่ยนสถานะตั๋ว unassigned จาก NEW เป็น OPEN ระบบจะทำการ auto-claim และอัปเดต assignedStaffId เป็น ID ของ staff คนปัจจุบันทันที
+
+2. เพิ่ม Test Coverage สำหรับการ Assign ตั๋ว (P2):
+   - ทดสอบการเปลี่ยนผู้รับผิดชอบ (Reassign) ไปยัง active staff รายอื่น -> HTTP 200 OK
+   - ทดสอบการยกเลิกการมอบหมาย (Unassign) โดยตั้งค่า assignedStaffId เป็น null -> HTTP 200 OK
+   - ทดสอบการปฏิเสธเป้าหมายที่ไม่ถูกต้อง เช่น มอบหมายตั๋วให้ผู้ใช้บทบาท Requester -> HTTP 400 Bad Request (code: "INVALID_INPUT")
+
+3. เพิ่ม Test สำหรับ Status Transition ตาม BR-10 (P2):
+   - ทดสอบการเปลี่ยนสถานะ CLOSED -> REOPENED โดย IT Staff -> ปฏิเสธด้วย HTTP 400 Bad Request (code: "INVALID_TRANSITION")
+   - ทดสอบการเปลี่ยนสถานะ CLOSED -> REOPENED โดย ADMINISTRATOR -> อนุญาตผ่านด้วย HTTP 200 OK
+
+4. ปรับปรุง Test Isolation & Hex Style Assertion (P3):
+   - ย้ายการทดสอบใน authorization.api.test.ts ไปใช้ staff.somsri เพื่อป้องกันปัญหา test flakiness
+   - เพิ่มการทดสอบการเปรียบเทียบค่าสี Hex ของ Amber Container (#FEF3C7, #FDE68A, #92400E) ใน STYLE-02
+   - เพิ่ม Scope Note ใน PR Description ระบุชัดเจนว่าระบบ User Management Portal ของ Admin จะส่งมอบใน PR ถัดไป
+
+ทำการ push โค้ดและอัปเดต PR #56 เรียบร้อยแล้ว รบกวนช่วยตรวจทานอีกครั้ง ขอบคุณมากค่ะ"
+
+---
+
+### Reviewer approval comment I received (PR #56 — Final):
+> ### Re-review — PR #56 (Round 2)
+> 
+> ตรวจรอบ 2 แล้วผ่านหมดค่ะ ทุก test ที่ขอให้เพิ่มมีลงจริงและครอบคลุมครบแล้วค่ะ 
+> 
+> * ✅ **P1 Auto-claim** — ticket ที่เป็น `NEW` และยังไม่ได้ assign → เปลี่ยนเป็น `OPEN` แล้วระบบ auto-claim ให้ staff คนปัจจุบันถูกต้องค่ะ
+> * ✅ **P2 Assign** — ทดสอบครบทั้ง reassign / unassign (`null`) / invalid target (requester) → ได้ `400 INVALID_INPUT` ถูกต้องค่ะ
+> * ✅ **P2 Status matrix** — `CLOSED → REOPENED`: `IT_STAFF` → `400 INVALID_TRANSITION` และ `ADMINISTRATOR` → `200 REOPENED` แสดงว่า row ที่เป็น admin-only ถูกบังคับใช้จริงค่ะ
+> * ✅ **P3** — `STYLE-02` assert hex สีจริง (`#FEF3C7/#FDE68A/#92400E`), มี scope note ว่า admin portal จะทำใน PR ถัดไป และทำ isolation ของ user ครบแล้วค่ะ
+> 
+> ### Decision: Approved 
+> 
+> ผ่านเรียบร้อยแล้วค่ะ merge เข้า `lab3-staging` ได้เลยค่ะ
+> 
+> **Approved and Merged PR #56** เข้าสู่ `lab3-staging` เรียบร้อยแล้ว ขอบคุณสำหรับงานเรียบร้อยค่ะ!
+
 
 
 
