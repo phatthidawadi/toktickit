@@ -11,7 +11,7 @@
 | [PR #52](https://github.com/phatthidawadi/toktickit/pull/52) | `feature/16-db-schema-seed` | Approved with comments |
 | [PR #53](https://github.com/phatthidawadi/toktickit/pull/53) | `feature/17-auth-foundation` | Approved with comments |
 | [PR #54](https://github.com/phatthidawadi/toktickit/pull/54) | `feature/18-authorization-header` | Approved with comments |
-| [PR #55](https://github.com/phatthidawadi/toktickit/pull/55) | `feature/19-requester-workflow-comments` | Pending Review |
+| [PR #55](https://github.com/phatthidawadi/toktickit/pull/55) | `feature/19-requester-workflow-comments` | Approved with comments |
 
 ---
 
@@ -631,6 +631,24 @@
    - ยืนยันการออกแบบ `POST /api/tickets`: รองรับผู้ใช้งานที่ยืนยันตัวตนได้ทุกบทบาทในการสร้างตั๋วแจ้งปัญหา
 
 ทำการ push อัปเดตขึ้นกิ่ง `feature/19-requester-workflow-comments` สำหรับ PR #55 เรียบร้อยแล้ว รบกวนช่วยตรวจทานอีกครั้ง ขอบคุณมากค่ะ"
+
+---
+
+### Reviewer approval comment I received (PR #55 — Final):
+> ### Re-review — PR #55 (Round 2)
+> 
+> ตรวจรอบ 2 แล้วผ่านหมดค่ะ ทุกจุดของ P1 แก้ครบแล้วจริง ๆ ค่ะ 
+> 
+> * **P1 — `getUserFromReq`** ใช้ session อย่างเดียวแล้วค่ะ ถ้าส่ง `x-requester-id` มาอย่างเดียวโดยไม่มี cookie → `401 UNAUTHORIZED` และมี `COMMENT-API-02` + `REQ-API-02` ยืนยันแล้วค่ะ
+> * **P1 — BR-02 gate** เพิ่ม `403 MUST_CHANGE_PASSWORD` ให้กับ `GET/POST comments` และ `resolve-ack` แล้วค่ะ และมี `COMMENT-API-03` ครอบคลุมด้วย ทั้ง 2 test file มีการ reset flag (`beforeEach/beforeAll` เป็น `false` และ restore กลับหลัง test) เพื่อไม่ให้ gate ไปกระทบ test ชุดอื่นค่ะ
+> * **P3 — Error codes** ตอนนี้ทุก error มี `code` กลับมาในรูปแบบเดียวกันแล้วค่ะ
+> * **POST /api/tickets** ยืนยันแล้วว่าตั้งใจให้ user ทุก role สามารถ create ticket ได้ค่ะ
+> 
+> ### Decision: Approved 
+> 
+> ผ่านเรียบร้อยแล้วค่ะ merge ได้เลยค่ะ
+> 
+> **Approved and Merged PR #55** เข้าสู่ `lab3-staging` เรียบร้อยแล้ว ขอบคุณสำหรับงานเรียบร้อยค่ะ!
 
 
 
