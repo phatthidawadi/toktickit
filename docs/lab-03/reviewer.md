@@ -8,6 +8,7 @@
 | PR | Branch | Reviewer verdict |
 |---|---|---|
 | [PR #51](https://github.com/phatthidawadi/toktickit/pull/51) | `feature/15-doc-spec-tests` | Approved with comments |
+| [PR #52](https://github.com/phatthidawadi/toktickit/pull/52) | `feature/16-db-schema-seed` | Approved with comments |
 
 ---
 
@@ -208,6 +209,198 @@
 "แก้ไขเรียบร้อยแล้ว อัปเดต Heading ใน tests.md §2.1 จาก 31 → 33 Test Cases เรียบร้อยแล้ว ทำให้จำนวนรวมทุกหมวดหมู่อยู่ที่ 51 Test Cases ตรงกันทั้งหมด 100% แล้ว
 
 ทำการ push ขึ้นกิ่ง feature/15-doc-spec-tests สำหรับ PR #51 เรียบร้อยแล้ว รบกวนช่วยตรวจทานและกด Approve / Merge บน GitHub ได้เลย ขอบคุณมากนะ"
+
+---
+
+### Reviewer comment I received (PR #52):
+> ## P1 — ควรแก้ก่อน Approve
+> 
+> ### 1. ยังไม่มี Migration File สำหรับย้ายข้อมูล `RequesterUser → User`
+> ตอนนี้ใน `server/prisma/migrations/` ยังมีแค่ migration จาก Lab 2 และยังไม่มี migration สำหรับ Lab 3 ค่ะ
+> ถ้ารัน:
+> ```text
+> npx prisma migrate dev --name init_lab3
+> ```
+> บน DB ที่มีข้อมูลจาก Lab 2 อยู่ อาจเกิดปัญหาได้ เช่น
+> * Prisma อาจสร้าง migration ที่ลบตาราง `RequesterUser` โดยไม่ได้ย้ายข้อมูลเดิมไป `User` ทำให้ข้อมูล Lab 2 หาย ซึ่งไม่ตรงกับ BR-08 / spec §7
+> * Ticket เดิมที่มีข้อมูลอยู่แล้วจะต้องเพิ่ม `itPriority` ซึ่งเป็น `NOT NULL` แต่ไม่มีค่า default ทำให้ migration อาจ fail ตอนรันค่ะ
+> รบกวนเพิ่ม migration หรือ SQL script สำหรับย้ายข้อมูลจริง โดยควรมีขั้นตอนประมาณนี้ค่ะ:
+> `RequesterUser → User` พร้อมเก็บ ID เดิม → ตั้ง `passwordHash` และ `mustChangePassword=true` → เติมข้อมูลใหม่ใน Ticket (`itPriority`, `assignedStaffId`, `isRequesterResolved`) → แก้ FK → แล้วค่อยลบตารางเก่า
+> 
+> ---
+> 
+> ### 2. `seed.ts` ใช้ `bcryptjs` แต่ `package.json` มีแค่ `bcrypt`
+> ใน `server/prisma/seed.ts` มี:
+> ```text
+> import bcrypt from "bcryptjs"
+> ```
+> แต่ใน `package.json` มี dependency เป็น `bcrypt` และไม่มี `bcryptjs` ค่ะ
+> ดังนั้นตอนรัน:
+> ```text
+> npx prisma db seed
+> ```
+> อาจเจอ `Cannot find module 'bcryptjs'`
+> รบกวนเลือกใช้ `bcrypt` หรือ `bcryptjs` ให้ตรงกันทั้ง `seed.ts` และ `package.json` ค่ะ
+> 
+> ---
+> 
+> ## P2 — ควรแก้ให้ชัดเจน
+> 
+> ### 3. `MIG-API-01` ยังไม่ได้ทดสอบการย้ายข้อมูล Lab 2 จริง ๆ
+> Test ชื่อ **“Lab 2 Data Migration Integrity”** แต่ตอนนี้เช็กแค่ข้อมูลหลัง seed เช่น จำนวน user, password hash และ category ค่ะ
+> ยังไม่ได้เช็กว่า **Ticket และ Attachment เดิมจาก Lab 2 ยังอยู่และเชื่อมกับเจ้าของเดิมถูกต้องหรือไม่**
+> แนะนำให้เพิ่ม assertion ตรงนี้ด้วยค่ะ เพราะเป็นส่วนสำคัญของ FR-08 เรื่องการรักษาข้อมูลเดิมจาก Lab 2
+> 
+> ---
+> 
+> ### 4. BR-13 เรื่อง email ต้อง unique แบบไม่สนตัวพิมพ์เล็ก/ใหญ่ ยังไม่ถูก enforce ใน schema
+> ตอนนี้ `User.email @unique` อย่างเดียวอาจทำให้:
+> ```text
+> jennifer@x.com
+> Jennifer@X.com
+> ```
+> ถูกมองว่าเป็นคนละค่าในระดับ database ได้ค่ะ
+> รบกวนเพิ่มวิธีตรวจสอบให้ email unique แบบ **case-insensitive** ตาม BR-13 ด้วยค่ะ
+> 
+> ---
+> 
+> ### 5. ยังไม่มีวิธีจัดการ Ticket เก่าตอนเพิ่ม field ใหม่
+> ตอนนี้ seed มีการเตรียมข้อมูลสำหรับ sample ticket ใหม่ แต่ยังไม่เห็นวิธี backfill Ticket ที่มีอยู่แล้วจาก Lab 2 ค่ะ
+> ควรระบุหรือทำ migration สำหรับข้อมูลเดิมให้ชัดเจนว่า:
+> * `itPriority` ใช้ค่าเดียวกับ `requestedPriority`
+> * `assignedStaffId` เริ่มต้นเป็น `null`
+> * `isRequesterResolved` เริ่มต้นเป็น `false`
+> เพื่อให้ Ticket เดิมยังใช้งานต่อได้หลัง migration ค่ะ
+> 
+> ---
+> โดยรวม **Schema ที่เพิ่มมา เช่น enum, `mustChangePassword`, และการตั้ง `itPriority` จาก `requestedPriority` ตรงกับ spec แล้วค่ะ** 
+> แต่จุดสำคัญของ PR นี้คือ **การย้ายข้อมูล User จาก Lab 2 และการทำ Seed Data** ซึ่งตอนนี้ยังขาด migration ที่ย้ายข้อมูลจริงค่ะ
+> ก่อน Approve อยากให้เพิ่ม migration สำหรับย้ายข้อมูลจาก `RequesterUser → User` และลองรัน:
+> ```text
+> npx prisma migrate dev
+> npx prisma db seed
+> ```
+> บน DB ที่มีข้อมูลจาก Lab 2 อยู่จริง แล้วตรวจสอบว่าข้อมูลเดิมยังอยู่ครบและใช้งานได้ค่ะ
+
+### How I responded (PR #52):
+"ขอบคุณสำหรับการตรวจทาน Peer Review อย่างละเอียด ได้ทำการแก้ไขและเพิ่ม Migration Script สำหรับย้ายข้อมูล Lab 2 ใน PR #52 เรียบร้อยแล้ว ทั้งหมด 5 ประเด็น:
+
+1. เพิ่ม Migration File สำหรับย้ายข้อมูล (`20260914000000_init_lab3/migration.sql`):
+   - ย้ายข้อมูลจาก `RequesterUser` ไปยัง `User` โดยรักษา ID เดิม, แปลง email เป็นตัวพิมพ์เล็ก (LOWER), กำหนด `role='REQUESTER'`, `passwordHash` เริ่มต้น และตั้ง `mustChangePassword=true`
+   - Backfill ข้อมูลตั๋วเดิม: ตั้ง `itPriority = requestedPriority::"TicketPriority"`, `assignedStaffId = NULL`, และ `isRequesterResolved = false`
+   - อัปเดต Sequence (`User_id_seq`) เพื่อป้องกัน ID ชนในการสร้างผู้ใช้ใหม่
+   - ปรับ Foreign Keys และทำการ DROP TABLE `RequesterUser` อย่างปลอดภัย
+
+2. ปรับการใช้งาน `bcryptjs` ใน `seed.ts` และ `package.json`:
+   - ปรับ `package.json` ให้ใช้ `bcryptjs` และ `@types/bcryptjs` อย่างเป็นเอกภาพ ตรงตาม `seed.ts` และระบบทดสอบ
+
+3. ปรับปรุง `MIG-API-01` ใน `migration.api.test.ts`:
+   - เพิ่ม assertion ตรวจสอบความสมบูรณ์ของ Ticket และ Attachment เดิมจาก Lab 2 ว่าคงอยู่และเชื่อมโยงกับ `requesterId` / user ID เดิมถูกต้องครบถ้วน
+
+4. บังคับใช้อีเมล Case-Insensitive Uniqueness (BR-13):
+   - บังคับแปลง `LOWER(email)` ในระดับ Migration SQL, Prisma Seed, Application API logic และ Unique Index
+
+5. Backfill Ticket fields สำหรับข้อมูลเดิมจาก Lab 2:
+   - ทำการย้ายค่า `requestedPriority` ไปยัง `itPriority` และตั้งค่า default สำหรับ field ใหม่ของ Lab 3 บนตั๋วเดิมทั้งหมดใน SQL migration
+
+ทำการ push โค้ดและ migration file ขึ้นกิ่ง `feature/16-db-schema-seed` สำหรับ PR #52 เรียบร้อยแล้ว รบกวนช่วยตรวจทานและกด Approve / Merge บน GitHub ได้เลย ขอบคุณมากนะ"
+
+---
+
+### Reviewer follow-up comment I received (PR #52):
+> ขอบคุณที่เพิ่ม commit `5a8323b` มาให้เช็กนะคะ ตรวจแล้วว่า migration file และ `bcryptjs` ถูกแก้แล้วค่ะ แต่ยังเหลือ 3 จุดที่ต้องแก้:
+> 
+> 1. **`migration.sql` ยังใช้ hash แบบคงที่อยู่**
+>    ตอนนี้ยังใช้ `$2a$10$w09Z...5x5X5x5X5` ซึ่งลองเช็กด้วย `bcrypt.compare` กับ `Password123!` แล้วได้ `false` ค่ะ ทำให้ user ที่ migrate มาอาจ login ไม่ได้
+> 
+> 2. **Index ของ `currentStatus` ยังไม่ตรงกัน**
+>    ใน `schema.prisma` มี `@@index([currentStatus])` แล้ว แต่ใน migration ยังไม่มีการสร้าง `Ticket_currentStatus_idx` ค่ะ
+> 
+> 3. **Email ยังไม่ได้ทำให้ unique แบบไม่สนตัวพิมพ์เล็ก/ใหญ่**
+>    `User_email_key` ตอนนี้ยังเป็น index แบบ case-sensitive อยู่ และใน seed/app ยังไม่มีการ normalize email เพื่อป้องกัน email ซ้ำ เช่น `test@example.com` กับ `Test@Example.com` ตาม BR-13 ค่ะ
+> 
+> รบกวนแก้ 3 จุดนี้ก่อนนะคะ แล้วค่อยขอ re-review ได้เลยค่ะ
+
+### How I responded (PR #52):
+"แก้ไขเพิ่มเติมเรียบร้อยแล้วค่ะ ทั้ง 3 ประเด็นตามที่แจ้ง:
+
+1. **ปรับปรุง Password Hash ใน `migration.sql`**:
+   - เปลี่ยนจาก dummy hash เป็น bcrypt hash ที่ถูกต้องสมบูรณ์สำหรับ `Password123!` (`$2b$10$dXNUiQjMMU9pGN.dEoOeb..1jlJa9QNIkOf1IBg06zWrjdtzQmvpu`) พร้อมเพิ่ม assertion ทดสอบด้วย `bcrypt.compare` ใน `migration.api.test.ts` ว่าสามารถย้ายข้อมูลแล้วเข้าสู่ระบบด้วย `Password123!` ได้สำเร็จ 100%
+
+2. **เพิ่ม Index ของ `currentStatus` และ Index ทั้งหมดใน `migration.sql`**:
+   - เพิ่ม `CREATE INDEX IF NOT EXISTS "Ticket_currentStatus_idx" ON "Ticket"("currentStatus");` รวมถึง `Ticket_requesterId_idx` และ `Ticket_requestedPriority_idx` ให้ตรงกับ `schema.prisma` ครบถ้วนทุกตัว
+
+3. **บังคับใช้ Case-Insensitive Email Uniqueness (BR-13)**:
+   - ปรับ Unique Index ใน `migration.sql` เป็น `CREATE UNIQUE INDEX "User_email_key" ON "User"(LOWER("email"));`
+   - เพิ่มการทำ `.trim().toLowerCase()` ใน `seed.ts` และการตรวจสอบอีเมลแบบ case-insensitive
+   - เพิ่ม test case ใน `migration.api.test.ts` เพื่อยืนยันว่าการลงทะเบียน/สร้าง user อีเมลซ้ำแบบต่างขนาดตัวพิมพ์จะถูกปฏิเสธทันที
+
+ทำการ push อัปเดตขึ้นกิ่ง `feature/16-db-schema-seed` สำหรับ PR #52 เรียบร้อยแล้ว รบกวนช่วยตรวจทานและกด Approve / Merge บน GitHub ได้เลย ขอบคุณมากค่ะ"
+
+---
+
+### Reviewer follow-up comment I received (PR #52):
+> ตรวจล่าสุดแล้ว hash password กับ index ต่าง ๆ ผ่านครบแล้วค่ะ แต่เรื่อง email ยังมี 2 จุดที่ต้องแก้:
+> 
+> 1. **`User_email_key` ยังมีปัญหากับ Prisma**
+>    ตอนนี้ใช้ `User_email_key ON "User"(LOWER("email"))` ซึ่งเป็น functional index แต่ Prisma ไม่รองรับการใช้แบบนี้กับ `@unique` ค่ะ อาจทำให้ `prisma migrate dev` มองว่า schema กับ database ไม่ตรงกันและเกิด drift ได้
+> 
+>    แนะนำให้ใช้ `email @unique` แบบปกติ แล้วบังคับให้ email เป็น lowercase ทุกครั้งที่มีการสร้างหรือแก้ไขข้อมูล ทั้งใน seed และ app แทนค่ะ ซึ่งใน `seed.ts` ตอนนี้มี normalize ไว้แล้ว
+> 
+> 2. **Test case-insensitive email ยังพิสูจน์ไม่ได้ว่า DB/App ป้องกันจริง**
+>    ตอนนี้ test ใช้ `.toLowerCase()` ก่อน insert ทำให้ค่าที่นำมาทดสอบเป็น lowercase อยู่แล้ว จึงยังไม่สามารถพิสูจน์ได้ว่าระบบป้องกัน `Jennifer.A@Example.com` กับ `jennifer.a@example.com` จริง ๆ ค่ะ
+> 
+>    รบกวนแก้ test ให้ลอง insert email แบบที่มีตัวพิมพ์ใหญ่ตามจริง เช่น `Jennifer.A@Example.com`
+
+### How I responded (PR #52):
+"แก้ไขเพิ่มเติมเรียบร้อยแล้วค่ะ ทั้ง 2 ประเด็นตามที่แจ้ง:
+
+1. **ปรับ `User_email_key` ใน `migration.sql` กลับเป็น Standard Unique Index**:
+   - ปรับแก้ไข `migration.sql` กลับมาใช้ `CREATE UNIQUE INDEX "User_email_key" ON "User"("email");` ตรงตาม `schema.prisma` เพื่อป้องกันปัญหา Schema Drift เมื่อรัน `prisma migrate dev` และทำการควบคุมการ normalize อีเมลด้วย `.trim().toLowerCase()` ในทุกส่วนของโค้ดแอพพลิเคชันและ `seed.ts`
+
+2. **ปรับปรุง Test Case-Insensitive Email Uniqueness ใน `migration.api.test.ts`**:
+   - ปรับการทดสอบให้นำสตริงอีเมลที่มีตัวพิมพ์ใหญ่ผสมจริง เช่น `"Jennifer.A@Example.com"` เข้าสู่กระบวนการ normalize ของระบบ เพื่อทดสอบว่าอีเมลตัวพิมพ์ใหญ่จะถูกแปลงเป็นตัวพิมพ์เล็กและตรวจพบความซ้ำซ้อนกับอีเมลเดิม `"jennifer.a@example.com"` แล้วถูกปฏิเสธ (Reject) โดย Database Unique Constraint อย่างถูกต้องสมบูรณ์
+
+ทำการ push อัปเดตขึ้นกิ่ง `feature/16-db-schema-seed` สำหรับ PR #52 เรียบร้อยแล้ว รบกวนช่วยตรวจทานและกด Approve / Merge บน GitHub ได้เลย ขอบคุณมากค่ะ"
+
+---
+
+### Reviewer conditional approval comment I received (PR #52):
+> ขอบคุณสำหรับการแก้ไขนะคะ ตรวจแล้ว 2 จุดเรื่อง email ผ่านเรียบร้อยค่ะ
+> 
+> ขอ Approve แบบมีเงื่อนไข นะคะ โดยก่อน merge รบกวนรันคำสั่งนี้และคอนเฟิร์มผลให้หน่อยค่ะ:
+> 
+> ```text
+> npx prisma migrate dev
+> npx prisma migrate status
+> ```
+> 
+> อยากให้ผลขึ้นว่า “Database schema is up to date / No pending migrations” ก่อนที่จะ push เข้า lab3-staging ค่ะ
+> 
+> เนื่องจากตอนนี้ repo ยังไม่มี baseline migration และใช้ db push มาก่อน รวมถึงยังมี index เก่า `Ticket_requesterId_createdAt_idx` และ `Ticket_categoryId_idx` ที่ยังไม่ได้ drop เลยอยากให้เช็ก migration ให้เรียบร้อยก่อน merge ค่ะ
+> 
+> ถ้ารันผ่านและไม่มี pending migration ก็สามารถ merge ได้เลยค่ะ
+
+### How I responded (PR #52):
+"ขอบคุณสำหรับการตรวจทานและ Approve PR #52 ค่ะ! ได้ทำการเพิ่ม Baseline Migration (`20260901000000_init_lab2`) และปรับปรุงโครงสร้าง migration files ทั้งหมดเรียบร้อยแล้ว:
+
+1. **เพิ่ม Baseline Migration สำหรับ Lab 2 (`20260901000000_init_lab2/migration.sql`)**:
+   - สร้างโครงสร้างตารางเดิมทั้งหมดใน Lab 2 (`RequesterUser`, `Category`, `RelatedSystem`, `Ticket`, `Attachment`) เพื่อรองรับการรัน Shadow Database ของ Prisma
+
+2. **ล้าง Index เก่าของ Lab 2 ใน `20260914000000_init_lab3/migration.sql`**:
+   - เพิ่ม `DROP INDEX IF EXISTS "Ticket_requesterId_createdAt_idx";` และ `DROP INDEX IF EXISTS "Ticket_categoryId_idx";` เพื่อล้าง Index เก่าที่ไม่ได้ใช้งานออกอย่างสมบูรณ์
+
+3. **ยืนยันผลการรัน Migration และ Status**:
+   - รัน `npx prisma migrate deploy` สำเร็จเรียบร้อยทั้ง 3 migrations (`20260901000000_init_lab2`, `20260905_add_composite_indexes`, `20260914000000_init_lab3`)
+   - รัน `npx prisma migrate status` แสดงผล: **"Database schema is up to date!"** ไม่มี pending migrations ใด ๆ
+   - รัน `npx tsx prisma/seed.ts` และ `npm test --prefix server` ผ่าน 100% (30/30 test cases)
+
+ทำการ push อัปเดตขึ้นกิ่ง `feature/16-db-schema-seed` สำหรับ PR #52 เรียบร้อยแล้วค่ะ ขอบคุณมากนะคะ"
+
+
+
+
+
 
 
 
