@@ -172,43 +172,97 @@ describe("Authentication & Session API Endpoints (AUTH-API-01 to AUTH-API-07)", 
       data: { passwordHash: defaultHash, mustChangePassword: true },
     });
 
+    try {
+      const loginRes = await request
+        .post("/api/auth/login")
+        .send({
+          email: "sarah.j@example.com",
+          password: "Password123!",
+        });
+
+      expect(loginRes.status).toBe(200);
+      const cookieHeader = getCookieHeader(loginRes);
+
+      const resChange = await request
+        .post("/api/auth/change-password")
+        .set("Cookie", cookieHeader)
+        .send({
+          currentPassword: "Password123!",
+          newPassword: "BrandNewPassword2026!",
+          confirmPassword: "BrandNewPassword2026!",
+        });
+
+      expect(resChange.status).toBe(200);
+      expect(resChange.body.message).toContain("successfully");
+
+      // Verify login with new password works
+      const reloginRes = await request
+        .post("/api/auth/login")
+        .send({
+          email: "sarah.j@example.com",
+          password: "BrandNewPassword2026!",
+        });
+
+      expect(reloginRes.status).toBe(200);
+      expect(reloginRes.body.user.mustChangePassword).toBe(false);
+    } finally {
+      // Guaranteed Cleanup: restore default password hash
+      await prisma.user.update({
+        where: { email: "sarah.j@example.com" },
+        data: { passwordHash: defaultHash, mustChangePassword: true },
+      });
+    }
+  });
+
+  it("SEC-AUTH-01: Tampered or invalid JWT cookie returns 401 Unauthorized", async () => {
+    const invalidCookie = "toktickit_session=invalid.tampered.jwt.payload";
+    const res = await request
+      .get("/api/auth/me")
+      .set("Cookie", invalidCookie);
+
+    expect(res.status).toBe(401);
+    expect(res.body.code).toBe("UNAUTHORIZED");
+  });
+
+  it("SEC-AUTH-02: Mandatory mustChangePassword = true blocks non-exempt protected paths with 403 Forbidden", async () => {
     const loginRes = await request
       .post("/api/auth/login")
       .send({
-        email: "sarah.j@example.com",
+        email: "jennifer.a@example.com",
         password: "Password123!",
       });
 
-    expect(loginRes.status).toBe(200);
     const cookieHeader = getCookieHeader(loginRes);
 
-    const resChange = await request
-      .post("/api/auth/change-password")
-      .set("Cookie", cookieHeader)
-      .send({
-        currentPassword: "Password123!",
-        newPassword: "BrandNewPassword2026!",
-        confirmPassword: "BrandNewPassword2026!",
-      });
+    // Call a non-exempt protected route (e.g. GET /api/auth/protected-sample)
+    const res = await request
+      .get("/api/auth/protected-sample")
+      .set("Cookie", cookieHeader);
 
-    expect(resChange.status).toBe(200);
-    expect(resChange.body.message).toContain("successfully");
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("MUST_CHANGE_PASSWORD");
+  });
 
-    // Verify login with new password works
-    const reloginRes = await request
+  it("SEC-AUTH-03: Excessive failed login attempts return 429 Too Many Requests (Rate Limiting)", async () => {
+    const targetEmail = "rate.limit.test@example.com";
+
+    for (let i = 0; i < 5; i++) {
+      await request
+        .post("/api/auth/login")
+        .send({
+          email: targetEmail,
+          password: "WrongPassword123!",
+        });
+    }
+
+    const rateLimitedRes = await request
       .post("/api/auth/login")
       .send({
-        email: "sarah.j@example.com",
-        password: "BrandNewPassword2026!",
+        email: targetEmail,
+        password: "WrongPassword123!",
       });
 
-    expect(reloginRes.status).toBe(200);
-    expect(reloginRes.body.user.mustChangePassword).toBe(false);
-
-    // Cleanup: restore default password hash
-    await prisma.user.update({
-      where: { email: "sarah.j@example.com" },
-      data: { passwordHash: defaultHash, mustChangePassword: true },
-    });
+    expect(rateLimitedRes.status).toBe(429);
+    expect(rateLimitedRes.body.code).toBe("TOO_MANY_REQUESTS");
   });
 });

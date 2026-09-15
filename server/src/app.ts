@@ -15,6 +15,7 @@ import {
   SESSION_MAX_AGE_SECONDS,
 } from "./utils/auth.js";
 import { authenticateSession } from "./middleware/authMiddleware.js";
+import { loginRateLimiter } from "./middleware/rateLimiter.js";
 
 // The Express app is exported separately from app.listen() (see index.ts) so
 // Supertest can import `app` without opening a port. Do not merge these files.
@@ -28,8 +29,8 @@ app.use(cookieParser());
 // Lab 3 — Authentication REST Endpoints
 // ---------------------------------------------------------------------------
 
-// POST /api/auth/login — User Authentication
-app.post("/api/auth/login", async (req: Request, res: Response) => {
+// POST /api/auth/login — User Authentication (Rate Limited: SEC-AUTH-03)
+app.post("/api/auth/login", loginRateLimiter, async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body || {};
 
@@ -59,6 +60,7 @@ app.post("/api/auth/login", async (req: Request, res: Response) => {
 
     res.cookie(SESSION_COOKIE_NAME, token, {
       httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       maxAge: SESSION_MAX_AGE_SECONDS * 1000, // 8 hours in ms
       path: "/",
@@ -85,11 +87,13 @@ app.post("/api/auth/logout", (_req: Request, res: Response) => {
   res.clearCookie(SESSION_COOKIE_NAME, {
     path: "/",
     httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
   });
   res.cookie(SESSION_COOKIE_NAME, "", {
     path: "/",
     httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
     expires: new Date(0),
     maxAge: 0,
@@ -170,6 +174,11 @@ app.post("/api/auth/change-password", authenticateSession, async (req: Request, 
   } catch (error) {
     return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
   }
+});
+
+// GET /api/auth/protected-sample — Sample protected endpoint for password change check
+app.get("/api/auth/protected-sample", authenticateSession, (_req: Request, res: Response) => {
+  return res.status(200).json({ message: "Access granted to protected sample endpoint" });
 });
 
 // ---------------------------------------------------------------------------

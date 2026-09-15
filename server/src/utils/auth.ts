@@ -1,7 +1,14 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-export const JWT_SECRET = process.env.JWT_SECRET || "toktickit_jwt_secret_key_2026";
+export function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("FATAL: JWT_SECRET environment variable is missing.");
+  }
+  return secret;
+}
+
 export const SESSION_COOKIE_NAME = "toktickit_session";
 export const SESSION_MAX_AGE_SECONDS = 28800; // 8 hours (28,800 seconds)
 
@@ -9,6 +16,7 @@ export interface TokenPayload {
   userId: number;
   email: string;
   role: string;
+  mustChangePassword?: boolean;
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -20,17 +28,18 @@ export async function comparePassword(password: string, hash: string): Promise<b
 }
 
 export function generateToken(payload: TokenPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "8h" });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: "8h" });
 }
 
 export function verifyToken(token: string): TokenPayload | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as TokenPayload;
+    const decoded = jwt.verify(token, getJwtSecret()) as TokenPayload;
     if (decoded && typeof decoded.userId === "number" && decoded.email && decoded.role) {
       return {
         userId: decoded.userId,
         email: decoded.email,
         role: decoded.role,
+        mustChangePassword: decoded.mustChangePassword,
       };
     }
     return null;

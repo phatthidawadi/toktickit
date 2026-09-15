@@ -9,7 +9,7 @@
 |---|---|---|
 | [PR #51](https://github.com/phatthidawadi/toktickit/pull/51) | `feature/15-doc-spec-tests` | Approved with comments |
 | [PR #52](https://github.com/phatthidawadi/toktickit/pull/52) | `feature/16-db-schema-seed` | Approved with comments |
-| [PR #53](https://github.com/phatthidawadi/toktickit/pull/53) | `feature/17-auth-foundation` | Pending |
+| [PR #53](https://github.com/phatthidawadi/toktickit/pull/53) | `feature/17-auth-foundation` | Pending re-review |
 
 ---
 
@@ -401,10 +401,83 @@
 ---
 
 ### Reviewer comment I received (PR #53):
-*(Pending review by @jejaebubu)*
+> ### Review — PR #53 (Auth Foundation)
+> 
+> ขอบคุณสำหรับโครงสร้างนะคะ โดยรวมทำมาดีเลยค่ะ ทั้งการ normalize email, รูปแบบ error ที่ปลอดภัย (`INVALID_CREDENTIALS`), การใช้ `httpOnly + sameSite=strict` cookie และ AUTH-API tests ทั้ง 7 ข้อที่ผูกกับ ID ถูกต้องค่ะ ถือว่า auth foundation โดยรวมโอเคและเอาไปต่อกับส่วน Staff/Admin ได้ค่ะ
+> 
+> แต่ก่อน Approve มีบางจุดที่อยากให้แก้ก่อนนะคะ
+> 
+> ### P1 — ต้องแก้
+> 
+> **1. JWT_SECRET มี secret สำรอง hardcode อยู่ในโค้ด**
+> 
+> ใน `server/src/utils/auth.ts:5` ตอนนี้เป็น
+> 
+> ```ts
+> export const JWT_SECRET = process.env.JWT_SECRET || "toktickit_jwt_secret_key_2026";
+> ```
+> 
+> ปัญหาคือ secret ตัวนี้อยู่ใน repo ถ้ามีคนรู้ค่าก็สามารถสร้าง ADMINISTRATOR token ปลอมขึ้นมาได้ และอาจ bypass RBAC ได้เลยค่ะ
+> 
+> แนะนำให้เอา fallback ออก และให้ระบบอ่าน `JWT_SECRET` จาก environment (`.env`) อย่างเดียว ถ้าไม่มีค่าให้ระบบ fail ทันทีค่ะ
+> 
+> ### P2 — ควรแก้
+> 
+> **2. ยังไม่ได้บังคับ `mustChangePassword` ที่ฝั่ง server**
+> 
+> ตอนนี้ถ้า user มี `mustChangePassword=true` ก็ยังสามารถเรียก endpoint อื่น ๆ ได้อยู่ค่ะ ทั้งที่ตาม BR-02 ควรบังคับให้เปลี่ยน password ก่อน
+> 
+> อีกเรื่องคือ JWT มี `role` อยู่ใน token ทำให้ถ้า user ถูกเปลี่ยน role หรือถูก deactivate ข้อมูลใน token อาจยังใช้ได้อีกหลายชั่วโมง เพราะ middleware เชื่อข้อมูลจาก token มากกว่าเช็กจาก DB
+> 
+> แนะนำให้ auth middleware ดึง user จาก DB ทุกครั้งที่เรียก protected endpoint แล้วเช็ก `isActive`, `mustChangePassword` และ `role` จาก DB โดยตรงค่ะ โดยเฉพาะก่อนเอา auth นี้ไปต่อกับ Staff/Admin endpoints
+> 
+> **3. Login ยังไม่มีการป้องกัน brute-force**
+> 
+> ตอนนี้สามารถลอง login ผิดได้ไม่จำกัดครั้ง ทั้งที่ SEC-AUTH-03 มีการวางแผนเรื่อง rate limiting ไว้ค่ะ
+> 
+> อย่างน้อยอยากให้เพิ่ม basic rate limit ก่อน release เข้า `main` ค่ะ
+> 
+> **4. AUTH-API-05 เปลี่ยน password ของ seed user แต่ไม่มี `try/finally`**
+> 
+> Test นี้แก้ password ของ `sarah.j@example.com` แต่ถ้า assertion ตรงกลาง fail การ cleanup จะไม่ทำงาน ทำให้ user ค้างอยู่ที่ password ใหม่ และอาจทำให้ test รอบต่อ ๆ ไปพังค่ะ
+> 
+> แนะนำให้ใช้ `beforeEach` สำหรับ reset state หรือใช้ dedicated throwaway user สำหรับ test นี้แทนค่ะ
+> 
+> ### P3 — จุดเล็ก ๆ ที่แนะนำ
+> 
+> * Cookie ยังไม่มี `secure: true` ซึ่งควรเพิ่มเมื่อเอาไปใช้บน HTTPS ใน production ค่ะ
+> * `App.tsx` ยังไม่ได้ต่อ Login/ChangePassword เข้ากับ UI ถ้าจะทำใน PR ถัดไปก็โอเคค่ะ แต่อยากให้ระบุไว้ว่าเป็น follow-up PR
+> * แนะนำเพิ่ม test กรณีส่ง JWT cookie ที่ถูกแก้ไขหรือไม่ถูกต้องไปที่ `GET /api/auth/me` แล้วต้องได้ `401` เพื่อให้ครอบคลุมกรณี `verifyToken` fail ด้วยค่ะ
+> 
+> ### Decision: Not yet
+> 
+> โดยรวม auth foundation ทำมาดีและสามารถเอาไปต่อกับ Staff/Admin PR ได้ค่ะ แต่ขอให้แก้ **P1 เรื่อง JWT_SECRET ก่อน** และถ้าเป็นไปได้อยากให้จัดการ P2 ข้อ 2–4 ด้วยนะคะ
+> 
+> หลังแก้แล้วเรียกมาให้ re-check ได้เลยค่ะ ถ้าผ่านแล้วจะ Approve ให้ค่ะ
 
 ### How I responded (PR #53):
-*(Pending response)*
+"ขอบคุณสำหรับการตรวจทาน Peer Review อย่างละเอียดค่ะ! ได้ทำการแก้ไขและอัปเดตตามคำแนะนำครบถ้วนทุกประเด็นใน PR #53 เรียบร้อยแล้วค่ะ:
+
+1. **ลบ Hardcoded Fallback ของ JWT_SECRET (P1 #1)**:
+   - ปรับแก้ไข `server/src/utils/auth.ts` ให้ดึงค่า `process.env.JWT_SECRET` เท่านั้น หากไม่มีการตั้งค่า environment variable ระบบจะ throw Error ทันทีตอนเริ่มทำงานเพื่อป้องกันการสร้าง JWT token ปลอม
+   - อัปเดต `server/.env`, `server/.env.example`, และ `server/vitest.config.ts` ให้กำหนด `JWT_SECRET` อย่างชัดเจน
+
+2. **บังคับใช้ `mustChangePassword` และตรวจสอบ User State จาก DB ใน Auth Middleware (P2 #2)**:
+   - ปรับปรุง `authenticateSession` ใน `server/src/middleware/authMiddleware.ts` ให้ค้นหาผู้ใช้จาก DB เสมอ เพื่อตรวจสอบสถานะ `isActive`, `role` และ `mustChangePassword` ปัจจุบันจาก DB โดยตรง
+   - หาก `mustChangePassword = true` ระบบจะปฏิเสธการเข้าถึง Endpoint ทั่วไป (ส่งกลับ HTTP 403 `MUST_CHANGE_PASSWORD`) โดยอนุญาตเฉพาะ Endpoint ที่ได้รับการยกเว้น เช่น `/api/auth/change-password`, `/api/auth/me`, `/api/auth/logout`
+
+3. **เพิ่ม Rate Limiter ป้องกัน Brute-Force Login (P2 #3)**:
+   - สร้าง Middleware `loginRateLimiter` ใน `server/src/middleware/rateLimiter.ts` โดยจำกัดการลองเข้าผิดไม่เกิน 5 ครั้ง ต่อ 15 นาทีต่อ IP/อีเมล หากเกินจะส่งกลับ HTTP 429 `TOO_MANY_REQUESTS` และนำไปใช้งานกับ `POST /api/auth/login`
+
+4. **เพิ่ม `try...finally` Cleanup และ Security Tests (P2 #4 & P3)**:
+   - ห่อหุ้มกระบวนการเปลี่ยนรหัสผ่านใน `AUTH-API-05` (`server/tests/lab-03/auth.api.test.ts`) ด้วย `try...finally` เพื่อการันตีการคืนค่ารหัสผ่านเดิมเข้า DB ไม่ว่า assertion จะผ่านหรือล้มเหลว
+   - เพิ่ม Option `secure: process.env.NODE_ENV === "production"` ให้กับ Cookie การจัดเก็บ Session
+   - เพิ่ม Security Test Cases ครอบคลุม `SEC-AUTH-01` (Invalid JWT Cookie -> 401), `SEC-AUTH-02` (mustChangePassword Check -> 403), และ `SEC-AUTH-03` (Brute-Force Rate Limiting -> 429)
+
+5. **หมายเหตุเรื่อง UI Alignment**:
+   - สำหรับการเชื่อมต่อ Login / Change Password เข้ากับ UI (`App.tsx`) จะดำเนินการใน PR ถัดไปตามลำดับ Roadmap
+
+ทำการ push อัปเดตขึ้นกิ่ง `feature/17-auth-foundation` สำหรับ PR #53 เรียบร้อยแล้ว รบกวนช่วยตรวจทานอีกครั้งได้เลย ขอบคุณมากค่ะ"
 
 
 
