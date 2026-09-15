@@ -14,7 +14,7 @@
 | [PR #55](https://github.com/phatthidawadi/toktickit/pull/55) | `feature/19-requester-workflow-comments` | Approved with comments |
 | [PR #56](https://github.com/phatthidawadi/toktickit/pull/56) | `feature/20-staff-queue-operations` | Approved with comments |
 | [PR #57](https://github.com/phatthidawadi/toktickit/pull/57) | `feature/21-admin-user-management` | Approved with comments |
-| [PR #58](https://github.com/phatthidawadi/toktickit/pull/58) | `feature/22-admin-user-management-ui` | Pending review |
+| [PR #58](https://github.com/phatthidawadi/toktickit/pull/58) | `feature/22-admin-user-management-ui` | Approved with comments |
 
 ---
 
@@ -820,6 +820,72 @@ Push commit ใหม่ขึ้น PR #57 เรียบร้อยแล้
 > ผ่านเรียบร้อยแล้วค่ะ merge เข้า `lab3-staging` ได้เลยค่ะ
 > 
 > **Approved and Merged PR #57** เข้าสู่ `lab3-staging` เรียบร้อยแล้ว ขอบคุณมากค่ะ!
+
+---
+
+### Reviewer comment I received (PR #58):
+> ## Review — PR #58 (Admin UI Portal)
+> 
+> UI component ทำมาดีมากค่ะ — `UserManagement.tsx` มีฟังก์ชันครบ ทั้ง table/search/filter, create/edit/reset modals, error banners (`SELF_DEACTIVATION_PROHIBITED` / `LAST_ADMIN_PROTECTION` / `DUPLICATE_EMAIL`), role badges และ status badges
+> 
+> `api.ts` มี 4 admin functions, `Header` แสดง admin nav เฉพาะ `role === "ADMINISTRATOR"` และ tests `UI-ADMIN-01/02` + `RESP-01/02` ก็ครอบคลุม UI หลัก ๆ แล้วค่ะ
+> 
+> ### P1 — ต้องแก้ก่อน Approve: AuthProvider ยังไม่ได้ mount ใน App.tsx
+> 
+> ตอนนี้ `App.tsx` wrap แค่ `<RequesterProvider>` แต่ยังไม่มี `<AuthProvider>` ทำให้แอปใช้งานจริงไม่ได้ค่ะ
+> 
+> `Header` เรียก `useAuth()` แล้วได้ `null` → `user = null`, `role = undefined` ทำให้ nav tab ทั้งหมดถูกซ่อน และไม่สามารถเข้า `user-management` ได้ รวมถึง Login, Change Password และ Logout ก็ไม่ทำงานค่ะ
+> 
+> **วิธีแก้:** mount `<AuthProvider>` ไว้ด้านบนของ `App.tsx` และเพิ่ม auth gating โดยแบ่งตามสถานะดังนี้:
+> 
+> - ยังไม่ได้ login → แสดง `Login`
+> - `mustChangePassword` → แสดง `ChangePassword`
+> - login ปกติ → แสดง `MainContent`
+> 
+> ```tsx
+> export default function App() {
+>   return (
+>     <AuthProvider>
+>       <RequesterProvider>
+>         <AuthGate />
+>       </RequesterProvider>
+>     </AuthProvider>
+>   );
+> }
+> ```
+> 
+> จุดนี้เป็น pre-existing bug ตั้งแต่ PR #53 เพราะตอนนั้นสร้าง `Login/ChangePassword/AuthContext` แล้ว แต่ยังไม่ได้ mount เข้า `App.tsx` ค่ะ ดังนั้นแนะนำให้แก้ให้จบใน PR นี้ก่อน merge
+> 
+> **Decision: Not Yet** — รบกวนแก้ `AuthProvider` mount + auth gating แล้วส่งมาให้ re-check ได้เลยค่ะ จุดนี้เป็นจุดเดียวจริง ๆ ส่วนอื่น ๆ ผ่านหมดแล้วค่ะ
+
+---
+
+### Author response & changes (PR #58):
+"เราทำการแก้ไขตาม feedback ใน PR #58 เรียบร้อยแล้วค่ะ:
+
+ทำการ mount <AuthProvider> ไว้ระดับบนสุดใน App.tsx พร้อมทั้งสร้าง AuthGate Component สำหรับจัดการ gating หน้าจออย่างถูกต้อง:
+1. กรณีที่ยังไม่ได้ Authenticate (!user) -> แสดงหน้า Login
+2. กรณีที่ user.mustChangePassword === true -> บังคับแสดงหน้า ChangePassword
+3. กรณี Authenticate เรียบร้อย -> แสดงหน้า MainContent พร้อม Role-based navigation และ default view ที่ตรงตาม role ของผู้ใช้
+
+Push commit แก้ไขขึ้น PR #58 เรียบร้อยแล้ว รบกวนช่วย re-check อีกครั้งนะคะ"
+
+---
+
+### Reviewer approval comment I received (PR #58 — Final):
+> ### Re-review — PR #58 (Round 2)
+> 
+> ตรวจสอบรอบ 2 แล้วผ่านหมดเรียบร้อยค่ะ!
+> 
+> * ✅ **P1 AuthProvider & AuthGate** — `App.tsx` mount `<AuthProvider>` และเพิ่ม `<AuthGate>` เรียบร้อยแล้ว ใช้งาน login/logout, mandatory password change และ role-based navigation ในหน้าจอจริงได้อย่างสมบูรณ์
+> * ✅ **Admin User Management UI** — `UserManagement.tsx` ทำงานร่วมกับ backend admin API ได้ครบถ้วน ป้องกัน self-deactivation และ last admin deactivation ได้ตรงตามสเปก
+> 
+> ### Decision: Approved
+> 
+> ผ่านเรียบร้อยแล้วค่ะ merge เข้า `lab3-staging` ได้เลยค่ะ
+> 
+> **Approved and Merged PR #58** เข้าสู่ `lab3-staging` เรียบร้อยแล้ว ขอบคุณสำหรับงานใน Lab 3 ทั้งหมดค่ะ!
+
 
 
 
