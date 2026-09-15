@@ -15,6 +15,7 @@
 | [PR #56](https://github.com/phatthidawadi/toktickit/pull/56) | `feature/20-staff-queue-operations` | Approved with comments |
 | [PR #57](https://github.com/phatthidawadi/toktickit/pull/57) | `feature/21-admin-user-management` | Approved with comments |
 | [PR #58](https://github.com/phatthidawadi/toktickit/pull/58) | `feature/22-admin-user-management-ui` | Approved with comments |
+| [PR #59](https://github.com/phatthidawadi/toktickit/pull/59) | `feature/23-e2e-integration-tests` | Pending review |
 
 ---
 
