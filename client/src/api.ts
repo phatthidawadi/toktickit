@@ -246,3 +246,71 @@ export async function softRemoveAttachment(
     throw new Error(errorData.error || "Soft removal failed");
   }
 }
+
+// ---------------------------------------------------------------------------
+// Authentication API Functions
+// ---------------------------------------------------------------------------
+export interface UserProfile {
+  id: number;
+  name: string;
+  email: string;
+  role: "REQUESTER" | "IT_STAFF" | "ADMINISTRATOR" | string;
+  isActive: boolean;
+  mustChangePassword: boolean;
+}
+
+export async function loginApi(email: string, password: string): Promise<{ user: UserProfile }> {
+  const res = await fetch(`${API_URL}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ email, password }),
+  });
+
+  const data = await res.json().catch(() => ({ error: "Login failed" }));
+  if (!res.ok) {
+    throw new Error(data.error || "Invalid credentials");
+  }
+  return data;
+}
+
+export async function logoutApi(): Promise<{ message: string }> {
+  const res = await fetch(`${API_URL}/api/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+  });
+  return res.json();
+}
+
+export async function fetchCurrentUserApi(): Promise<{ user: UserProfile }> {
+  const res = await fetch(`${API_URL}/api/auth/me`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  const data = await res.json().catch(() => ({ error: "Failed to fetch user session" }));
+  if (!res.ok) {
+    throw new Error(data.error || "Unauthenticated");
+  }
+  return data;
+}
+
+export async function changePasswordApi(
+  currentPassword: string,
+  newPassword: string,
+  confirmPassword: string
+): Promise<{ message: string }> {
+  const res = await fetch(`${API_URL}/api/auth/change-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+  });
+
+  const data = await res.json().catch(() => ({ error: "Password change failed" }));
+  if (!res.ok) {
+    throw new Error(data.error || "Password change failed");
+  }
+  return data;
+}
+

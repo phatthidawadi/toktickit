@@ -5,12 +5,172 @@ import { getPrisma } from "./prisma.js";
 // need the DB (Issue 4). It is intentionally unused until then.
 void getPrisma;
 
+import cookieParser from "cookie-parser";
+import {
+  hashPassword,
+  comparePassword,
+  generateToken,
+  validatePasswordStrength,
+  SESSION_COOKIE_NAME,
+  SESSION_MAX_AGE_SECONDS,
+} from "./utils/auth.js";
+import { authenticateSession } from "./middleware/authMiddleware.js";
+
 // The Express app is exported separately from app.listen() (see index.ts) so
 // Supertest can import `app` without opening a port. Do not merge these files.
 export const app = express();
 
-app.use(cors());          // already wired: lets the Vite dev server call this API
+app.use(cors({ credentials: true, origin: true }));          // already wired: lets the Vite dev server call this API
 app.use(express.json());
+app.use(cookieParser());
+
+// ---------------------------------------------------------------------------
+// Lab 3 — Authentication REST Endpoints
+// ---------------------------------------------------------------------------
+
+// POST /api/auth/login — User Authentication
+app.post("/api/auth/login", async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body || {};
+
+    if (!email || typeof email !== "string" || !password || typeof password !== "string") {
+      return res.status(400).json({ error: "Email and password are required", code: "INVALID_INPUT" });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await getPrisma().user.findUnique({
+      where: { email: normalizedEmail },
+    });
+
+    if (!user || !user.isActive) {
+      return res.status(401).json({ error: "Invalid email or password", code: "INVALID_CREDENTIALS" });
+    }
+
+    const isPasswordValid = await comparePassword(password, user.passwordHash);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: "Invalid email or password", code: "INVALID_CREDENTIALS" });
+    }
+
+    const token = generateToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    res.cookie(SESSION_COOKIE_NAME, token, {
+      httpOnly: true,
+      sameSite: "strict",
+      maxAge: SESSION_MAX_AGE_SECONDS * 1000, // 8 hours in ms
+      path: "/",
+    });
+
+    return res.status(200).json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isActive: user.isActive,
+        mustChangePassword: user.mustChangePassword,
+      },
+    });
+  } catch (error: any) {
+    console.error("Login error:", error);
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+  }
+});
+
+// POST /api/auth/logout — Invalidate Session
+app.post("/api/auth/logout", (_req: Request, res: Response) => {
+  res.clearCookie(SESSION_COOKIE_NAME, {
+    path: "/",
+    httpOnly: true,
+    sameSite: "strict",
+  });
+  res.cookie(SESSION_COOKIE_NAME, "", {
+    path: "/",
+    httpOnly: true,
+    sameSite: "strict",
+    expires: new Date(0),
+    maxAge: 0,
+  });
+  return res.status(200).json({ message: "Successfully logged out" });
+});
+
+// GET /api/auth/me — Retrieve Current Authenticated User Profile
+app.get("/api/auth/me", authenticateSession, async (req: Request, res: Response) => {
+  try {
+    const user = await getPrisma().user.findUnique({
+      where: { id: req.user!.userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isActive: true,
+        mustChangePassword: true,
+      },
+    });
+
+    if (!user || !user.isActive) {
+      return res.status(401).json({ error: "User inactive or not found", code: "UNAUTHORIZED" });
+    }
+
+    return res.status(200).json({ user });
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+  }
+});
+
+// POST /api/auth/change-password — Update User Password
+app.post("/api/auth/change-password", authenticateSession, async (req: Request, res: Response) => {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body || {};
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ error: "Current password, new password, and confirm password are required", code: "INVALID_INPUT" });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ error: "New password and confirm password do not match", code: "PASSWORD_MISMATCH" });
+    }
+
+    const user = await getPrisma().user.findUnique({
+      where: { id: req.user!.userId },
+    });
+
+    if (!user || !user.isActive) {
+      return res.status(401).json({ error: "User inactive or not found", code: "UNAUTHORIZED" });
+    }
+
+    const isCurrentValid = await comparePassword(currentPassword, user.passwordHash);
+    if (!isCurrentValid) {
+      return res.status(400).json({ error: "Current password is incorrect", code: "INCORRECT_CURRENT_PASSWORD" });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({ error: "New password must be different from current password", code: "PASSWORD_NOT_DIFFERENT" });
+    }
+
+    const strengthCheck = validatePasswordStrength(newPassword);
+    if (!strengthCheck.valid) {
+      return res.status(400).json({ error: strengthCheck.reason, code: "WEAK_PASSWORD" });
+    }
+
+    const newHash = await hashPassword(newPassword);
+    await getPrisma().user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: newHash,
+        mustChangePassword: false,
+      },
+    });
+
+    return res.status(200).json({ message: "Password updated successfully" });
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+  }
+});
 
 // ---------------------------------------------------------------------------
 // Issue 2 — API health check
