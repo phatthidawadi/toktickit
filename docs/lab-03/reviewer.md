@@ -10,6 +10,7 @@
 | [PR #51](https://github.com/phatthidawadi/toktickit/pull/51) | `feature/15-doc-spec-tests` | Approved with comments |
 | [PR #52](https://github.com/phatthidawadi/toktickit/pull/52) | `feature/16-db-schema-seed` | Approved with comments |
 | [PR #53](https://github.com/phatthidawadi/toktickit/pull/53) | `feature/17-auth-foundation` | Approved with comments |
+| [PR #54](https://github.com/phatthidawadi/toktickit/pull/54) | `feature/18-authorization-header` | Pending |
 
 ---
 
@@ -532,6 +533,14 @@
 > ตรวจสอบการแก้ไข Round 2 เรียบร้อยแล้วค่ะ แก้ไขเรื่อง `x-requester-id` bypass และเพิ่ม test `SEC-AUTH-04` เรียบร้อยแล้ว ถือว่าผ่านทุกข้อกำหนดของ Auth Foundation แล้วค่ะ
 > 
 > **Approved and Merged PR #53** เข้าสู่ `lab3-staging` เรียบร้อยแล้ว ขอบคุณนะคะ!
+
+---
+
+### Reviewer comment I received (PR #54):
+*(Pending review by @jejaebubu)*
+
+### How I responded (PR #54):
+*(Pending response)*
 
 
 
