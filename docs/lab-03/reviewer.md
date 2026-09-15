@@ -11,6 +11,7 @@
 | [PR #52](https://github.com/phatthidawadi/toktickit/pull/52) | `feature/16-db-schema-seed` | Approved with comments |
 | [PR #53](https://github.com/phatthidawadi/toktickit/pull/53) | `feature/17-auth-foundation` | Approved with comments |
 | [PR #54](https://github.com/phatthidawadi/toktickit/pull/54) | `feature/18-authorization-header` | Approved with comments |
+| [PR #55](https://github.com/phatthidawadi/toktickit/pull/55) | `feature/19-requester-workflow-comments` | Pending Review |
 
 ---
 
@@ -601,6 +602,36 @@
 > ตรวจสอบการแก้ไขเพิ่มเติมเรียบร้อยแล้วค่ะ แก้ไข role เป็น `IT_STAFF`, เพิ่ม test `AUTHZ-API-04`, คืนค่า `mustChangePassword` ใน `finally` และทำความสะอาด style ใน Header เรียบร้อยแล้วค่ะ ถือว่าผ่านข้อกำหนด Server-Side Authorization แล้วค่ะ
 > 
 > **Approved and Merged PR #54** เข้าสู่ `lab3-staging` เรียบร้อยแล้ว ขอบคุณสำหรับงานเรียบร้อยค่ะ!
+
+---
+
+### Reviewer comment I received (PR #55):
+> ## P1 — Endpoint ใหม่ยังรับ identity จาก `x-requester-id` header
+> `getUserFromReq` ที่ใช้กับ `GET/POST /comments` และ `PATCH /resolve-ack` ยังมี fallback ไปใช้ `x-requester-id` อยู่ค่ะ
+> ทำให้ถ้าไม่มี session ก็สามารถส่ง header ปลอมเป็น ID ของเจ้าของ ticket แล้วเข้าไป comment หรือ resolve-ack ได้ค่ะ
+> แนะนำให้ `getUserFromReq` ใช้ session อย่างเดียว และบังคับ BR-02 gate (`mustChangePassword=true` ตอบ `403 MUST_CHANGE_PASSWORD`) กับ path ใหม่ด้วยค่ะ
+> 
+> ## P3 — ขอ confirm ความตั้งใจ
+> 1. Refactor `POST /api/tickets`: confirm ว่าตั้งใจให้ user ทุก role สามารถ create ticket ได้ใช่ไหม
+> 2. Error shape: เพิ่ม `code: "FORBIDDEN"` ใน path ใหม่ให้สอดคล้องกับ authz path
+
+### How I responded (PR #55):
+"ขอบคุณสำหรับการตรวจทาน Peer Review อย่างละเอียดค่ะ! ได้ดำเนินการปรับแก้และอัปเดตตามคำแนะนำเรียบร้อยแล้วทุกประเด็นใน PR #55:
+
+1. **ถอด `x-requester-id` Header Fallback ออกจาก `getUserFromReq` (P1)**:
+   - ปรับแก้ไขฟังก์ชัน `getUserFromReq` ใน `server/src/app.ts` ให้ตรวจสอบและสกัดตัวตนของผู้ใช้จาก Session Token Cookie (`toktickit_session`) เพียงอย่างเดียว ป้องกันการปลอมแปลงตัวตนด้วย Header สำหรับ Endpoint ใหม่ทั้งหมด (`GET/POST /api/tickets/:id/comments`, `PATCH /api/tickets/:id/resolve-ack`)
+   - เพิ่ม test cases `COMMENT-API-02` และ `REQ-API-02` เพื่อทดสอบการปฏิเสธคำขอที่ส่ง `x-requester-id` header โดยไม่มี session cookie (`HTTP 401 UNAUTHORIZED`)
+
+2. **บังคับใช้ BR-02 Password Change Gate บน Endpoint ใหม่ (P1)**:
+   - เพิ่มการตรวจสอบ `user.mustChangePassword` บน `GET/POST /comments` และ `PATCH /resolve-ack` หากผู้ใช้ยังไม่ได้เปลี่ยนรหัสผ่านครั้งแรก ระบบจะปฏิเสธคำขอด้วย `HTTP 403` พร้อม `code: "MUST_CHANGE_PASSWORD"`
+   - เพิ่ม test case `COMMENT-API-03` เพื่อทดสอบพฤติกรรมนี้
+
+3. **มาตรฐาน Error Shape และ Confirmation (P3)**:
+   - กำหนด `code` ใน Response JSON สำหรับทุก Error State ของ Endpoint ใหม่ (`UNAUTHORIZED`, `FORBIDDEN`, `MUST_CHANGE_PASSWORD`, `NOT_FOUND`, `INVALID_INPUT`)
+   - ยืนยันการออกแบบ `POST /api/tickets`: รองรับผู้ใช้งานที่ยืนยันตัวตนได้ทุกบทบาทในการสร้างตั๋วแจ้งปัญหา
+
+ทำการ push อัปเดตขึ้นกิ่ง `feature/19-requester-workflow-comments` สำหรับ PR #55 เรียบร้อยแล้ว รบกวนช่วยตรวจทานอีกครั้ง ขอบคุณมากค่ะ"
+
 
 
 

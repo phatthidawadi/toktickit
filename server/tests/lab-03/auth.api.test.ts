@@ -225,6 +225,11 @@ describe("Authentication & Session API Endpoints (AUTH-API-01 to AUTH-API-07)", 
   });
 
   it("SEC-AUTH-02: Mandatory mustChangePassword = true blocks non-exempt protected paths with 403 Forbidden", async () => {
+    await prisma.user.update({
+      where: { email: "jennifer.a@example.com" },
+      data: { mustChangePassword: true },
+    });
+
     const loginRes = await request
       .post("/api/auth/login")
       .send({
