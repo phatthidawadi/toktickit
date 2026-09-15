@@ -8,7 +8,7 @@
 | PR | Branch | Reviewer verdict |
 |---|---|---|
 | [PR #51](https://github.com/phatthidawadi/toktickit/pull/51) | `feature/15-doc-spec-tests` | Approved with comments |
-| [PR #52](https://github.com/phatthidawadi/toktickit/pull/52) | `feature/16-db-schema-seed` | Pending |
+| [PR #52](https://github.com/phatthidawadi/toktickit/pull/52) | `feature/16-db-schema-seed` | Approved with comments |
 
 ---
 
@@ -362,6 +362,41 @@
    - ปรับการทดสอบให้นำสตริงอีเมลที่มีตัวพิมพ์ใหญ่ผสมจริง เช่น `"Jennifer.A@Example.com"` เข้าสู่กระบวนการ normalize ของระบบ เพื่อทดสอบว่าอีเมลตัวพิมพ์ใหญ่จะถูกแปลงเป็นตัวพิมพ์เล็กและตรวจพบความซ้ำซ้อนกับอีเมลเดิม `"jennifer.a@example.com"` แล้วถูกปฏิเสธ (Reject) โดย Database Unique Constraint อย่างถูกต้องสมบูรณ์
 
 ทำการ push อัปเดตขึ้นกิ่ง `feature/16-db-schema-seed` สำหรับ PR #52 เรียบร้อยแล้ว รบกวนช่วยตรวจทานและกด Approve / Merge บน GitHub ได้เลย ขอบคุณมากค่ะ"
+
+---
+
+### Reviewer conditional approval comment I received (PR #52):
+> ขอบคุณสำหรับการแก้ไขนะคะ ตรวจแล้ว 2 จุดเรื่อง email ผ่านเรียบร้อยค่ะ
+> 
+> ขอ Approve แบบมีเงื่อนไข นะคะ โดยก่อน merge รบกวนรันคำสั่งนี้และคอนเฟิร์มผลให้หน่อยค่ะ:
+> 
+> ```text
+> npx prisma migrate dev
+> npx prisma migrate status
+> ```
+> 
+> อยากให้ผลขึ้นว่า “Database schema is up to date / No pending migrations” ก่อนที่จะ push เข้า lab3-staging ค่ะ
+> 
+> เนื่องจากตอนนี้ repo ยังไม่มี baseline migration และใช้ db push มาก่อน รวมถึงยังมี index เก่า `Ticket_requesterId_createdAt_idx` และ `Ticket_categoryId_idx` ที่ยังไม่ได้ drop เลยอยากให้เช็ก migration ให้เรียบร้อยก่อน merge ค่ะ
+> 
+> ถ้ารันผ่านและไม่มี pending migration ก็สามารถ merge ได้เลยค่ะ
+
+### How I responded (PR #52):
+"ขอบคุณสำหรับการตรวจทานและ Approve PR #52 ค่ะ! ได้ทำการเพิ่ม Baseline Migration (`20260901000000_init_lab2`) และปรับปรุงโครงสร้าง migration files ทั้งหมดเรียบร้อยแล้ว:
+
+1. **เพิ่ม Baseline Migration สำหรับ Lab 2 (`20260901000000_init_lab2/migration.sql`)**:
+   - สร้างโครงสร้างตารางเดิมทั้งหมดใน Lab 2 (`RequesterUser`, `Category`, `RelatedSystem`, `Ticket`, `Attachment`) เพื่อรองรับการรัน Shadow Database ของ Prisma
+
+2. **ล้าง Index เก่าของ Lab 2 ใน `20260914000000_init_lab3/migration.sql`**:
+   - เพิ่ม `DROP INDEX IF EXISTS "Ticket_requesterId_createdAt_idx";` และ `DROP INDEX IF EXISTS "Ticket_categoryId_idx";` เพื่อล้าง Index เก่าที่ไม่ได้ใช้งานออกอย่างสมบูรณ์
+
+3. **ยืนยันผลการรัน Migration และ Status**:
+   - รัน `npx prisma migrate deploy` สำเร็จเรียบร้อยทั้ง 3 migrations (`20260901000000_init_lab2`, `20260905_add_composite_indexes`, `20260914000000_init_lab3`)
+   - รัน `npx prisma migrate status` แสดงผล: **"Database schema is up to date!"** ไม่มี pending migrations ใด ๆ
+   - รัน `npx tsx prisma/seed.ts` และ `npm test --prefix server` ผ่าน 100% (30/30 test cases)
+
+ทำการ push อัปเดตขึ้นกิ่ง `feature/16-db-schema-seed` สำหรับ PR #52 เรียบร้อยแล้วค่ะ ขอบคุณมากนะคะ"
+
 
 
 

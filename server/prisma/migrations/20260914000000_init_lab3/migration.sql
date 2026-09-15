@@ -39,7 +39,9 @@ BEGIN
         FROM "RequesterUser"
         ON CONFLICT ("id") DO NOTHING;
         
-        PERFORM setval('User_id_seq', GREATEST((SELECT MAX(id) FROM "User"), 1));
+        IF pg_get_serial_sequence('"User"', 'id') IS NOT NULL THEN
+            PERFORM setval(pg_get_serial_sequence('"User"', 'id'), GREATEST((SELECT COALESCE(MAX(id), 1) FROM "User"), 1));
+        END IF;
     END IF;
 END $$;
 
@@ -78,6 +80,7 @@ UPDATE "Ticket" SET "itPriority" = "requestedPriority" WHERE "itPriority" IS NUL
 
 ALTER TABLE "Ticket" ALTER COLUMN "itPriority" SET NOT NULL;
 
+ALTER TABLE "Ticket" ALTER COLUMN "currentStatus" DROP DEFAULT;
 ALTER TABLE "Ticket" ALTER COLUMN "currentStatus" TYPE "TicketStatus" USING "currentStatus"::"TicketStatus";
 ALTER TABLE "Ticket" ALTER COLUMN "currentStatus" SET DEFAULT 'NEW'::"TicketStatus";
 
@@ -91,7 +94,10 @@ ALTER TABLE "TicketComment" ADD CONSTRAINT "TicketComment_authorId_fkey" FOREIGN
 ALTER TABLE "TicketInternalNote" ADD CONSTRAINT "TicketInternalNote_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "Ticket"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "TicketInternalNote" ADD CONSTRAINT "TicketInternalNote_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
--- 8. Create Indexes
+-- 8. Create & Drop Indexes
+DROP INDEX IF EXISTS "Ticket_requesterId_createdAt_idx";
+DROP INDEX IF EXISTS "Ticket_categoryId_idx";
+
 CREATE INDEX IF NOT EXISTS "Ticket_requesterId_idx" ON "Ticket"("requesterId");
 CREATE INDEX IF NOT EXISTS "Ticket_assignedStaffId_idx" ON "Ticket"("assignedStaffId");
 CREATE INDEX IF NOT EXISTS "Ticket_currentStatus_idx" ON "Ticket"("currentStatus");
