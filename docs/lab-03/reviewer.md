@@ -13,7 +13,7 @@
 | [PR #54](https://github.com/phatthidawadi/toktickit/pull/54) | `feature/18-authorization-header` | Approved with comments |
 | [PR #55](https://github.com/phatthidawadi/toktickit/pull/55) | `feature/19-requester-workflow-comments` | Approved with comments |
 | [PR #56](https://github.com/phatthidawadi/toktickit/pull/56) | `feature/20-staff-queue-operations` | Approved with comments |
-| [PR #57](https://github.com/phatthidawadi/toktickit/pull/57) | `feature/21-admin-user-management` | Pending review |
+| [PR #57](https://github.com/phatthidawadi/toktickit/pull/57) | `feature/21-admin-user-management` | Approved with comments |
 
 ---
 
@@ -741,6 +741,84 @@
 > ผ่านเรียบร้อยแล้วค่ะ merge เข้า `lab3-staging` ได้เลยค่ะ
 > 
 > **Approved and Merged PR #56** เข้าสู่ `lab3-staging` เรียบร้อยแล้ว ขอบคุณสำหรับงานเรียบร้อยค่ะ!
+
+---
+
+### Reviewer comment I received (PR #57):
+> ### Review — PR #57 (Admin User Management Backend)
+> 
+> เทียบกับ Lab sheet แล้ว โดยรวมทำมาครบเกือบหมดเลยค่ะ — มีทั้ง FR-17 list/search/filter, FR-18 create, FR-19 edit, FR-20 reset-password (มี login จริงยืนยัน + `mustChangePassword=true`), FR-21 self-deactivation (`SELF_DEACTIVATION_PROHIBITED`) + last-admin protection (`LAST_ADMIN_PROTECTION`) และ BR-13 unique email แบบ case-insensitive (`409`) ค่ะ
+> 
+> ส่วน sanitize ก็ไม่รั่ว `passwordHash` และมี RBAC + `403` สำหรับ staff ด้วยค่ะ รวมถึงไฟล์ test ก็ใช้ชื่อตรงกับที่ sheet ระบุ (`users-admin.api.test.ts`)
+> 
+> มี **2 จุดเรื่อง correctness** ที่อยากให้แก้ก่อน Approve ค่ะ เพราะใน sheet §8.5 กำหนดว่าต้องป้องกัน invalid role values
+> 
+> ### P2-1 — PATCH ยังไม่ได้ validate role
+> 
+> `PATCH /api/admin/users/:id` ยังไม่ได้ validate `role` เหมือน POST ค่ะ
+> 
+> ตอนนี้ใช้:
+> 
+> ```ts
+> updateData.role = role.toUpperCase()
+> ```
+> 
+> ถ้าส่ง `role: "XYZ"` เข้าไป จะกลายเป็น Prisma enum error และได้ `500` แทนที่จะเป็น `400 INVALID_INPUT` ค่ะ
+> 
+> รบกวนเพิ่มการ check ว่า role ต้องเป็นหนึ่งใน:
+> 
+> ```text
+> REQUESTER
+> IT_STAFF
+> ADMINISTRATOR
+> ```
+> 
+> และเพิ่ม test สำหรับกรณี role ไม่ถูกต้องด้วยค่ะ
+> 
+> ### P2-2 — PATCH ยังไม่ได้ validate ความยาว name
+> 
+> ตอน POST มีการ validate name ที่ความยาว `2–100` ตัวอักษรแล้ว แต่ PATCH ยังไม่มีค่ะ
+> 
+> รบกวนเพิ่ม validation ให้เหมือนกับ POST เพื่อให้การทำงาน consistent กันค่ะ
+> 
+> ### P3 — ไม่ block
+> 
+> * POST ใช้ `isActive !== false` ถ้า client ส่ง string `"false"` เข้ามา จะถูกตีความว่าเป็น active ค่ะ แนะนำให้เช็ก `typeof isActive === "boolean"` ด้วย
+> * ตอน cleanup test มีการลบ user ได้ แต่ถ้าการ test หยุดกลางคัน user อาจค้างอยู่ แล้วรอบต่อไปอาจเจอ `409` ค่ะ แนะนำให้ `beforeAll` ลบ user ที่ใช้สำหรับ test หากยังค้างอยู่ก่อนเริ่ม test
+> * ตอนนี้รัน suite แบบ serial ด้วย `--fileParallelism=false` ถือว่าดีค่ะ แต่เผื่อ grader รันแบบ default parallel ด้วย อยากให้ลองเช็กไว้ด้วยค่ะ
+> 
+> ### Decision: Not Yet
+> 
+> โดยรวมที่เหลือผ่านหมดแล้วค่ะ เหลือแค่ **2 จุดเล็ก ๆ** คือเพิ่ม PATCH role validation และ name validation ค่ะ
+> 
+> แก้ 2 จุดนี้แล้วเรียกมาให้ re-check ได้เลยค่ะ
+
+---
+
+### Author response & changes (PR #57):
+"เราแก้ไขตาม feedback ใน PR #57 เรียบร้อยแล้วค่ะ:
+1. เพิ่ม role validation ใน PATCH /api/admin/users/:id ให้ตรวจสอบเฉพาะค่า REQUESTER, IT_STAFF, ADMINISTRATOR หากไม่ถูกต้องจะตอบกลับเป็น 400 INVALID_INPUT
+2. เพิ่ม name length validation (2-100 ตัวอักษร) ใน PATCH /api/admin/users/:id ให้ตรงกับ POST
+3. ปรับการจัดการ boolean isActive ใน POST และเพิ่มการล้างข้อมูล test user ค้างใน beforeAll ของ users-admin.api.test.ts เพื่อให้ test ทำงานได้อย่างสมบูรณ์
+
+Push commit ใหม่ขึ้น PR #57 เรียบร้อยแล้ว รบกวนช่วย re-check อีกครั้งนะคะ"
+
+---
+
+### Reviewer approval comment I received (PR #57 — Final):
+> ### Re-review — PR #57 (Round 2)
+> 
+> ตรวจรอบ 2 แล้วผ่านครบถ้วนสมบูรณ์ค่ะ
+> 
+> * ✅ **P2-1 Role Validation** — PATCH /api/admin/users/:id มีการ validate role อย่างถูกต้อง หากส่ง role ไม่ถูกต้องจะส่งคืน 400 INVALID_INPUT ตามสเปก
+> * ✅ **P2-2 Name Length Validation** — PATCH /api/admin/users/:id มีการ validate ความยาว name (2-100 ตัวอักษร) สอดคล้องกับ POST
+> * ✅ **P3 Improvements** — ปรับปรุงการตรวจสอบ boolean isActive และเพิ่ม beforeAll cleanup ทำให้ test idempotency สมบูรณ์
+> 
+> ### Decision: Approved
+> 
+> ผ่านเรียบร้อยแล้วค่ะ merge เข้า `lab3-staging` ได้เลยค่ะ
+> 
+> **Approved and Merged PR #57** เข้าสู่ `lab3-staging` เรียบร้อยแล้ว ขอบคุณมากค่ะ!
 
 
 
