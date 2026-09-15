@@ -18,6 +18,7 @@ import {
 import { authenticateSession, requireRole } from "./middleware/authMiddleware.js";
 import { loginRateLimiter } from "./middleware/rateLimiter.js";
 import { generateTicketNumber } from "./utils/ticketNumber.js";
+import { isValidStatusTransition } from "./utils/workflow.js";
 
 // The Express app is exported separately from app.listen() (see index.ts) so
 // Supertest can import `app` without opening a port. Do not merge these files.
@@ -183,9 +184,328 @@ app.get("/api/auth/protected-sample", authenticateSession, (_req: Request, res: 
   return res.status(200).json({ message: "Access granted to protected sample endpoint" });
 });
 
-// GET /api/staff/tickets — IT Staff Ticket Queue (Protected by RBAC: IT_STAFF, ADMINISTRATOR)
-app.get("/api/staff/tickets", authenticateSession, requireRole(["IT_STAFF", "ADMINISTRATOR"]), (_req: Request, res: Response) => {
-  return res.status(200).json({ tickets: [] });
+// GET /api/staff/tickets — IT Staff Ticket Queue (Search, Filter, Sort, Paginate)
+app.get("/api/staff/tickets", authenticateSession, requireRole(["IT_STAFF", "ADMINISTRATOR"]), async (req: Request, res: Response) => {
+  try {
+    const { search, categoryId, status, requestedPriority, itPriority, assignedStaffId, sort = "createdAt_desc", page = "1", limit = "10" } = req.query;
+
+    const pageNum = Math.max(1, Number(page) || 1);
+    const limitNum = Math.max(1, Math.min(50, Number(limit) || 10));
+    const skip = (pageNum - 1) * limitNum;
+
+    const where: any = {};
+
+    if (categoryId) {
+      where.categoryId = Number(categoryId);
+    }
+
+    if (status) {
+      where.currentStatus = String(status);
+    }
+
+    if (requestedPriority) {
+      where.requestedPriority = String(requestedPriority);
+    }
+
+    if (itPriority) {
+      where.itPriority = String(itPriority);
+    }
+
+    if (assignedStaffId !== undefined) {
+      if (assignedStaffId === "unassigned") {
+        where.assignedStaffId = null;
+      } else if (assignedStaffId === "me") {
+        where.assignedStaffId = req.user!.userId;
+      } else {
+        const staffIdNum = Number(assignedStaffId);
+        if (!isNaN(staffIdNum)) {
+          where.assignedStaffId = staffIdNum;
+        }
+      }
+    }
+
+    if (search && typeof search === "string" && search.trim().length > 0) {
+      const searchTerm = search.trim();
+      where.OR = [
+        { ticketNumber: { contains: searchTerm, mode: "insensitive" } },
+        { summary: { contains: searchTerm, mode: "insensitive" } },
+        { description: { contains: searchTerm, mode: "insensitive" } },
+      ];
+    }
+
+    const PRIORITY_RANK: Record<string, number> = {
+      URGENT: 4,
+      HIGH: 3,
+      MEDIUM: 2,
+      LOW: 1,
+    };
+
+    if (sort === "priority_desc") {
+      const [total, allTickets] = await Promise.all([
+        getPrisma().ticket.count({ where }),
+        getPrisma().ticket.findMany({
+          where,
+          include: {
+            requester: { select: { id: true, name: true, email: true } },
+            assignedStaff: { select: { id: true, name: true, email: true, role: true } },
+            category: { select: { id: true, name: true } },
+            relatedSystem: { select: { id: true, name: true } },
+            attachments: {
+              where: { isRemoved: false },
+              select: { id: true, filename: true, originalName: true, size: true, mimeType: true },
+            },
+          },
+        }),
+      ]);
+
+      allTickets.sort((a, b) => {
+        const rankA = PRIORITY_RANK[a.itPriority] || PRIORITY_RANK[a.requestedPriority] || 0;
+        const rankB = PRIORITY_RANK[b.itPriority] || PRIORITY_RANK[b.requestedPriority] || 0;
+        if (rankA !== rankB) {
+          return rankB - rankA;
+        }
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+
+      const tickets = allTickets.slice(skip, skip + limitNum);
+      const totalPages = Math.ceil(total / limitNum) || 1;
+
+      return res.status(200).json({
+        tickets,
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages,
+      });
+    }
+
+    let orderBy: any = { createdAt: "desc" };
+    if (sort === "createdAt_asc") {
+      orderBy = { createdAt: "asc" };
+    }
+
+    const [total, tickets] = await Promise.all([
+      getPrisma().ticket.count({ where }),
+      getPrisma().ticket.findMany({
+        where,
+        skip,
+        take: limitNum,
+        orderBy,
+        include: {
+          requester: { select: { id: true, name: true, email: true } },
+          assignedStaff: { select: { id: true, name: true, email: true, role: true } },
+          category: { select: { id: true, name: true } },
+          relatedSystem: { select: { id: true, name: true } },
+          attachments: {
+            where: { isRemoved: false },
+            select: { id: true, filename: true, originalName: true, size: true, mimeType: true },
+          },
+        },
+      }),
+    ]);
+
+    const totalPages = Math.ceil(total / limitNum) || 1;
+
+    return res.status(200).json({
+      tickets,
+      total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+  }
+});
+
+// GET /api/staff/tickets/:id — Retrieve Ticket Detail for Staff/Admin
+app.get("/api/staff/tickets/:id", authenticateSession, requireRole(["IT_STAFF", "ADMINISTRATOR"]), async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId) || ticketId <= 0) {
+      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
+    }
+
+    const ticket = await getPrisma().ticket.findUnique({
+      where: { id: ticketId },
+      include: {
+        requester: { select: { id: true, name: true, email: true } },
+        assignedStaff: { select: { id: true, name: true, email: true, role: true } },
+        category: { select: { id: true, name: true, description: true } },
+        relatedSystem: { select: { id: true, name: true, description: true } },
+        attachments: {
+          select: {
+            id: true,
+            filename: true,
+            originalName: true,
+            size: true,
+            mimeType: true,
+            isRemoved: true,
+            removedReason: true,
+            removedAt: true,
+            createdAt: true,
+          },
+          orderBy: { id: "asc" },
+        },
+        comments: {
+          include: {
+            author: { select: { id: true, name: true, email: true, role: true } },
+          },
+          orderBy: { createdAt: "asc" },
+        },
+        internalNotes: {
+          include: {
+            author: { select: { id: true, name: true, email: true, role: true } },
+          },
+          orderBy: { createdAt: "asc" },
+        },
+      },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
+    }
+
+    return res.status(200).json(ticket);
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+  }
+});
+
+// PATCH /api/staff/tickets/:id/assign — Claim or Reassign Ticket
+app.patch("/api/staff/tickets/:id/assign", authenticateSession, requireRole(["IT_STAFF", "ADMINISTRATOR"]), async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId) || ticketId <= 0) {
+      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
+    }
+
+    const ticket = await getPrisma().ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) {
+      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
+    }
+
+    const { assignedStaffId, claim } = req.body || {};
+    let targetStaffId: number | null = null;
+
+    if (claim === true) {
+      targetStaffId = req.user!.userId;
+    } else if (assignedStaffId !== undefined) {
+      if (assignedStaffId === null) {
+        targetStaffId = null;
+      } else {
+        const staffIdNum = Number(assignedStaffId);
+        if (isNaN(staffIdNum)) {
+          return res.status(400).json({ error: "Invalid assignedStaffId", code: "INVALID_INPUT" });
+        }
+        targetStaffId = staffIdNum;
+      }
+    } else {
+      return res.status(400).json({ error: "assignedStaffId or claim field is required", code: "INVALID_INPUT" });
+    }
+
+    if (targetStaffId !== null) {
+      const targetUser = await getPrisma().user.findUnique({
+        where: { id: targetStaffId },
+      });
+
+      if (!targetUser || !targetUser.isActive || (targetUser.role !== "IT_STAFF" && targetUser.role !== "ADMINISTRATOR")) {
+        return res.status(400).json({
+          error: "Target assigned user is inactive or not an IT Staff/Admin",
+          code: "INVALID_INPUT",
+        });
+      }
+    }
+
+    const updatedTicket = await getPrisma().ticket.update({
+      where: { id: ticketId },
+      data: { assignedStaffId: targetStaffId },
+      include: {
+        assignedStaff: { select: { id: true, name: true, email: true, role: true } },
+      },
+    });
+
+    return res.status(200).json(updatedTicket);
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+  }
+});
+
+// PATCH /api/staff/tickets/:id/priority — Update Operational IT Priority
+app.patch("/api/staff/tickets/:id/priority", authenticateSession, requireRole(["IT_STAFF", "ADMINISTRATOR"]), async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId) || ticketId <= 0) {
+      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
+    }
+
+    const ticket = await getPrisma().ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) {
+      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
+    }
+
+    const { itPriority } = req.body || {};
+    const validPriorities = ["LOW", "MEDIUM", "HIGH", "URGENT"];
+    if (!itPriority || !validPriorities.includes(itPriority)) {
+      return res.status(400).json({
+        error: "Valid itPriority (LOW, MEDIUM, HIGH, URGENT) is required",
+        code: "INVALID_INPUT",
+      });
+    }
+
+    const updatedTicket = await getPrisma().ticket.update({
+      where: { id: ticketId },
+      data: { itPriority: itPriority as any },
+    });
+
+    return res.status(200).json(updatedTicket);
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+  }
+});
+
+// PATCH /api/staff/tickets/:id/status — Transition Ticket Status (BR-10 Matrix)
+app.patch("/api/staff/tickets/:id/status", authenticateSession, requireRole(["IT_STAFF", "ADMINISTRATOR"]), async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId) || ticketId <= 0) {
+      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
+    }
+
+    const ticket = await getPrisma().ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) {
+      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
+    }
+
+    const { status } = req.body || {};
+    if (!status || typeof status !== "string") {
+      return res.status(400).json({ error: "Status field is required", code: "INVALID_INPUT" });
+    }
+
+    const isPermitted = isValidStatusTransition(ticket.currentStatus, status, req.user!.role);
+    if (!isPermitted) {
+      return res.status(400).json({
+        error: `Invalid ticket status transition from ${ticket.currentStatus} to ${status}`,
+        code: "INVALID_TRANSITION",
+      });
+    }
+
+    const updateData: any = { currentStatus: status };
+
+    // BR-10 Auto-claim rule: If transitioning from NEW to OPEN or IN_PROGRESS while unassigned
+    if (ticket.currentStatus === "NEW" && (status === "OPEN" || status === "IN_PROGRESS") && ticket.assignedStaffId === null) {
+      updateData.assignedStaffId = req.user!.userId;
+    }
+
+    const updatedTicket = await getPrisma().ticket.update({
+      where: { id: ticketId },
+      data: updateData,
+    });
+
+    return res.status(200).json(updatedTicket);
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+  }
 });
 
 // GET /api/admin/users — Admin User Management (Protected by RBAC: ADMINISTRATOR)
@@ -939,6 +1259,106 @@ app.patch("/api/tickets/:id/resolve-ack", async (req: Request, res: Response) =>
     });
 
     return res.status(200).json(updatedTicket);
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+  }
+});
+
+// GET /api/tickets/:id/notes — Fetch Confidential Internal Notes (Staff/Admin ONLY)
+app.get("/api/tickets/:id/notes", async (req: Request, res: Response) => {
+  try {
+    const user = await getUserFromReq(req);
+    if (!user) {
+      return res.status(401).json({ error: "Authentication required", code: "UNAUTHORIZED" });
+    }
+
+    if (user.mustChangePassword) {
+      return res.status(403).json({
+        error: "Mandatory password change required before accessing system features.",
+        code: "MUST_CHANGE_PASSWORD",
+      });
+    }
+
+    if (user.role === "REQUESTER") {
+      return res.status(403).json({
+        error: "Access denied. Confidential Internal Notes are restricted to IT Staff and Administrators.",
+        code: "FORBIDDEN",
+      });
+    }
+
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId) || ticketId <= 0) {
+      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
+    }
+
+    const ticket = await getPrisma().ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) {
+      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
+    }
+
+    const notes = await getPrisma().ticketInternalNote.findMany({
+      where: { ticketId },
+      include: {
+        author: { select: { id: true, name: true, email: true, role: true } },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+
+    return res.status(200).json(notes);
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+  }
+});
+
+// POST /api/tickets/:id/notes — Post a Private Internal Note (Staff/Admin ONLY)
+app.post("/api/tickets/:id/notes", async (req: Request, res: Response) => {
+  try {
+    const user = await getUserFromReq(req);
+    if (!user) {
+      return res.status(401).json({ error: "Authentication required", code: "UNAUTHORIZED" });
+    }
+
+    if (user.mustChangePassword) {
+      return res.status(403).json({
+        error: "Mandatory password change required before accessing system features.",
+        code: "MUST_CHANGE_PASSWORD",
+      });
+    }
+
+    if (user.role === "REQUESTER") {
+      return res.status(403).json({
+        error: "Access denied. Confidential Internal Notes are restricted to IT Staff and Administrators.",
+        code: "FORBIDDEN",
+      });
+    }
+
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId) || ticketId <= 0) {
+      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
+    }
+
+    const ticket = await getPrisma().ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) {
+      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
+    }
+
+    const { content } = req.body || {};
+    if (!content || typeof content !== "string" || content.trim().length === 0 || content.trim().length > 1000) {
+      return res.status(400).json({ error: "Internal note content is required (1 to 1000 characters)", code: "INVALID_INPUT" });
+    }
+
+    const newNote = await getPrisma().ticketInternalNote.create({
+      data: {
+        ticketId,
+        authorId: user.id,
+        content: content.trim(),
+      },
+      include: {
+        author: { select: { id: true, name: true, email: true, role: true } },
+      },
+    });
+
+    return res.status(201).json(newNote);
   } catch (error) {
     return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
   }

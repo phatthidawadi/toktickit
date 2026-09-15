@@ -116,11 +116,11 @@ describe("Server-Side Authorization & RBAC Middleware (AUTHZ-API-01 to AUTHZ-API
   });
 
   it("AUTHZ-API-04: Authorized IT_STAFF user accessing /api/staff/tickets returns 200 OK", async () => {
-    const user = await prisma.user.findUnique({ where: { email: "staff.somchai@example.com" } });
+    const user = await prisma.user.findUnique({ where: { email: "staff.somsri@example.com" } });
     const initialMustChangePassword = user?.mustChangePassword ?? true;
 
     await prisma.user.update({
-      where: { email: "staff.somchai@example.com" },
+      where: { email: "staff.somsri@example.com" },
       data: { mustChangePassword: false },
     });
 
@@ -128,7 +128,7 @@ describe("Server-Side Authorization & RBAC Middleware (AUTHZ-API-01 to AUTHZ-API
       const loginRes = await request
         .post("/api/auth/login")
         .send({
-          email: "staff.somchai@example.com",
+          email: "staff.somsri@example.com",
           password: "Password123!",
         });
 
@@ -143,7 +143,7 @@ describe("Server-Side Authorization & RBAC Middleware (AUTHZ-API-01 to AUTHZ-API
       expect(Array.isArray(staffRes.body.tickets)).toBe(true);
     } finally {
       await prisma.user.update({
-        where: { email: "staff.somchai@example.com" },
+        where: { email: "staff.somsri@example.com" },
         data: { mustChangePassword: initialMustChangePassword },
       });
     }
