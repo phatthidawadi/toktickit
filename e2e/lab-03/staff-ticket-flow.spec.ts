@@ -3,8 +3,10 @@ import { test, expect, Page } from '@playwright/test';
 async function resetDbViaApi(request?: any) {
   try {
     if (request) {
-      await request.post('http://localhost:3000/api/test/reset-db');
-      await request.post('http://localhost:3000/api/test/reset-rate-limit');
+      const res1 = await request.post('http://localhost:3000/api/test/reset-db');
+      await res1.json().catch(() => {});
+      const res2 = await request.post('http://localhost:3000/api/test/reset-rate-limit');
+      await res2.json().catch(() => {});
     } else {
       const r1 = await fetch('http://localhost:3000/api/test/reset-db', { method: 'POST' });
       await r1.json().catch(() => {});
@@ -111,9 +113,9 @@ test.describe('E2E-02: IT Staff Ticket Queue & Lifecycle Workflow E2E Journey', 
     await expect(queueNav).toBeVisible();
 
     const searchInput = page.locator('input[placeholder*="Search by ticket"], input[type="text"]').first();
-    if (await searchInput.isVisible()) {
-      await searchInput.fill('');
-    }
+    await expect(searchInput).toBeVisible();
+    await searchInput.fill('TKT-2026-000001');
+    await page.keyboard.press('Enter');
 
     const ticketCell = page.locator('tr:has-text("TKT-2026-000001") td, tr:has-text("TKT-2026-000001")').first();
     await expect(ticketCell).toBeVisible();
@@ -169,9 +171,20 @@ test.describe('E2E-02: IT Staff Ticket Queue & Lifecycle Workflow E2E Journey', 
 
     await loginAndHandlePasswordChange(page, 'jennifer.a@example.com');
 
+    // Handle Requester Context modal if displayed
+    const noReqBtn = page.locator('button:has-text("Select Requester Context")');
+    if (await noReqBtn.isVisible()) {
+      await noReqBtn.click();
+      const selectJen = page.locator('button:has-text("Jennifer Anderson"), tr:has-text("Jennifer Anderson")').first();
+      if (await selectJen.isVisible()) {
+        await selectJen.click({ force: true });
+      }
+    }
+
     // Open ticket in Requester view
-    const bodyHtml = await page.locator('body').innerHTML();
-    console.log('BODY HTML AT STEP 7:', bodyHtml);
+    const reqSearchInput = page.locator('#search-input, input[placeholder*="Search"]').first();
+    await expect(reqSearchInput).toBeVisible();
+    await reqSearchInput.fill('TKT-2026-000001');
 
     const reqTicketRow = page.locator('tr:has-text("TKT-2026-000001") td, tr:has-text("TKT-2026-000001")').first();
     await expect(reqTicketRow).toBeVisible();
@@ -185,7 +198,7 @@ test.describe('E2E-02: IT Staff Ticket Queue & Lifecycle Workflow E2E Journey', 
     await expect(page.locator('text="Re-synced Exchange AD token"')).not.toBeVisible();
 
     await page.screenshot({
-      path: `artifacts/lab-03/screenshots/staff-ticket-detail/03-requester-privacy-view-${projectName}.png`,
+      path: `../artifacts/lab-03/screenshots/staff-ticket-detail/03-requester-privacy-view-${projectName}.png`,
       fullPage: true,
     });
   });

@@ -3,8 +3,10 @@ import { test, expect, Page } from '@playwright/test';
 async function resetDbViaApi(request?: any) {
   try {
     if (request) {
-      await request.post('http://localhost:3000/api/test/reset-db');
-      await request.post('http://localhost:3000/api/test/reset-rate-limit');
+      const res1 = await request.post('http://localhost:3000/api/test/reset-db');
+      await res1.json().catch(() => {});
+      const res2 = await request.post('http://localhost:3000/api/test/reset-rate-limit');
+      await res2.json().catch(() => {});
     } else {
       const r1 = await fetch('http://localhost:3000/api/test/reset-db', { method: 'POST' });
       await r1.json().catch(() => {});
