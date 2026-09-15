@@ -10,7 +10,7 @@
 | [PR #51](https://github.com/phatthidawadi/toktickit/pull/51) | `feature/15-doc-spec-tests` | Approved with comments |
 | [PR #52](https://github.com/phatthidawadi/toktickit/pull/52) | `feature/16-db-schema-seed` | Approved with comments |
 | [PR #53](https://github.com/phatthidawadi/toktickit/pull/53) | `feature/17-auth-foundation` | Approved with comments |
-| [PR #54](https://github.com/phatthidawadi/toktickit/pull/54) | `feature/18-authorization-header` | Pending |
+| [PR #54](https://github.com/phatthidawadi/toktickit/pull/54) | `feature/18-authorization-header` | Approved with comments |
 
 ---
 
@@ -593,7 +593,14 @@
 4. **การระบุ Scope ใน PR Description (P2 #1 & P2 #3)**:
    - ระบุใน PR Description ชัดเจนว่า Real Data Endpoints สำหรับ Staff Queue, Admin Users, Requester Workflow รวมถึงการ mount `AuthProvider` ใน `App.tsx` จะดำเนินการใน PR ถัดไป (Issue 19-22) ตามลำดับ Roadmap
 
-ทำการ push อัปเดตขึ้นกิ่ง `feature/18-authorization-header` สำหรับ PR #53 เรียบร้อยแล้ว รบกวนช่วยตรวจทานอีกครั้ง ขอบคุณมากค่ะ"
+ทำการ push อัปเดตขึ้นกิ่ง `feature/18-authorization-header` สำหรับ PR #54 เรียบร้อยแล้ว รบกวนช่วยตรวจทานอีกครั้ง ขอบคุณมากค่ะ"
+
+---
+
+### Reviewer approval comment I received (PR #54 — Final):
+> ตรวจสอบการแก้ไขเพิ่มเติมเรียบร้อยแล้วค่ะ แก้ไข role เป็น `IT_STAFF`, เพิ่ม test `AUTHZ-API-04`, คืนค่า `mustChangePassword` ใน `finally` และทำความสะอาด style ใน Header เรียบร้อยแล้วค่ะ ถือว่าผ่านข้อกำหนด Server-Side Authorization แล้วค่ะ
+> 
+> **Approved and Merged PR #54** เข้าสู่ `lab3-staging` เรียบร้อยแล้ว ขอบคุณสำหรับงานเรียบร้อยค่ะ!
 
 
 
