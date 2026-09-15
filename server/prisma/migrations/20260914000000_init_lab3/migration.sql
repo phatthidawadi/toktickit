@@ -18,8 +18,8 @@ CREATE TABLE "User" (
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
 
--- Create Unique Index on User.email (case-insensitive)
-CREATE UNIQUE INDEX "User_email_key" ON "User"(LOWER("email"));
+-- Create Unique Index on User.email
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- 3. Data Migration: Copy existing RequesterUser data into User table if RequesterUser exists
 DO $$

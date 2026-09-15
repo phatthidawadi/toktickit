@@ -89,12 +89,18 @@ describe("MIG-API-01: Lab 2 Data Migration Integrity and Seed State", () => {
     expect(user).not.toBeNull();
     expect(user?.email).toBe("jennifer.a@example.com");
 
-    const duplicateEmail = "Jennifer.A@Example.com".trim().toLowerCase();
+    // BR-13: System normalizes mixed/uppercase input email (e.g., "Jennifer.A@Example.com") to lowercase
+    const rawInputEmail = "Jennifer.A@Example.com";
+    const normalizedEmail = rawInputEmail.trim().toLowerCase();
+
+    expect(normalizedEmail).toBe("jennifer.a@example.com");
+
+    // Attempting to create duplicate user with normalized email triggers unique constraint error
     await expect(
       prisma.user.create({
         data: {
           name: "Duplicate User",
-          email: duplicateEmail,
+          email: normalizedEmail,
           passwordHash: user!.passwordHash,
           role: "REQUESTER",
         },

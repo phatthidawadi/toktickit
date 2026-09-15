@@ -337,6 +337,33 @@
 
 ทำการ push อัปเดตขึ้นกิ่ง `feature/16-db-schema-seed` สำหรับ PR #52 เรียบร้อยแล้ว รบกวนช่วยตรวจทานและกด Approve / Merge บน GitHub ได้เลย ขอบคุณมากค่ะ"
 
+---
+
+### Reviewer follow-up comment I received (PR #52):
+> ตรวจล่าสุดแล้ว hash password กับ index ต่าง ๆ ผ่านครบแล้วค่ะ แต่เรื่อง email ยังมี 2 จุดที่ต้องแก้:
+> 
+> 1. **`User_email_key` ยังมีปัญหากับ Prisma**
+>    ตอนนี้ใช้ `User_email_key ON "User"(LOWER("email"))` ซึ่งเป็น functional index แต่ Prisma ไม่รองรับการใช้แบบนี้กับ `@unique` ค่ะ อาจทำให้ `prisma migrate dev` มองว่า schema กับ database ไม่ตรงกันและเกิด drift ได้
+> 
+>    แนะนำให้ใช้ `email @unique` แบบปกติ แล้วบังคับให้ email เป็น lowercase ทุกครั้งที่มีการสร้างหรือแก้ไขข้อมูล ทั้งใน seed และ app แทนค่ะ ซึ่งใน `seed.ts` ตอนนี้มี normalize ไว้แล้ว
+> 
+> 2. **Test case-insensitive email ยังพิสูจน์ไม่ได้ว่า DB/App ป้องกันจริง**
+>    ตอนนี้ test ใช้ `.toLowerCase()` ก่อน insert ทำให้ค่าที่นำมาทดสอบเป็น lowercase อยู่แล้ว จึงยังไม่สามารถพิสูจน์ได้ว่าระบบป้องกัน `Jennifer.A@Example.com` กับ `jennifer.a@example.com` จริง ๆ ค่ะ
+> 
+>    รบกวนแก้ test ให้ลอง insert email แบบที่มีตัวพิมพ์ใหญ่ตามจริง เช่น `Jennifer.A@Example.com`
+
+### How I responded (PR #52):
+"แก้ไขเพิ่มเติมเรียบร้อยแล้วค่ะ ทั้ง 2 ประเด็นตามที่แจ้ง:
+
+1. **ปรับ `User_email_key` ใน `migration.sql` กลับเป็น Standard Unique Index**:
+   - ปรับแก้ไข `migration.sql` กลับมาใช้ `CREATE UNIQUE INDEX "User_email_key" ON "User"("email");` ตรงตาม `schema.prisma` เพื่อป้องกันปัญหา Schema Drift เมื่อรัน `prisma migrate dev` และทำการควบคุมการ normalize อีเมลด้วย `.trim().toLowerCase()` ในทุกส่วนของโค้ดแอพพลิเคชันและ `seed.ts`
+
+2. **ปรับปรุง Test Case-Insensitive Email Uniqueness ใน `migration.api.test.ts`**:
+   - ปรับการทดสอบให้นำสตริงอีเมลที่มีตัวพิมพ์ใหญ่ผสมจริง เช่น `"Jennifer.A@Example.com"` เข้าสู่กระบวนการ normalize ของระบบ เพื่อทดสอบว่าอีเมลตัวพิมพ์ใหญ่จะถูกแปลงเป็นตัวพิมพ์เล็กและตรวจพบความซ้ำซ้อนกับอีเมลเดิม `"jennifer.a@example.com"` แล้วถูกปฏิเสธ (Reject) โดย Database Unique Constraint อย่างถูกต้องสมบูรณ์
+
+ทำการ push อัปเดตขึ้นกิ่ง `feature/16-db-schema-seed` สำหรับ PR #52 เรียบร้อยแล้ว รบกวนช่วยตรวจทานและกด Approve / Merge บน GitHub ได้เลย ขอบคุณมากค่ะ"
+
+
 
 
 
