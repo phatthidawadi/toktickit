@@ -44,34 +44,13 @@ export const Header: React.FC<HeaderProps> = ({ currentNav, onNavigate }) => {
     if (!role) return null;
 
     if (role === "REQUESTER") {
-      return (
-        <span
-          className="role-badge role-badge-requester"
-          style={{ backgroundColor: "#DBEAFE", color: "#1E40AF" }}
-        >
-          Requester
-        </span>
-      );
+      return <span className="role-badge role-badge-requester">Requester</span>;
     }
     if (role === "IT_STAFF") {
-      return (
-        <span
-          className="role-badge role-badge-staff"
-          style={{ backgroundColor: "#D1FAE5", color: "#065F46" }}
-        >
-          IT Staff
-        </span>
-      );
+      return <span className="role-badge role-badge-staff">IT Staff</span>;
     }
     if (role === "ADMINISTRATOR") {
-      return (
-        <span
-          className="role-badge role-badge-admin"
-          style={{ backgroundColor: "#E0E7FF", color: "#3730A3" }}
-        >
-          Administrator
-        </span>
-      );
+      return <span className="role-badge role-badge-admin">Administrator</span>;
     }
 
     return <span className="role-badge">{role}</span>;

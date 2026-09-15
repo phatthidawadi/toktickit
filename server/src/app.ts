@@ -181,8 +181,8 @@ app.get("/api/auth/protected-sample", authenticateSession, (_req: Request, res: 
   return res.status(200).json({ message: "Access granted to protected sample endpoint" });
 });
 
-// GET /api/staff/tickets — IT Staff Ticket Queue (Protected by RBAC: STAFF, ADMINISTRATOR)
-app.get("/api/staff/tickets", authenticateSession, requireRole(["STAFF", "ADMINISTRATOR"]), (_req: Request, res: Response) => {
+// GET /api/staff/tickets — IT Staff Ticket Queue (Protected by RBAC: IT_STAFF, ADMINISTRATOR)
+app.get("/api/staff/tickets", authenticateSession, requireRole(["IT_STAFF", "ADMINISTRATOR"]), (_req: Request, res: Response) => {
   return res.status(200).json({ tickets: [] });
 });
 

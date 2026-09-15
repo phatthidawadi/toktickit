@@ -64,6 +64,9 @@ describe("Server-Side Authorization & RBAC Middleware (AUTHZ-API-01 to AUTHZ-API
   });
 
   it("AUTHZ-API-03: Role-based forbidden access returns 403 (AC-06, BR-06)", async () => {
+    const user = await prisma.user.findUnique({ where: { email: "jennifer.a@example.com" } });
+    const initialMustChangePassword = user?.mustChangePassword ?? true;
+
     // Temporarily set mustChangePassword = false for testing RBAC
     await prisma.user.update({
       where: { email: "jennifer.a@example.com" },
@@ -98,10 +101,44 @@ describe("Server-Side Authorization & RBAC Middleware (AUTHZ-API-01 to AUTHZ-API
       expect(adminRes.status).toBe(403);
       expect(adminRes.body.code).toBe("FORBIDDEN");
     } finally {
-      // Restore default mustChangePassword = true
+      // Restore initial mustChangePassword value
       await prisma.user.update({
         where: { email: "jennifer.a@example.com" },
-        data: { mustChangePassword: true },
+        data: { mustChangePassword: initialMustChangePassword },
+      });
+    }
+  });
+
+  it("AUTHZ-API-04: Authorized IT_STAFF user accessing /api/staff/tickets returns 200 OK", async () => {
+    const user = await prisma.user.findUnique({ where: { email: "staff.somchai@example.com" } });
+    const initialMustChangePassword = user?.mustChangePassword ?? true;
+
+    await prisma.user.update({
+      where: { email: "staff.somchai@example.com" },
+      data: { mustChangePassword: false },
+    });
+
+    try {
+      const loginRes = await request
+        .post("/api/auth/login")
+        .send({
+          email: "staff.somchai@example.com",
+          password: "Password123!",
+        });
+
+      expect(loginRes.status).toBe(200);
+      const cookieHeader = getCookieHeader(loginRes);
+
+      const staffRes = await request
+        .get("/api/staff/tickets")
+        .set("Cookie", cookieHeader);
+
+      expect(staffRes.status).toBe(200);
+      expect(Array.isArray(staffRes.body.tickets)).toBe(true);
+    } finally {
+      await prisma.user.update({
+        where: { email: "staff.somchai@example.com" },
+        data: { mustChangePassword: initialMustChangePassword },
       });
     }
   });
