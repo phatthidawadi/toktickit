@@ -85,6 +85,12 @@ describe("Server-Side Authorization & RBAC Middleware (AUTHZ-API-01 to AUTHZ-API
       expect(loginRes.status).toBe(200);
       const cookieHeader = getCookieHeader(loginRes);
 
+      // Ensure mustChangePassword is false in DB before calling protected endpoints
+      await prisma.user.update({
+        where: { email: "jennifer.a@example.com" },
+        data: { mustChangePassword: false },
+      });
+
       // Requester accessing staff tickets queue endpoint -> 403 Forbidden
       const staffRes = await request
         .get("/api/staff/tickets")

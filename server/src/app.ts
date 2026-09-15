@@ -292,13 +292,16 @@ function getRequesterIdFromReq(req: Request): number | null {
   return null;
 }
 
-async function getUserFromReq(req: Request): Promise<{ id: number; name: string; email: string; role: string; isActive: boolean } | null> {
-  const requesterId = getRequesterIdFromReq(req);
-  if (!requesterId) return null;
+async function getUserFromReq(req: Request): Promise<{ id: number; name: string; email: string; role: string; isActive: boolean; mustChangePassword: boolean } | null> {
+  const token = req.cookies?.[SESSION_COOKIE_NAME];
+  if (!token) return null;
+
+  const payload = verifyToken(token);
+  if (!payload?.userId) return null;
 
   const user = await getPrisma().user.findUnique({
-    where: { id: requesterId },
-    select: { id: true, name: true, email: true, role: true, isActive: true },
+    where: { id: payload.userId },
+    select: { id: true, name: true, email: true, role: true, isActive: true, mustChangePassword: true },
   });
 
   if (!user || !user.isActive) return null;
@@ -793,9 +796,16 @@ app.get("/api/tickets/:id/comments", async (req: Request, res: Response) => {
       return res.status(401).json({ error: "Authentication required", code: "UNAUTHORIZED" });
     }
 
+    if (user.mustChangePassword) {
+      return res.status(403).json({
+        error: "Mandatory password change required before accessing system features.",
+        code: "MUST_CHANGE_PASSWORD",
+      });
+    }
+
     const ticketId = Number(req.params.id);
     if (isNaN(ticketId) || ticketId <= 0) {
-      return res.status(404).json({ error: "Ticket not found" });
+      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
     }
 
     const ticket = await getPrisma().ticket.findUnique({
@@ -803,12 +813,12 @@ app.get("/api/tickets/:id/comments", async (req: Request, res: Response) => {
     });
 
     if (!ticket) {
-      return res.status(404).json({ error: "Ticket not found" });
+      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
     }
 
     // Access control: Ticket owner (REQUESTER) or IT_STAFF / ADMINISTRATOR
     if (user.role === "REQUESTER" && ticket.requesterId !== user.id) {
-      return res.status(403).json({ error: "Access denied. You can only view comments for your own tickets." });
+      return res.status(403).json({ error: "Access denied. You can only view comments for your own tickets.", code: "FORBIDDEN" });
     }
 
     const comments = await getPrisma().ticketComment.findMany({
@@ -823,7 +833,7 @@ app.get("/api/tickets/:id/comments", async (req: Request, res: Response) => {
 
     return res.status(200).json(comments);
   } catch (error) {
-    return res.status(500).json({ error: "Internal Server Error" });
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
   }
 });
 
@@ -835,9 +845,16 @@ app.post("/api/tickets/:id/comments", async (req: Request, res: Response) => {
       return res.status(401).json({ error: "Authentication required", code: "UNAUTHORIZED" });
     }
 
+    if (user.mustChangePassword) {
+      return res.status(403).json({
+        error: "Mandatory password change required before accessing system features.",
+        code: "MUST_CHANGE_PASSWORD",
+      });
+    }
+
     const ticketId = Number(req.params.id);
     if (isNaN(ticketId) || ticketId <= 0) {
-      return res.status(404).json({ error: "Ticket not found" });
+      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
     }
 
     const ticket = await getPrisma().ticket.findUnique({
@@ -845,16 +862,16 @@ app.post("/api/tickets/:id/comments", async (req: Request, res: Response) => {
     });
 
     if (!ticket) {
-      return res.status(404).json({ error: "Ticket not found" });
+      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
     }
 
     if (user.role === "REQUESTER" && ticket.requesterId !== user.id) {
-      return res.status(403).json({ error: "Access denied. You can only comment on your own tickets." });
+      return res.status(403).json({ error: "Access denied. You can only comment on your own tickets.", code: "FORBIDDEN" });
     }
 
     const { content } = req.body || {};
     if (!content || typeof content !== "string" || content.trim().length === 0 || content.trim().length > 1000) {
-      return res.status(400).json({ error: "Comment content is required (1 to 1000 characters)" });
+      return res.status(400).json({ error: "Comment content is required (1 to 1000 characters)", code: "INVALID_INPUT" });
     }
 
     const newComment = await getPrisma().ticketComment.create({
@@ -880,7 +897,7 @@ app.post("/api/tickets/:id/comments", async (req: Request, res: Response) => {
 
     return res.status(201).json(newComment);
   } catch (error) {
-    return res.status(500).json({ error: "Internal Server Error" });
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
   }
 });
 
@@ -892,9 +909,16 @@ app.patch("/api/tickets/:id/resolve-ack", async (req: Request, res: Response) =>
       return res.status(401).json({ error: "Authentication required", code: "UNAUTHORIZED" });
     }
 
+    if (user.mustChangePassword) {
+      return res.status(403).json({
+        error: "Mandatory password change required before accessing system features.",
+        code: "MUST_CHANGE_PASSWORD",
+      });
+    }
+
     const ticketId = Number(req.params.id);
     if (isNaN(ticketId) || ticketId <= 0) {
-      return res.status(404).json({ error: "Ticket not found" });
+      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
     }
 
     const ticket = await getPrisma().ticket.findUnique({
@@ -902,11 +926,11 @@ app.patch("/api/tickets/:id/resolve-ack", async (req: Request, res: Response) =>
     });
 
     if (!ticket) {
-      return res.status(404).json({ error: "Ticket not found" });
+      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
     }
 
     if (ticket.requesterId !== user.id) {
-      return res.status(403).json({ error: "Access denied. You can only acknowledge resolution for your own tickets." });
+      return res.status(403).json({ error: "Access denied. You can only acknowledge resolution for your own tickets.", code: "FORBIDDEN" });
     }
 
     const updatedTicket = await getPrisma().ticket.update({
@@ -916,7 +940,7 @@ app.patch("/api/tickets/:id/resolve-ack", async (req: Request, res: Response) =>
 
     return res.status(200).json(updatedTicket);
   } catch (error) {
-    return res.status(500).json({ error: "Internal Server Error" });
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
   }
 });
 

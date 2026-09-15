@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll, beforeAll } from "vitest";
+import { describe, it, expect, afterAll, beforeAll, beforeEach } from "vitest";
 import supertest from "supertest";
 import { app } from "../../src/app.js";
 import { getPrisma } from "../../src/prisma.js";
@@ -24,6 +24,13 @@ describe("Public Comments API Endpoints (COMMENT-API-01 & API-COMM-03)", () => {
   let testTicketId: number;
   let waitingTicketId: number;
 
+  beforeEach(async () => {
+    await prisma.user.update({
+      where: { email: "jennifer.a@example.com" },
+      data: { mustChangePassword: false },
+    });
+  });
+
   beforeAll(async () => {
     // Login as requester (Jennifer)
     const loginRes = await request.post("/api/auth/login").send({
@@ -32,8 +39,12 @@ describe("Public Comments API Endpoints (COMMENT-API-01 & API-COMM-03)", () => {
     });
     requesterCookie = getCookieHeader(loginRes);
 
-    // Get Jennifer user
+    // Get Jennifer user & ensure mustChangePassword is false for comment tests
     const jennifer = await prisma.user.findUnique({ where: { email: "jennifer.a@example.com" } });
+    await prisma.user.update({
+      where: { id: jennifer!.id },
+      data: { mustChangePassword: false },
+    });
     const requesterId = jennifer!.id;
 
     // Get an existing category and related system
@@ -74,6 +85,10 @@ describe("Public Comments API Endpoints (COMMENT-API-01 & API-COMM-03)", () => {
   });
 
   afterAll(async () => {
+    await prisma.user.update({
+      where: { email: "jennifer.a@example.com" },
+      data: { mustChangePassword: true },
+    }).catch(() => {});
     if (testTicketId) {
       await prisma.ticketComment.deleteMany({ where: { ticketId: testTicketId } });
       await prisma.ticket.delete({ where: { id: testTicketId } }).catch(() => {});
@@ -139,5 +154,38 @@ describe("Public Comments API Endpoints (COMMENT-API-01 & API-COMM-03)", () => {
     // Verify status transitioned to IN_PROGRESS
     const updatedTicket = await prisma.ticket.findUnique({ where: { id: waitingTicketId } });
     expect(updatedTicket?.currentStatus).toBe("IN_PROGRESS");
+  });
+
+  it("COMMENT-API-02: Rejects x-requester-id header spoofing without valid session cookie", async () => {
+    const res = await request
+      .post(`/api/tickets/${testTicketId}/comments`)
+      .set("x-requester-id", "1")
+      .send({ content: "Spoofed header comment attempt" });
+
+    expect(res.status).toBe(401);
+    expect(res.body.code).toBe("UNAUTHORIZED");
+  });
+
+  it("COMMENT-API-03: Rejects comment request when user mustChangePassword=true (BR-02)", async () => {
+    const user = await prisma.user.findUnique({ where: { email: "jennifer.a@example.com" } });
+    await prisma.user.update({
+      where: { id: user!.id },
+      data: { mustChangePassword: true },
+    });
+
+    try {
+      const res = await request
+        .post(`/api/tickets/${testTicketId}/comments`)
+        .set("Cookie", requesterCookie)
+        .send({ content: "Comment while mustChangePassword is true" });
+
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe("MUST_CHANGE_PASSWORD");
+    } finally {
+      await prisma.user.update({
+        where: { id: user!.id },
+        data: { mustChangePassword: true },
+      });
+    }
   });
 });

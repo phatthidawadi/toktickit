@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll, beforeAll } from "vitest";
+import { describe, it, expect, afterAll, beforeAll, beforeEach } from "vitest";
 import supertest from "supertest";
 import { app } from "../../src/app.js";
 import { getPrisma } from "../../src/prisma.js";
@@ -25,8 +25,20 @@ describe("Requester Workflow API Endpoints (REQ-API-01 & API-REQ-REG-01)", () =>
   let categoryId: number;
   let relatedSystemId: number;
 
+  beforeEach(async () => {
+    // Ensure Jennifer mustChangePassword is false for workflow testing
+    await prisma.user.update({
+      where: { email: "jennifer.a@example.com" },
+      data: { mustChangePassword: false },
+    });
+  });
+
   beforeAll(async () => {
     // Login as requester (Jennifer)
+    await prisma.user.update({
+      where: { email: "jennifer.a@example.com" },
+      data: { mustChangePassword: false },
+    });
     const loginRes = await request.post("/api/auth/login").send({
       email: "jennifer.a@example.com",
       password: "Password123!",
@@ -40,6 +52,10 @@ describe("Requester Workflow API Endpoints (REQ-API-01 & API-REQ-REG-01)", () =>
   });
 
   afterAll(async () => {
+    await prisma.user.update({
+      where: { email: "jennifer.a@example.com" },
+      data: { mustChangePassword: true },
+    }).catch(() => {});
     if (createdTicketId) {
       await prisma.ticketComment.deleteMany({ where: { ticketId: createdTicketId } });
       await prisma.ticket.delete({ where: { id: createdTicketId } }).catch(() => {});
@@ -91,5 +107,14 @@ describe("Requester Workflow API Endpoints (REQ-API-01 & API-REQ-REG-01)", () =>
 
     const updatedTicket = await prisma.ticket.findUnique({ where: { id: createdTicketId } });
     expect(updatedTicket?.isRequesterResolved).toBe(true);
+  });
+
+  it("REQ-API-02: Rejects x-requester-id header spoofing without valid session cookie on resolve-ack", async () => {
+    const res = await request
+      .patch(`/api/tickets/${createdTicketId}/resolve-ack`)
+      .set("x-requester-id", "1");
+
+    expect(res.status).toBe(401);
+    expect(res.body.code).toBe("UNAUTHORIZED");
   });
 });
