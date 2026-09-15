@@ -9,6 +9,7 @@
 |---|---|---|
 | [PR #51](https://github.com/phatthidawadi/toktickit/pull/51) | `feature/15-doc-spec-tests` | Approved with comments |
 | [PR #52](https://github.com/phatthidawadi/toktickit/pull/52) | `feature/16-db-schema-seed` | Approved with comments |
+| [PR #53](https://github.com/phatthidawadi/toktickit/pull/53) | `feature/17-auth-foundation` | Pending |
 
 ---
 
@@ -396,6 +397,15 @@
    - รัน `npx tsx prisma/seed.ts` และ `npm test --prefix server` ผ่าน 100% (30/30 test cases)
 
 ทำการ push อัปเดตขึ้นกิ่ง `feature/16-db-schema-seed` สำหรับ PR #52 เรียบร้อยแล้วค่ะ ขอบคุณมากนะคะ"
+
+---
+
+### Reviewer comment I received (PR #53):
+*(Pending review by @jejaebubu)*
+
+### How I responded (PR #53):
+*(Pending response)*
+
 
 
 
