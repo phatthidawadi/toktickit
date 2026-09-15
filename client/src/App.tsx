@@ -5,9 +5,10 @@ import { RequesterSelectorScreen } from "./components/RequesterSelectorScreen.js
 import { CreateTicketForm } from "./components/CreateTicketForm.js";
 import { MyTicketsView } from "./components/MyTicketsView.js";
 import { TicketDetailView } from "./components/TicketDetailView.js";
+import { UserManagement } from "./components/UserManagement.js";
 
 function MainContent() {
-  const [currentNav, setCurrentNav] = useState<"my-tickets" | "create-ticket" | "ticket-detail">("my-tickets");
+  const [currentNav, setCurrentNav] = useState<"my-tickets" | "create-ticket" | "ticket-detail" | "user-management">("my-tickets");
   const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
 
   const handleSelectTicket = (ticketId: number) => {
@@ -26,7 +27,7 @@ function MainContent() {
       />
       <RequesterSelectorScreen />
 
-      <main className="container py-4" style={{ maxWidth: 960 }}>
+      <main className="container py-4" style={{ maxWidth: 1100 }}>
         {currentNav === "create-ticket" && (
           <CreateTicketForm onCancel={() => setCurrentNav("my-tickets")} />
         )}
@@ -45,6 +46,7 @@ function MainContent() {
             }}
           />
         )}
+        {currentNav === "user-management" && <UserManagement />}
       </main>
     </div>
   );

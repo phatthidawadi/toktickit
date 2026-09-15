@@ -478,3 +478,89 @@ export async function createInternalNoteApi(ticketId: number, content: string): 
   return data;
 }
 
+export interface AdminUser {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  mustChangePassword: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export async function fetchAdminUsersApi(search?: string, role?: string): Promise<AdminUser[]> {
+  const queryParams = new URLSearchParams();
+  if (search) queryParams.append("search", search);
+  if (role && role !== "ALL") queryParams.append("role", role);
+
+  const res = await fetch(`${API_URL}/api/admin/users?${queryParams.toString()}`, {
+    method: "GET",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to fetch admin users");
+  return res.json();
+}
+
+export async function createAdminUserApi(user: {
+  name: string;
+  email: string;
+  role: string;
+  initialPassword?: string;
+  password?: string;
+  isActive?: boolean;
+}): Promise<AdminUser> {
+  const res = await fetch(`${API_URL}/api/admin/users`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(user),
+  });
+  const data = await res.json().catch(() => ({ error: "Failed to create user" }));
+  if (!res.ok) {
+    const errorObj: any = new Error(data.error || "Failed to create user");
+    errorObj.code = data.code;
+    throw errorObj;
+  }
+  return data;
+}
+
+export async function updateAdminUserApi(
+  id: number,
+  updates: { name?: string; email?: string; role?: string; isActive?: boolean }
+): Promise<AdminUser> {
+  const res = await fetch(`${API_URL}/api/admin/users/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(updates),
+  });
+  const data = await res.json().catch(() => ({ error: "Failed to update user" }));
+  if (!res.ok) {
+    const errorObj: any = new Error(data.error || "Failed to update user");
+    errorObj.code = data.code;
+    throw errorObj;
+  }
+  return data;
+}
+
+export async function resetAdminUserPasswordApi(
+  id: number,
+  initialPassword: string
+): Promise<{ message: string; user: AdminUser }> {
+  const res = await fetch(`${API_URL}/api/admin/users/${id}/reset-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ initialPassword }),
+  });
+  const data = await res.json().catch(() => ({ error: "Failed to reset password" }));
+  if (!res.ok) {
+    const errorObj: any = new Error(data.error || "Failed to reset password");
+    errorObj.code = data.code;
+    throw errorObj;
+  }
+  return data;
+}
+
+
