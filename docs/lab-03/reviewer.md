@@ -11,6 +11,7 @@
 | [PR #52](https://github.com/phatthidawadi/toktickit/pull/52) | `feature/16-db-schema-seed` | Approved with comments |
 | [PR #53](https://github.com/phatthidawadi/toktickit/pull/53) | `feature/17-auth-foundation` | Approved with comments |
 | [PR #54](https://github.com/phatthidawadi/toktickit/pull/54) | `feature/18-authorization-header` | Approved with comments |
+| [PR #55](https://github.com/phatthidawadi/toktickit/pull/55) | `feature/19-requester-workflow-comments` | Pending Review |
 
 ---
 
@@ -601,6 +602,12 @@
 > ตรวจสอบการแก้ไขเพิ่มเติมเรียบร้อยแล้วค่ะ แก้ไข role เป็น `IT_STAFF`, เพิ่ม test `AUTHZ-API-04`, คืนค่า `mustChangePassword` ใน `finally` และทำความสะอาด style ใน Header เรียบร้อยแล้วค่ะ ถือว่าผ่านข้อกำหนด Server-Side Authorization แล้วค่ะ
 > 
 > **Approved and Merged PR #54** เข้าสู่ `lab3-staging` เรียบร้อยแล้ว ขอบคุณสำหรับงานเรียบร้อยค่ะ!
+
+---
+
+### Reviewer comment I received (PR #55):
+*Pending peer review from partner.*
+
 
 
 
