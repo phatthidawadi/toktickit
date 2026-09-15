@@ -6,8 +6,10 @@ async function resetDbViaApi(request?: any) {
       await request.post('http://localhost:3000/api/test/reset-db');
       await request.post('http://localhost:3000/api/test/reset-rate-limit');
     } else {
-      await fetch('http://localhost:3000/api/test/reset-db', { method: 'POST' });
-      await fetch('http://localhost:3000/api/test/reset-rate-limit', { method: 'POST' });
+      const r1 = await fetch('http://localhost:3000/api/test/reset-db', { method: 'POST' });
+      await r1.json().catch(() => {});
+      const r2 = await fetch('http://localhost:3000/api/test/reset-rate-limit', { method: 'POST' });
+      await r2.json().catch(() => {});
     }
   } catch {}
 }
