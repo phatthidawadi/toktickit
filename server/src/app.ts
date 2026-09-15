@@ -1445,13 +1445,20 @@ app.post("/api/admin/users", authenticateSession, requireRole(["ADMINISTRATOR"])
 
     const passwordHash = await hashPassword(rawPassword);
 
+    let userIsActive = true;
+    if (typeof isActive === "boolean") {
+      userIsActive = isActive;
+    } else if (typeof isActive === "string") {
+      userIsActive = isActive.toLowerCase() !== "false";
+    }
+
     const newUser = await getPrisma().user.create({
       data: {
         name: name.trim(),
         email: normalizedEmail,
         role: role.toUpperCase() as any,
         passwordHash,
-        isActive: isActive !== false,
+        isActive: userIsActive,
         mustChangePassword: true,
       },
       select: {
@@ -1486,6 +1493,21 @@ app.patch("/api/admin/users/:id", authenticateSession, requireRole(["ADMINISTRAT
     }
 
     const { name, email, role, isActive } = req.body || {};
+
+    // Validate name if provided (P2-2)
+    if (name !== undefined) {
+      if (typeof name !== "string" || name.trim().length < 2 || name.trim().length > 100) {
+        return res.status(400).json({ error: "User name must be between 2 and 100 characters", code: "INVALID_INPUT" });
+      }
+    }
+
+    // Validate role if provided (P2-1)
+    if (role !== undefined) {
+      const validRoles = ["REQUESTER", "IT_STAFF", "ADMINISTRATOR"];
+      if (typeof role !== "string" || !validRoles.includes(role.toUpperCase())) {
+        return res.status(400).json({ error: "Valid role (REQUESTER, IT_STAFF, ADMINISTRATOR) is required", code: "INVALID_INPUT" });
+      }
+    }
 
     // If email is being updated, check case-insensitive uniqueness (BR-13)
     let normalizedEmail: string | undefined = undefined;

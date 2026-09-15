@@ -26,6 +26,11 @@ describe("Administrator User Management API Endpoints (ADMIN-API-01 to ADMIN-API
   let createdUserId: number | null = null;
 
   beforeAll(async () => {
+    // Ensure leftover test user is cleaned up before beginning
+    await prisma.user.deleteMany({
+      where: { email: { equals: "test.admin.created@example.com", mode: "insensitive" } },
+    });
+
     // Ensure admin & staff have mustChangePassword = false for testing
     await prisma.user.updateMany({
       where: { email: { in: ["admin.toktickit@example.com", "staff.somsri@example.com"] } },
@@ -141,6 +146,24 @@ describe("Administrator User Management API Endpoints (ADMIN-API-01 to ADMIN-API
 
     expect(dupRes.status).toBe(409);
     expect(dupRes.body.code).toBe("DUPLICATE_EMAIL");
+
+    // 3. Attempt to update role with an invalid role string -> 400 INVALID_INPUT
+    const invalidRoleRes = await request
+      .patch(`/api/admin/users/${createdUserId}`)
+      .set("Cookie", adminCookie)
+      .send({ role: "INVALID_ROLE" });
+
+    expect(invalidRoleRes.status).toBe(400);
+    expect(invalidRoleRes.body.code).toBe("INVALID_INPUT");
+
+    // 4. Attempt to update name with invalid length (< 2 characters) -> 400 INVALID_INPUT
+    const invalidNameRes = await request
+      .patch(`/api/admin/users/${createdUserId}`)
+      .set("Cookie", adminCookie)
+      .send({ name: "A" });
+
+    expect(invalidNameRes.status).toBe(400);
+    expect(invalidNameRes.body.code).toBe("INVALID_INPUT");
   });
 
   it("ADMIN-API-03: PATCH /api/admin/users/:id rejects Admin self-deactivation (BR-14)", async () => {
