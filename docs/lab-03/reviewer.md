@@ -1074,22 +1074,60 @@ Push commit ใหม่ขึ้นกิ่ง `feature/24-visual-style-respon
 ---
 
 ### Reviewer comment I received (PR #61 — Release PR & Final Documentation):
-> ## Review — PR #61 (Docs / Release — Peer Review Record)
+> ## Review — PR #61 (Docs / Release — Peer Review Record) 🗂
 > 
 > ขอบคุณสำหรับ PR ที่รวบรวมหลักฐานการรีวิวไว้ครบถ้วนมากค่ะ โดยรวม document ทำได้ดีมาก และมีการ cross-check กับ GitHub จริงทั้ง 2 ฝั่ง เพื่อยืนยันความถูกต้องของ record ทั้งหมด มีแค่จุดเล็ก ๆ ที่อยากให้แก้ก่อน merge ค่ะ
 > 
-> ### 1. สิ่งที่ตรวจแล้วและผ่าน
-> - Records ของ PRs ที่ตนเองเป็นผู้เขียน (#51–#60) ครบถ้วนตรงกับประวัติจริง
-> - Records ของ PRs ที่ไปรีวิว partner (#52, #60–#68) ตรงกับประวัติบน GitHub จริง
-> - `ai-use.md` ครบถ้วนตามข้อกำหนด lab sheet
+> ### 1. สิ่งที่ตรวจแล้วและผ่าน ✅
 > 
-> ### 2. P2 — ต้องแก้ก่อน merge
-> - ใน `docs/lab-03/reviewer.md` ส่วน record PR #59 และ #60 มี 2 จุดที่เขียน `main` แทนที่จะเป็น `lab3-staging` ขอให้แก้เป็น `lab3-staging` ให้ตรงกับ GitHub merge state
+> #### 1.1 Records ของ PRs ที่ตนเองเป็นผู้เขียน (#51–#60)
 > 
-> ### 3. P3 — แนะนำให้เพิ่ม
-> - เพิ่ม `My review comment` ของ partner PRs #63, #65, #66, #67, #68 ให้ครบ 10/10
+> - บันทึก `Reviewer comment I received` + `How I responded` ของทั้ง 10 PR ตรงกับประวัติการรีวิวจริงทุกตัว ทั้งลำดับรอบ (Round 1 → re-check → final approval), เนื้อหา comment และการตอบกลับของเพื่อน
+> - ตัวอย่างที่ยืนยันได้: PR #53 มีบันทึก P1 เรื่อง hardcoded `JWT_SECRET` → round 2 เจอ `x-requester-id` bypass ใหม่ → แก้ + เพิ่ม `SEC-AUTH-04` → Final Approve ตรงกับที่เกิดขึ้นจริงทุกขั้นตอน
+> - Cross-check merge state ผ่าน GitHub API แล้ว: PR #51–#60 ทั้งหมดถูก merge เข้า `lab3-staging` และมี `merged_at` ยืนยันจริงทุกตัว
 > 
-> **Decision: Approved with comments** — ขอแค่แก้ P2 (2 บรรทัด `main` -> `lab3-staging`) แล้ว merge ได้เลยค่ะ
+> #### 1.2 Records ของ PRs ที่ไปรีวิว partner (jejaebubu #52, #60–#68)
+> 
+> - ตรวจผ่าน GitHub API แล้ว PR ทั้ง 10 ตัวมีอยู่จริงใน `jejaebubu/toktickit` โดย branch/title ตรงกับตารางเป๊ะ (`issue1-specs` → `issue10-ui-style-responsive`, Issues #39–#48)
+> - Review comments ทั้ง 10 PR เขียนโดย `phatthidawadi` จริงบน GitHub และ pattern `CHANGES_REQUESTED → APPROVED` ตรงกับ verdict ในตารางทุกตัว เช่น:
+>   - partner PR #60: `CHANGES_REQUESTED` (เรื่อง data loss / `DROP TABLE`) → `APPROVED` หลังแก้ migration ✓
+>   - partner PR #61: `CHANGES_REQUESTED` (`checkPasswordChangeState` + 401) → `APPROVED` ✓
+>   - partner PR #64: `CHANGES_REQUESTED` (priority case-sensitivity + query param validation) → `APPROVED` ✓
+> - แสดงว่านี่คือ peer review ที่เกิดขึ้นจริงทั้ง 2 ทาง ไม่ใช่เอกสารที่สร้างขึ้นเอง ซึ่งจุดนี้สำคัญต่อคะแนนค่ะ
+> 
+> #### 1.3 `ai-use.md`
+> 
+> - ระบุชื่อ LLM/agent ครบ (`Gemini 3.6 Flash (High)` ผ่าน Antigravity)
+> - ตาราง 10 prompts อยู่ในช่วง 6–10 ตามที่ lab sheet ต้องการ พร้อมสิ่งที่ทำกับผลลัพธ์แต่ละข้อ
+> - มี Reflection ที่สรุปบทบาทของ human auditor / LLM อย่างตรงไปตรงมา
+> - ตัวเลขที่อ้าง (`84/84 server`, `21/21 client`, `21/21 E2E`) consistent กับ record ใน PR ก่อนหน้าค่ะ
+> 
+> ### 2. P2 — ต้องแก้ก่อน merge (ความถูกต้องของ record)
+> 
+> ใน `docs/lab-03/reviewer.md` ส่วน record PR #59 และ #60 มี 2 จุดที่เขียนไม่ตรงข้อเท็จจริง:
+> 
+> - PR #59 — `"Approved and Merged PR #59 เข้าสู่ main เรียบร้อยแล้ว"`
+> - PR #60 — `"merge เข้า main ได้เลยค่ะ"` / `"เข้าสู่ main"`
+> 
+> แต่จากข้อมูลจริงใน GitHub ทุก PR #51–#60 ถูก merge เข้า `lab3-staging` (`base = lab3-staging`, 100%) ไม่ใช่ `main` ค่ะ
+> 
+> รบกวนแก้ทั้ง 2 จุดจาก `main` → `lab3-staging` เพื่อให้ record ตรงกับ GitHub merge state เพราะ grader สามารถ cross-check จุดนี้ได้ค่ะ
+> 
+> ถ้ามีแผนจะ merge `lab3-staging → main` ท้ายสุด แนะนำให้เขียนเป็น release step แยกต่างหาก เช่น ใน PR description หรือ section สุดท้ายของ docs แทนการเขียนปนกับ record ของ feature PR จะชัดเจนกว่าค่ะ
+> 
+> ### 3. P3 — แนะนำให้เพิ่ม (ไม่บล็อก)
+> 
+> ใน section `Pull Requests I reviewed (authored by my partner)` ตอนนี้มี detailed review comment ใน `reviewer.md` แค่ 5/10 PR คือ #52, #60, #61, #62, #64 ส่วน #63, #65, #66, #67, #68 มีแค่บรรทัดเดียวในตารางค่ะ
+> 
+> ผมยืนยันแล้วว่า comment จริงบน GitHub ของ 5 PR ที่หายไปมีอยู่ครบ (`CHANGES_REQUESTED → APPROVED` ตามจริง) แต่ถ้า grader อ่านแค่เอกสารนี้จะเห็นข้อมูลไม่ครบค่ะ
+> 
+> แนะนำให้เพิ่ม `My review comment` ของ #63, #65, #66, #67, #68 ให้ครบเหมือน 5 ตัวแรก เพื่อให้ record สมบูรณ์ 10/10 ค่ะ
+> 
+> ### 4. สรุป
+> 
+> เอกสารทำมาแข็งแรงมาก ทั้งความละเอียด ความสอดคล้องกับประวัติจริง และหลักฐาน peer review ที่ตรวจยืนยันได้จาก GitHub ทั้ง 2 ฝั่งค่ะ
+> 
+> ขอแค่แก้ **P2 (2 บรรทัด `main` → `lab3-staging`)** แล้ว merge ได้เลยค่ะ ส่วน P3 เป็นแค่การทำให้ record ครอบคลุมยิ่งขึ้น ไม่บังคับค่ะ
 
 ---
 
