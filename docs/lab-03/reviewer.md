@@ -17,7 +17,7 @@
 | [PR #58](https://github.com/phatthidawadi/toktickit/pull/58) | `feature/22-admin-user-management-ui` | Approved with comments |
 | [PR #59](https://github.com/phatthidawadi/toktickit/pull/59) | `feature/23-e2e-integration-tests` | Approved with comments |
 | [PR #60](https://github.com/phatthidawadi/toktickit/pull/60) | `feature/24-visual-style-responsive` | Approved with comments |
-| [PR #61](https://github.com/phatthidawadi/toktickit/pull/61) | `feature/25-doc-reviewer-ai-use` | Approved with comments |
+| [PR #61](https://github.com/phatthidawadi/toktickit/pull/61) | `feature/25-doc-reviewer-ai-use` | Changes requested |
 
 ---
 
@@ -1145,21 +1145,6 @@ Push commit ใหม่ขึ้นกิ่ง `feature/24-visual-style-respon
    - ยืนยันการรัน Vitest Suite (Client: 10 test files / 24 passed; Server: 18 test files / 84 passed) และ Playwright E2E Suite (21/21 passed) ผ่าน 100% 0 errors
 
 ขอบคุณสำหรับการรีวิวและการร่วมมือกันตลอดทั้ง Lab 3 นะคะ!"
-
----
-
-### Reviewer approval comment I received (PR #61 — Final):
-> ### Re-review — PR #61 (Round 2 Final)
-> 
-> ตรวจสอบแล้วผ่านครบถ้วนสมบูรณ์เรียบร้อยแล้วค่ะ!
-> 
-> * ✅ **P2 Target Branch Standardized** — แก้ไข target branch ใน record PR #59 และ #60 เป็น `lab3-staging` ตรงกับ GitHub merge state จริง
-> * ✅ **P3 Review Comments Complete** — เพิ่มรายละเอียด review comment ฝั่ง partner ครบ 10/10 PRs
-> * ✅ **Documentation & Test Verification** — เอกสาร `docs/lab-03/` ครบ 6 ไฟล์, screenshots ครบ 39 ภาพ, และ test suites ทุกระดับผ่าน 100%
-> 
-> ### Decision: Approved
-> 
-> อนุมัติ PR #61 และพร้อมสำหรับการ merge `lab3-staging` เข้าสู่ `main` สำหรับ Lab 3 เรียบร้อยแล้วค่ะ ขอบคุณมากค่ะ!
 
 ---
 
