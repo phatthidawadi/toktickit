@@ -1070,6 +1070,77 @@ Push commit ใหม่ขึ้นกิ่ง `feature/24-visual-style-respon
 > 
 > **Approved and Merged PR #60** เข้าสู่ `main` เรียบร้อยแล้ว ขอบคุณมากค่ะ!
 
+---
+
+## Pull Requests I reviewed (authored by my partner)
+
+| PR | Branch | My review verdict |
+|---|---|---|
+| [PR #52](https://github.com/jejaebubu/toktickit/pull/52) | `feature/lab03-issue1-specs` | Approved with comments |
+| [PR #60](https://github.com/jejaebubu/toktickit/pull/60) | `feature/lab03-issue2-migration` | Approved with comments |
+| [PR #61](https://github.com/jejaebubu/toktickit/pull/61) | `feature/lab03-issue3-auth` | Approved with comments |
+| [PR #62](https://github.com/jejaebubu/toktickit/pull/62) | `feature/lab03-issue4-rbac` | Approved with comments |
+| [PR #63](https://github.com/jejaebubu/toktickit/pull/63) | `feature/lab03-issue5-requester-regression` | Approved with comments |
+| [PR #64](https://github.com/jejaebubu/toktickit/pull/64) | `feature/lab03-issue6-staff-queue` | Approved with comments |
+| [PR #65](https://github.com/jejaebubu/toktickit/pull/65) | `feature/lab03-issue7-staff-operations` | Approved with comments |
+| [PR #66](https://github.com/jejaebubu/toktickit/pull/66) | `feature/lab03-issue9-admin-user-management` | Approved with comments |
+| [PR #67](https://github.com/jejaebubu/toktickit/pull/67) | `feature/lab03-issue8-client-auth` | Approved with comments |
+| [PR #68](https://github.com/jejaebubu/toktickit/pull/68) | `feature/lab03-issue10-ui-style-responsive` | Approved with comments |
+
+---
+
+### My review comment for partner's PR #52 (Sprint 3 Engineering Contract & Specs):
+> **Review Verdict:** Request changes
+> 
+> **Key Feedback:**
+> 1. **`requesterIndicatedResolved` Field:** เพิ่มฟิลด์ `requesterIndicatedResolved` ใน `specification.md` และระบุพฤติกรรมใน `api-spec.md` ให้ Requester เจ้าของตั๋วปรับสถานะเป็น `Waiting for Requester` ได้
+> 2. **Authorization Matrix:** เพิ่มตารางสิทธิ์การเข้าถึง (Authorization Matrix) แยกบทบาท Requester, IT Staff และ Administrator ชัดเจนใน `specification.md` §5
+> 3. **Privacy Protection (404 Error):** กรณี Requester พยายามเข้าถึงตั๋วของผู้อื่น ต้องตอบกลับด้วย `404 Not Found` เพื่อไม่เปิดเผยการมีอยู่ของตั๋ว
+> 4. **DoD & Test Status Alignment:** ปรับ DoD และสถานะทดสอบใน `tests.md` ให้สะท้อนสถานะจริงก่อนเริ่ม implementation
+> 
+> **Final Status:** Approved after author addressed all items in commit `fa9eed6`.
+
+---
+
+### My review comment for partner's PR #60 (Lab 3 Database Migration & User Model):
+> **Review Verdict:** Request changes
+> 
+> **Key Feedback:**
+> 1. **Data Loss Risk:** ปรับปรุงไฟล์ SQL Migration จากคำสั่ง `DROP TABLE "RequesterUser"` เป็น `ALTER TABLE "RequesterUser" RENAME TO "User"` เพื่อย้ายข้อมูลผู้ใช้เดิมจาก Lab 2 ได้อย่างปลอดภัยโดยไม่มีข้อมูลสูญหายตาม Handout §5.0/§5.2
+> 2. **Seed Test Fix:** แก้ไขการอ้างอิง `prisma.requesterUser` ใน `server/tests/lab-02/seed.test.ts` ให้เป็น `prisma.user`
+> 3. **Database Indexing:** เพิ่ม Index บน `ownerId` และ `status` บนโมเดล `Ticket` เพื่อเพิ่มประสิทธิภาพ Queue Queries
+> 
+> **Final Status:** Approved after migration rewrite confirmed zero data loss.
+
+---
+
+### My review comment for partner's PR #61 (JWT Authentication & Session APIs):
+> **Review Verdict:** Request changes
+> 
+> **Key Feedback:**
+> 1. **`checkPasswordChangeState` Middleware Coverage:** บังคับใช้ middleware `checkPasswordChangeState` บนทุก Protected Ticket & Attachment Routes (`/api/tickets/:id`, `/api/tickets/:id/attachments`, `/api/attachments/:id/download`, `/api/attachments/:id`) เพื่อป้องกันผู้ใช้ที่มี `mustChangePassword=true` แอบข้ามหน้าเปลี่ยนรหัสผ่าน
+> 2. **HTTP 401 Unauthorized Standard:** ปรับ Response กรณีไม่แนบ Token ให้ตอบกลับด้วย `401 Unauthorized` แทน `400 Bad Request` ตาม Handout §6.2
+> 
+> **Final Status:** Approved after middleware coverage and HTTP 401 status standard alignment.
+
+---
+
+### My review comment for partner's PR #62 (Server-Side RBAC Middleware & Route Guards):
+> **Review Verdict:** Approved
+> 
+> **Feedback:** Middleware `requireRole` ทำงานร่วมกับ `authenticateToken` และ `checkPasswordChangeState` ได้อย่างสมบูรณ์ ปกป้อง API Internal Notes และ Admin Users ตรงตามตาราง Authorization Matrix ข้อมูลรหัสผ่านไม่รั่วไหล และชุดทดสอบรันผ่าน 100%
+
+---
+
+### My review comment for partner's PR #64 (Role-Aware Staff Ticket Queue & Query APIs):
+> **Review Verdict:** Request changes
+> 
+> **Key Feedback:**
+> 1. **Priority Case-Sensitivity:** ปรับแปลงค่า `requestedPriority` และ `itPriority` เป็นตัวพิมพ์ใหญ่ (`.toUpperCase()`) เพื่อรองรับการค้นหาแบบ case-insensitive
+> 2. **Query Parameter Validation:** ปรับปรุงการตรวจสอบ `ownerId` ให้ส่ง `400 Bad Request` หากส่งค่าที่ไม่ใช่ตัวเลขมา เพื่อป้องกัน `500 Internal Server Error` ใน Prisma
+> 
+> **Final Status:** Approved after parameter validation and case-insensitive filter fix.
+
 
 
 
