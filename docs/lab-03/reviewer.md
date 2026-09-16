@@ -1131,20 +1131,15 @@ Push commit ใหม่ขึ้นกิ่ง `feature/24-visual-style-respon
 
 ---
 
-### Author response & changes (PR #61 — Final Release):
+### Author response & changes (PR #61):
 "เราแก้ไขตาม feedback สำหรับ PR #61 เรียบร้อยแล้วค่ะ:
 
-1. **P2 — แก้ไข Target Branch Name ใน Record PR #59 และ PR #60**:
-   - ปรับแก้ไขข้อความใน record PR #59 และ PR #60 จาก `main` เป็น `lab3-staging` ให้ตรงกับ GitHub merge state จริง 100%
+1. P2 Target Branch Standardized — แก้ไข target branch ใน record PR #59 และ #60 จาก main เป็น lab3-staging ตรงกับ GitHub merge state จริง 100%
+2. P3 Detailed Review Comments Complete — เพิ่มรายละเอียด review comment ฝั่ง partner ครบถ้วน 10/10 PRs ในเอกสาร reviewer.md
+3. Record PR #61 Complete — เพิ่มบันทึกการรีวิวและการตอบรับของ PR #61 เข้าใน docs/lab-03/reviewer.md เรียบร้อยแล้วค่ะ
+4. Structure Alignment — เพิ่มไฟล์ client/tests/lab-03/Login.test.tsx และ client/tests/lab-03/ChangePassword.test.tsx ครบตามข้อกำหนด Handout Section 12 (Client tests ผ่าน 10/10 files 24/24 passed)
 
-2. **P3 — เติม Detailed Review Comments ของ Partner PRs #63, #65, #66, #67, #68**:
-   - เพิ่มรายละเอียด `My review comment` สำหรับ PRs ของ partner ครบทั้ง 10/10 PRs ในตาราง
-
-3. **Client Test Files Requirement (Handout Section 12)**:
-   - เพิ่ม `client/tests/lab-03/Login.test.tsx` และ `client/tests/lab-03/ChangePassword.test.tsx` ครบถ้วน
-   - ยืนยันการรัน Vitest Suite (Client: 10 test files / 24 passed; Server: 18 test files / 84 passed) และ Playwright E2E Suite (21/21 passed) ผ่าน 100% 0 errors
-
-ขอบคุณสำหรับการรีวิวและการร่วมมือกันตลอดทั้ง Lab 3 นะคะ!"
+ขอบคุณสำหรับความร่วมมือที่ดีมากตลอดทั้ง Sprint 3 นะ ตอนนี้พร้อมสำหรับ final merge เข้าสู่ main แล้ว"
 
 ---
 
