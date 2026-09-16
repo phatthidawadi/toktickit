@@ -3315,3 +3315,32 @@ Verify: migrate reset + vitest = 71/71 ผ่าน (15 ไฟล์)  + tsc
 
 ---
 
+### Reviewer approval comment I received for Release PR #62 (Round 3):
+> # Re-review — PR #62 (Round 3) — พร้อม merge เข้า main ✅
+> 
+> ตรวจ head ใหม่ `620adbb` (commits `f076022` + `620adbb`) และยืนยันจากโค้ดจริงทุกจุดแล้วค่ะ — P1 ที่ขอไว้แก้ครบและแก้เรียบร้อยค่ะ
+> 
+> ## ✅ 1. Security Fix — getRequesterIdFromReq
+> 
+> * ไม่พบ `x-requester-id` ใน `server/src` แล้ว — identity อ่านจาก JWT session cookie อย่างเดียว 100%
+> * ทั้ง 7 ticket/attachment endpoints ใช้มาตรฐาน `401 { error: "Authentication required", code: "UNAUTHORIZED" }` ตรงตามเกณฑ์ §6.2 (แยก 401 vs 403) ถือว่าปิด IDOR ตาม BR-03 ได้สมบูรณ์ค่ะ
+> 
+> ## ✅ 2. Lab 02 Tests converted
+> 
+> * ทั้ง 4 ไฟล์ (create-ticket, my-tickets, ticket-detail, attachments) เปลี่ยนมาใช้ session cookie (`getAuthCookie` ผ่าน `generateToken`) แล้ว
+> * `x-requester-id` ในโฟลเดอร์ `lab-02` = 0 จุด พร้อมเพิ่มเคส unauthenticated → 401
+> * ฟลอว์ test ทั้งหมดสอดคล้องกับ handler ใหม่ (categories / related-systems / requesters ยังเป็น public ตามเดิม ไม่มี side-effect)
+> 
+> ## ✅ 3. Client API
+> 
+> * `credentials: "include"` ครบทุก fetch call ใน `client/src/api.ts` (23 จุด) เพื่อให้ browser ส่ง session cookie ได้ถูกต้อง
+> * เช็กทั่ว repo (server + client + e2e) แล้ว ไม่พบ `x-requester-id` เหลือแม้แต่จุดเดียวค่ะ
+> 
+> ## P3 — ไม่บล็อก (ทำใน PR ถัดไปก็ได้)
+> 
+> `GET /api/requesters` ยังเป็น public และคืน `id/name/email` ของ requester ทั้งหมด — แนะนำจำกัด role ไว้ จะช่วยปิดจุดนี้เพิ่มเติมค่ะ
+> 
+> **Decision: Approved ✅**
+> 
+> merge `lab3-staging → main` ได้เลยค่ะ — P1 เดียวที่เจอถูกปิดจริงและปิดเป็นระบบ เนื้อหาส่วนที่เหลือผ่านหมด และหลักฐาน peer review ครบทั้ง 2 ฝั่งสำหรับ Release Sprint 3 (Lab 3) ค่ะ
+
