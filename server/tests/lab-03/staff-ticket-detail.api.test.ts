@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll, beforeAll } from "vitest";
+import { describe, it, expect, afterAll, beforeAll, beforeEach } from "vitest";
 import supertest from "supertest";
 import { app } from "../../src/app.js";
 import { getPrisma } from "../../src/prisma.js";
@@ -29,11 +29,18 @@ describe("Staff Ticket Detail & Operational Endpoints (STAFF-API-01 to STAFF-API
   let testTicketId: number;
   let autoClaimTicketId: number;
 
+  beforeEach(async () => {
+    await prisma.user.updateMany({
+      where: { email: { in: ["staff.somchai@example.com", "staff.somsri@example.com", "admin.toktickit@example.com", "jennifer.a@example.com"] } },
+      data: { mustChangePassword: false, isActive: true },
+    });
+  });
+
   beforeAll(async () => {
     // Ensure Staff, Admin & Requester have mustChangePassword = false
     await prisma.user.updateMany({
       where: { email: { in: ["staff.somchai@example.com", "staff.somsri@example.com", "admin.toktickit@example.com", "jennifer.a@example.com"] } },
-      data: { mustChangePassword: false },
+      data: { mustChangePassword: false, isActive: true },
     });
 
     const staffLoginRes = await request.post("/api/auth/login").send({

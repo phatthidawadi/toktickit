@@ -624,12 +624,6 @@ function getRequesterIdFromReq(req: Request): number | null {
     }
   }
 
-  const requesterHeader = req.headers["x-requester-id"];
-  if (requesterHeader) {
-    const id = Number(requesterHeader);
-    if (!isNaN(id) && id > 0) return id;
-  }
-
   return null;
 }
 
@@ -653,7 +647,7 @@ app.post("/api/tickets", async (req: Request, res: Response) => {
   try {
     const requesterId = getRequesterIdFromReq(req);
     if (!requesterId) {
-      return res.status(400).json({ error: "Missing x-requester-id header" });
+      return res.status(401).json({ error: "Authentication required", code: "UNAUTHORIZED" });
     }
 
     // Verify requester exists and is active
@@ -751,7 +745,7 @@ app.get("/api/tickets", async (req: Request, res: Response) => {
   try {
     const requesterId = getRequesterIdFromReq(req);
     if (!requesterId) {
-      return res.status(400).json({ error: "Missing x-requester-id header" });
+      return res.status(401).json({ error: "Authentication required", code: "UNAUTHORIZED" });
     }
 
     const { search, categoryId, status, priority, sort = "desc", page = "1", limit = "10" } = req.query;
@@ -874,7 +868,7 @@ app.get("/api/tickets/:id", async (req: Request, res: Response) => {
   try {
     const requesterId = getRequesterIdFromReq(req);
     if (!requesterId) {
-      return res.status(400).json({ error: "Missing x-requester-id header" });
+      return res.status(401).json({ error: "Authentication required", code: "UNAUTHORIZED" });
     }
 
     const ticketId = Number(req.params.id);
@@ -974,7 +968,7 @@ app.post("/api/tickets/:id/attachments", (req: Request, res: Response) => {
     try {
       const requesterId = getRequesterIdFromReq(req);
       if (!requesterId) {
-        return res.status(400).json({ error: "Missing x-requester-id header" });
+        return res.status(401).json({ error: "Authentication required", code: "UNAUTHORIZED" });
       }
       const ticketId = Number(req.params.id);
 
@@ -1027,7 +1021,7 @@ app.get("/api/attachments/:id", async (req: Request, res: Response) => {
   try {
     const requesterId = getRequesterIdFromReq(req);
     if (!requesterId) {
-      return res.status(400).json({ error: "Missing x-requester-id header" });
+      return res.status(401).json({ error: "Authentication required", code: "UNAUTHORIZED" });
     }
     const attachmentId = Number(req.params.id);
 
@@ -1055,7 +1049,7 @@ app.get("/api/attachments/:id/download", async (req: Request, res: Response) => 
   try {
     const requesterId = getRequesterIdFromReq(req);
     if (!requesterId) {
-      return res.status(400).json({ error: "Missing x-requester-id header" });
+      return res.status(401).json({ error: "Authentication required", code: "UNAUTHORIZED" });
     }
     const attachmentId = Number(req.params.id);
 
@@ -1092,7 +1086,7 @@ app.delete("/api/attachments/:id", async (req: Request, res: Response) => {
   try {
     const requesterId = getRequesterIdFromReq(req);
     if (!requesterId) {
-      return res.status(400).json({ error: "Missing x-requester-id header" });
+      return res.status(401).json({ error: "Authentication required", code: "UNAUTHORIZED" });
     }
     const attachmentId = Number(req.params.id);
     const { reason } = req.body || {};

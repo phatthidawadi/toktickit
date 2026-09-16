@@ -126,9 +126,11 @@ test.describe('E2E-02: IT Staff Ticket Queue & Lifecycle Workflow E2E Journey', 
     await expect(itPrioritySelect).toBeVisible();
     await itPrioritySelect.selectOption('URGENT');
 
-    // 4. Update Status to RESOLVED
+    // 4. Update Status (NEW -> IN_PROGRESS -> RESOLVED)
     const statusSelect = page.locator('#status-transition-select');
     await expect(statusSelect).toBeVisible();
+    await statusSelect.selectOption('IN_PROGRESS');
+    await expect(page.locator('#status-transition-select')).toHaveValue('IN_PROGRESS');
     await statusSelect.selectOption('RESOLVED');
 
     // Assert status pill / banner displays RESOLVED
@@ -185,6 +187,8 @@ test.describe('E2E-02: IT Staff Ticket Queue & Lifecycle Workflow E2E Journey', 
     const reqSearchInput = page.locator('#search-input, input[placeholder*="Search"]').first();
     await expect(reqSearchInput).toBeVisible();
     await reqSearchInput.fill('TKT-2026-000001');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(400);
 
     const reqTicketRow = page.locator('tr:has-text("TKT-2026-000001") td, tr:has-text("TKT-2026-000001")').first();
     await expect(reqTicketRow).toBeVisible();

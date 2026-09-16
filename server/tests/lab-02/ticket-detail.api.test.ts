@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
 import request from "supertest";
 import { app } from "../../src/app.js";
+import { generateToken, SESSION_COOKIE_NAME } from "../../src/utils/auth.js";
+
+function getAuthCookie(userId: number, email = "jennifer.a@example.com", role = "REQUESTER") {
+  const token = generateToken({ userId, email, role });
+  return [`${SESSION_COOKIE_NAME}=${token}`];
+}
 
 describe("GET /api/tickets/:id", () => {
   it("returns 200 OK with ticket details when requesting owned ticket", async () => {
@@ -17,7 +23,7 @@ describe("GET /api/tickets/:id", () => {
 
     const createRes = await request(app)
       .post("/api/tickets")
-      .set("x-requester-id", String(requesterId))
+      .set("Cookie", getAuthCookie(requesterId))
       .send({
         summary: "Detail Test Ticket Summary",
         description: "Detailed description for detail test ticket",
@@ -32,7 +38,7 @@ describe("GET /api/tickets/:id", () => {
     // Fetch ticket detail
     const res = await request(app)
       .get(`/api/tickets/${ticketId}`)
-      .set("x-requester-id", String(requesterId));
+      .set("Cookie", getAuthCookie(requesterId));
 
     expect(res.status).toBe(200);
     expect(res.body.id).toBe(ticketId);
@@ -55,7 +61,7 @@ describe("GET /api/tickets/:id", () => {
 
     const createRes = await request(app)
       .post("/api/tickets")
-      .set("x-requester-id", String(requesterId))
+      .set("Cookie", getAuthCookie(requesterId))
       .send({
         summary: "Attachment Persistence Ticket",
         description: "Testing active and soft-removed attachments in detail view",
@@ -71,7 +77,7 @@ describe("GET /api/tickets/:id", () => {
     fsMod.default.writeFileSync(path1, "%PDF-1.4 active file");
     const up1 = await request(app)
       .post(`/api/tickets/${ticketId}/attachments`)
-      .set("x-requester-id", String(requesterId))
+      .set("Cookie", getAuthCookie(requesterId))
       .attach("file", path1);
     fsMod.default.unlinkSync(path1);
 
@@ -80,20 +86,20 @@ describe("GET /api/tickets/:id", () => {
     fsMod.default.writeFileSync(path2, "%PDF-1.4 file to be removed");
     const up2 = await request(app)
       .post(`/api/tickets/${ticketId}/attachments`)
-      .set("x-requester-id", String(requesterId))
+      .set("Cookie", getAuthCookie(requesterId))
       .attach("file", path2);
     fsMod.default.unlinkSync(path2);
 
     // Soft remove attachment 2
     await request(app)
       .delete(`/api/attachments/${up2.body.id}`)
-      .set("x-requester-id", String(requesterId))
+      .set("Cookie", getAuthCookie(requesterId))
       .send({ reason: "Removing duplicate upload" });
 
     // Fetch ticket detail again (simulating refresh / re-fetch)
     const res = await request(app)
       .get(`/api/tickets/${ticketId}`)
-      .set("x-requester-id", String(requesterId));
+      .set("Cookie", getAuthCookie(requesterId));
 
     expect(res.status).toBe(200);
     expect(res.body.attachments).toHaveLength(2);
@@ -122,7 +128,7 @@ describe("GET /api/tickets/:id", () => {
     // Create ticket for Requester A
     const createRes = await request(app)
       .post("/api/tickets")
-      .set("x-requester-id", String(requesterA))
+      .set("Cookie", getAuthCookie(requesterA, "requesterA@example.com"))
       .send({
         summary: "Requester A Private Ticket",
         description: "Description of ticket belonging to Requester A",
@@ -136,7 +142,7 @@ describe("GET /api/tickets/:id", () => {
     // Requester B attempts to view Requester A's ticket
     const res = await request(app)
       .get(`/api/tickets/${ticketId}`)
-      .set("x-requester-id", String(requesterB));
+      .set("Cookie", getAuthCookie(requesterB, "requesterB@example.com"));
 
     expect(res.status).toBe(403);
     expect(res.body.error).toContain("Access denied");
@@ -148,7 +154,7 @@ describe("GET /api/tickets/:id", () => {
 
     const res = await request(app)
       .get("/api/tickets/999999")
-      .set("x-requester-id", String(requesterId));
+      .set("Cookie", getAuthCookie(requesterId));
 
     expect(res.status).toBe(404);
     expect(res.body.error).toContain("Ticket not found");

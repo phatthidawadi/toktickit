@@ -114,8 +114,8 @@ export async function createTicket(input: CreateTicketInput, requesterId: number
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-requester-id": String(requesterId),
     },
+    credentials: "include",
     body: JSON.stringify(input),
   });
 
@@ -151,9 +151,7 @@ export async function fetchMyTickets(
   if (params.limit) queryParams.append("limit", String(params.limit));
 
   const res = await fetch(`${API_URL}/api/tickets?${queryParams.toString()}`, {
-    headers: {
-      "x-requester-id": String(requesterId),
-    },
+    credentials: "include",
   });
 
   if (!res.ok) {
@@ -166,9 +164,7 @@ export async function fetchMyTickets(
 
 export async function fetchTicketDetail(ticketId: number, requesterId: number): Promise<Ticket> {
   const res = await fetch(`${API_URL}/api/tickets/${ticketId}`, {
-    headers: {
-      "x-requester-id": String(requesterId),
-    },
+    credentials: "include",
   });
 
   if (res.status === 403) {
@@ -209,9 +205,7 @@ export async function uploadAttachment(
 
   const res = await fetch(`${API_URL}/api/tickets/${ticketId}/attachments`, {
     method: "POST",
-    headers: {
-      "x-requester-id": String(requesterId),
-    },
+    credentials: "include",
     body: formData,
   });
 
@@ -240,8 +234,8 @@ export async function softRemoveAttachment(
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",
-      "x-requester-id": String(requesterId),
     },
+    credentials: "include",
     body: JSON.stringify({ reason: reason.trim() }),
   });
 

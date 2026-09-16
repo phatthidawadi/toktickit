@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll, beforeAll } from "vitest";
+import { describe, it, expect, afterAll, beforeAll, beforeEach } from "vitest";
 import supertest from "supertest";
 import { app } from "../../src/app.js";
 import { getPrisma } from "../../src/prisma.js";
@@ -23,11 +23,18 @@ describe("IT Staff Ticket Queue API Endpoints (QUEUE-API-01 & QUEUE-API-02)", ()
   let staffCookie: string;
   let requesterCookie: string;
 
+  beforeEach(async () => {
+    await prisma.user.updateMany({
+      where: { email: { in: ["staff.somchai@example.com", "jennifer.a@example.com"] } },
+      data: { mustChangePassword: false, isActive: true },
+    });
+  });
+
   beforeAll(async () => {
     // Ensure Staff & Requester have mustChangePassword = false for queue testing
     await prisma.user.updateMany({
       where: { email: { in: ["staff.somchai@example.com", "jennifer.a@example.com"] } },
-      data: { mustChangePassword: false },
+      data: { mustChangePassword: false, isActive: true },
     });
 
     // Login as IT Staff (Somchai)
