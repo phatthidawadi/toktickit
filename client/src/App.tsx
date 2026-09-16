@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext.js";
-import { RequesterProvider } from "./context/RequesterContext.js";
+import { RequesterProvider, useRequester } from "./context/RequesterContext.js";
 import { Header } from "./components/Header.js";
 import { RequesterSelectorScreen } from "./components/RequesterSelectorScreen.js";
 import { CreateTicketForm } from "./components/CreateTicketForm.js";

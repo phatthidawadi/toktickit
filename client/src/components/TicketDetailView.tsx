@@ -9,6 +9,7 @@ import {
 } from "../api.js";
 import { useRequester } from "../context/RequesterContext.js";
 import { useAuth } from "../context/AuthContext.js";
+import { PublicComments } from "./PublicComments.js";
 
 interface TicketDetailViewProps {
   ticketId: number;
@@ -658,6 +659,9 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({ ticketId, on
           </ul>
         )}
       </div>
+
+      {/* Public Comments Stream */}
+      <PublicComments ticketId={ticketId} />
     </div>
   );
 };
