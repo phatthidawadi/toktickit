@@ -3,6 +3,12 @@ import request from "supertest";
 import path from "path";
 import fs from "fs";
 import { app } from "../../src/app.js";
+import { generateToken, SESSION_COOKIE_NAME } from "../../src/utils/auth.js";
+
+function getAuthCookie(userId: number, email = "jennifer.a@example.com", role = "REQUESTER") {
+  const token = generateToken({ userId, email, role });
+  return [`${SESSION_COOKIE_NAME}=${token}`];
+}
 
 describe("Attachment Lifecycle API", () => {
   it("uploads valid attachment to ticket and returns 201 Created", async () => {
@@ -18,7 +24,7 @@ describe("Attachment Lifecycle API", () => {
     // Create ticket
     const ticketRes = await request(app)
       .post("/api/tickets")
-      .set("x-requester-id", String(requesterId))
+      .set("Cookie", getAuthCookie(requesterId))
       .send({
         summary: "Attachment Test Ticket",
         description: "Testing attachment upload functionality",
@@ -36,7 +42,7 @@ describe("Attachment Lifecycle API", () => {
     // Upload attachment
     const res = await request(app)
       .post(`/api/tickets/${ticketId}/attachments`)
-      .set("x-requester-id", String(requesterId))
+      .set("Cookie", getAuthCookie(requesterId))
       .attach("file", tempFilePath);
 
     fs.unlinkSync(tempFilePath);
@@ -56,7 +62,7 @@ describe("Attachment Lifecycle API", () => {
 
     const res = await request(app)
       .post("/api/tickets/1/attachments")
-      .set("x-requester-id", String(requesterId))
+      .set("Cookie", getAuthCookie(requesterId))
       .attach("file", tempExePath);
 
     fs.unlinkSync(tempExePath);
@@ -77,7 +83,7 @@ describe("Attachment Lifecycle API", () => {
 
     const ticketRes = await request(app)
       .post("/api/tickets")
-      .set("x-requester-id", String(requesterId))
+      .set("Cookie", getAuthCookie(requesterId))
       .send({
         summary: "Soft Remove Test Ticket",
         description: "Testing soft removal of attachment",
@@ -93,17 +99,16 @@ describe("Attachment Lifecycle API", () => {
 
     const uploadRes = await request(app)
       .post(`/api/tickets/${ticketId}/attachments`)
-      .set("x-requester-id", String(requesterId))
+      .set("Cookie", getAuthCookie(requesterId))
       .attach("file", tempFilePath);
 
     fs.unlinkSync(tempFilePath);
-
     const attachmentId = uploadRes.body.id;
 
     // Soft-remove attachment with reason
     const deleteRes = await request(app)
       .delete(`/api/attachments/${attachmentId}`)
-      .set("x-requester-id", String(requesterId))
+      .set("Cookie", getAuthCookie(requesterId))
       .send({ reason: "Uploaded sensitive log file by mistake" });
 
     expect(deleteRes.status).toBe(200);
@@ -113,7 +118,7 @@ describe("Attachment Lifecycle API", () => {
     // Attempt download -> expect 410 Gone
     const downloadRes = await request(app)
       .get(`/api/attachments/${attachmentId}/download`)
-      .set("x-requester-id", String(requesterId));
+      .set("Cookie", getAuthCookie(requesterId));
 
     expect(downloadRes.status).toBe(410);
     expect(downloadRes.body.error).toContain("Attachment has been removed");
@@ -127,7 +132,7 @@ describe("Attachment Lifecycle API", () => {
 
     const ticketRes = await request(app)
       .post("/api/tickets")
-      .set("x-requester-id", String(requesterId))
+      .set("Cookie", getAuthCookie(requesterId))
       .send({
         summary: "Attachment Limit Ticket",
         description: "Testing max 5 active attachments per ticket limit",
@@ -144,7 +149,7 @@ describe("Attachment Lifecycle API", () => {
       fs.writeFileSync(tempPath, `%PDF-1.4 file ${i} content`);
       const upRes = await request(app)
         .post(`/api/tickets/${ticketId}/attachments`)
-        .set("x-requester-id", String(requesterId))
+        .set("Cookie", getAuthCookie(requesterId))
         .attach("file", tempPath);
       fs.unlinkSync(tempPath);
       expect(upRes.status).toBe(201);
@@ -155,7 +160,7 @@ describe("Attachment Lifecycle API", () => {
     fs.writeFileSync(temp6Path, "%PDF-1.4 file 6 content");
     const res6 = await request(app)
       .post(`/api/tickets/${ticketId}/attachments`)
-      .set("x-requester-id", String(requesterId))
+      .set("Cookie", getAuthCookie(requesterId))
       .attach("file", temp6Path);
     fs.unlinkSync(temp6Path);
 
@@ -171,7 +176,7 @@ describe("Attachment Lifecycle API", () => {
 
     const ticketRes = await request(app)
       .post("/api/tickets")
-      .set("x-requester-id", String(requesterId))
+      .set("Cookie", getAuthCookie(requesterId))
       .send({
         summary: "Soft Remove Count Ticket",
         description: "Testing soft removal exclusion from active limit",
@@ -188,7 +193,7 @@ describe("Attachment Lifecycle API", () => {
       fs.writeFileSync(tempPath, "PNG dummy image content");
       const upRes = await request(app)
         .post(`/api/tickets/${ticketId}/attachments`)
-        .set("x-requester-id", String(requesterId))
+        .set("Cookie", getAuthCookie(requesterId))
         .attach("file", tempPath);
       fs.unlinkSync(tempPath);
       uploadedIds.push(upRes.body.id);
@@ -197,7 +202,7 @@ describe("Attachment Lifecycle API", () => {
     // Soft-remove one attachment
     const delRes = await request(app)
       .delete(`/api/attachments/${uploadedIds[0]}`)
-      .set("x-requester-id", String(requesterId))
+      .set("Cookie", getAuthCookie(requesterId))
       .send({ reason: "Removing duplicate file attachment" });
     expect(delRes.status).toBe(200);
 
@@ -206,7 +211,7 @@ describe("Attachment Lifecycle API", () => {
     fs.writeFileSync(tempNewPath, "%PDF-1.4 new file after remove");
     const newUpRes = await request(app)
       .post(`/api/tickets/${ticketId}/attachments`)
-      .set("x-requester-id", String(requesterId))
+      .set("Cookie", getAuthCookie(requesterId))
       .attach("file", tempNewPath);
     fs.unlinkSync(tempNewPath);
 
@@ -228,7 +233,7 @@ describe("Attachment Lifecycle API", () => {
       fs.writeFileSync(tempPath, item.content);
       const res = await request(app)
         .post("/api/tickets/1/attachments")
-        .set("x-requester-id", String(requesterId))
+        .set("Cookie", getAuthCookie(requesterId))
         .attach("file", tempPath);
       fs.unlinkSync(tempPath);
 
@@ -248,7 +253,7 @@ describe("Attachment Lifecycle API", () => {
 
     const res = await request(app)
       .post("/api/tickets/1/attachments")
-      .set("x-requester-id", String(requesterId))
+      .set("Cookie", getAuthCookie(requesterId))
       .attach("file", tempLargePath);
 
     if (fs.existsSync(tempLargePath)) {
@@ -265,7 +270,7 @@ describe("Attachment Lifecycle API", () => {
 
     const res = await request(app)
       .delete("/api/attachments/1")
-      .set("x-requester-id", String(requesterId))
+      .set("Cookie", getAuthCookie(requesterId))
       .send({ reason: "bad" }); // less than 5 characters
 
     expect(res.status).toBe(400);
@@ -280,7 +285,7 @@ describe("Attachment Lifecycle API", () => {
     // Create ticket & attachment for Requester A
     const ticketRes = await request(app)
       .post("/api/tickets")
-      .set("x-requester-id", String(requesterA))
+      .set("Cookie", getAuthCookie(requesterA, "requesterA@example.com"))
       .send({
         summary: "Requester A Attachment Ticket",
         description: "Testing cross requester attachment protection",
@@ -294,7 +299,7 @@ describe("Attachment Lifecycle API", () => {
 
     const uploadRes = await request(app)
       .post(`/api/tickets/${ticketRes.body.id}/attachments`)
-      .set("x-requester-id", String(requesterA))
+      .set("Cookie", getAuthCookie(requesterA, "requesterA@example.com"))
       .attach("file", tempFilePath);
 
     fs.unlinkSync(tempFilePath);
@@ -303,7 +308,7 @@ describe("Attachment Lifecycle API", () => {
     // Requester B attempts download
     const res = await request(app)
       .get(`/api/attachments/${attachmentId}/download`)
-      .set("x-requester-id", String(requesterB));
+      .set("Cookie", getAuthCookie(requesterB, "requesterB@example.com"));
 
     expect(res.status).toBe(403);
     expect(res.body.error).toMatch(/Access denied/i);

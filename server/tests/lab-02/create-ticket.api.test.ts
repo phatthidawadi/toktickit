@@ -1,9 +1,15 @@
 import { describe, it, expect } from "vitest";
 import request from "supertest";
 import { app } from "../../src/app.js";
+import { generateToken, SESSION_COOKIE_NAME } from "../../src/utils/auth.js";
+
+function getAuthCookie(userId: number, email = "jennifer.a@example.com", role = "REQUESTER") {
+  const token = generateToken({ userId, email, role });
+  return [`${SESSION_COOKIE_NAME}=${token}`];
+}
 
 describe("POST /api/tickets", () => {
-  it("creates a new ticket when valid data and x-requester-id are provided", async () => {
+  it("creates a new ticket when valid data and session cookie are provided", async () => {
     // 1. Fetch categories and related systems first
     const catRes = await request(app).get("/api/categories");
     expect(catRes.status).toBe(200);
@@ -29,7 +35,7 @@ describe("POST /api/tickets", () => {
 
     const res = await request(app)
       .post("/api/tickets")
-      .set("x-requester-id", String(requesterId))
+      .set("Cookie", getAuthCookie(requesterId))
       .send(ticketData);
 
     expect(res.status).toBe(201);
@@ -40,7 +46,7 @@ describe("POST /api/tickets", () => {
     expect(res.body.requesterId).toBe(requesterId);
   });
 
-  it("returns 400 when x-requester-id is missing", async () => {
+  it("returns 401 UNAUTHORIZED when session cookie is missing", async () => {
     const res = await request(app).post("/api/tickets").send({
       summary: "Test Ticket Summary",
       description: "Test description for ticket submission",
@@ -49,8 +55,8 @@ describe("POST /api/tickets", () => {
       requestedPriority: "LOW",
     });
 
-    expect(res.status).toBe(400);
-    expect(res.body.error).toContain("Missing x-requester-id");
+    expect(res.status).toBe(401);
+    expect(res.body.code).toBe("UNAUTHORIZED");
   });
 
   it("returns 400 when summary or description is invalid", async () => {
@@ -59,7 +65,7 @@ describe("POST /api/tickets", () => {
 
     const res = await request(app)
       .post("/api/tickets")
-      .set("x-requester-id", String(requesterId))
+      .set("Cookie", getAuthCookie(requesterId))
       .send({
         summary: "Bad", // Less than 5 chars
         description: "Short", // Less than 10 chars

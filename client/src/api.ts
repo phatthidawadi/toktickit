@@ -48,13 +48,17 @@ export interface Ticket {
   summary: string;
   description: string;
   requestedPriority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
-  currentStatus: "NEW" | "IN_PROGRESS" | "RESOLVED" | "CLOSED" | string;
+  itPriority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+  currentStatus: "NEW" | "IN_PROGRESS" | "WAITING_FOR_REQUESTER" | "RESOLVED" | "CLOSED" | "REOPENED" | "CANCELLED" | string;
+  isRequesterResolved?: boolean;
   requesterId: number;
+  assignedStaffId?: number | null;
   categoryId: number;
   relatedSystemId: number;
   createdAt: string;
   updatedAt: string;
   requester?: { id: number; name: string; email: string };
+  assignedStaff?: { id: number; name: string; email: string } | null;
   category?: Category;
   relatedSystem?: RelatedSystem;
   attachments?: AttachmentSummary[];
@@ -110,8 +114,8 @@ export async function createTicket(input: CreateTicketInput, requesterId: number
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-requester-id": String(requesterId),
     },
+    credentials: "include",
     body: JSON.stringify(input),
   });
 
@@ -147,9 +151,7 @@ export async function fetchMyTickets(
   if (params.limit) queryParams.append("limit", String(params.limit));
 
   const res = await fetch(`${API_URL}/api/tickets?${queryParams.toString()}`, {
-    headers: {
-      "x-requester-id": String(requesterId),
-    },
+    credentials: "include",
   });
 
   if (!res.ok) {
@@ -162,9 +164,7 @@ export async function fetchMyTickets(
 
 export async function fetchTicketDetail(ticketId: number, requesterId: number): Promise<Ticket> {
   const res = await fetch(`${API_URL}/api/tickets/${ticketId}`, {
-    headers: {
-      "x-requester-id": String(requesterId),
-    },
+    credentials: "include",
   });
 
   if (res.status === 403) {
@@ -205,9 +205,7 @@ export async function uploadAttachment(
 
   const res = await fetch(`${API_URL}/api/tickets/${ticketId}/attachments`, {
     method: "POST",
-    headers: {
-      "x-requester-id": String(requesterId),
-    },
+    credentials: "include",
     body: formData,
   });
 
@@ -236,8 +234,8 @@ export async function softRemoveAttachment(
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",
-      "x-requester-id": String(requesterId),
     },
+    credentials: "include",
     body: JSON.stringify({ reason: reason.trim() }),
   });
 
@@ -246,3 +244,319 @@ export async function softRemoveAttachment(
     throw new Error(errorData.error || "Soft removal failed");
   }
 }
+
+// ---------------------------------------------------------------------------
+// Authentication API Functions
+// ---------------------------------------------------------------------------
+export interface UserProfile {
+  id: number;
+  name: string;
+  email: string;
+  role: "REQUESTER" | "IT_STAFF" | "ADMINISTRATOR" | string;
+  isActive: boolean;
+  mustChangePassword: boolean;
+}
+
+export interface LoginResponse {
+  user: UserProfile;
+}
+
+export async function loginApi(email: string, pass: string): Promise<LoginResponse> {
+  const res = await fetch(`${API_URL}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ email, password: pass }),
+  });
+  const data = await res.json().catch(() => ({ error: "Login failed" }));
+  if (!res.ok) {
+    throw new Error(data.error || "Invalid email or password");
+  }
+  return data;
+}
+
+export async function logoutApi(): Promise<void> {
+  await fetch(`${API_URL}/api/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+  });
+}
+
+export async function fetchCurrentUserApi(): Promise<{ user: UserProfile }> {
+  const res = await fetch(`${API_URL}/api/auth/me`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  const data = await res.json().catch(() => ({ error: "Failed to fetch user session" }));
+  if (!res.ok) {
+    throw new Error(data.error || "Unauthenticated");
+  }
+  return data;
+}
+
+export async function changePasswordApi(
+  currentPassword: string,
+  newPassword: string,
+  confirmPassword: string
+): Promise<{ message: string }> {
+  const res = await fetch(`${API_URL}/api/auth/change-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+  });
+
+  const data = await res.json().catch(() => ({ error: "Password change failed" }));
+  if (!res.ok) {
+    throw new Error(data.error || "Password change failed");
+  }
+  return data;
+}
+
+export interface PublicComment {
+  id: number;
+  ticketId: number;
+  authorId: number;
+  content: string;
+  createdAt: string;
+  author: {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+  };
+}
+
+export async function fetchPublicCommentsApi(ticketId: number): Promise<PublicComment[]> {
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/comments`, {
+    method: "GET",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to fetch public comments");
+  return res.json();
+}
+
+export async function createPublicCommentApi(ticketId: number, content: string): Promise<PublicComment> {
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/comments`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ content }),
+  });
+  const data = await res.json().catch(() => ({ error: "Failed to post comment" }));
+  if (!res.ok) throw new Error(data.error || "Failed to post comment");
+  return data;
+}
+
+export async function toggleResolveAckApi(ticketId: number): Promise<Ticket> {
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/resolve-ack`, {
+    method: "PATCH",
+    credentials: "include",
+  });
+  const data = await res.json().catch(() => ({ error: "Failed to update resolution status" }));
+  if (!res.ok) throw new Error(data.error || "Failed to update resolution status");
+  return data;
+}
+
+export interface StaffTicketQueueParams {
+  search?: string;
+  categoryId?: number;
+  status?: string;
+  requestedPriority?: string;
+  itPriority?: string;
+  assignedStaffId?: string;
+  sort?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface TicketInternalNote {
+  id: number;
+  ticketId: number;
+  authorId: number;
+  content: string;
+  createdAt: string;
+  author: {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+  };
+}
+
+export async function fetchStaffTicketsApi(params: StaffTicketQueueParams): Promise<PaginatedTickets> {
+  const queryParams = new URLSearchParams();
+  if (params.search) queryParams.append("search", params.search);
+  if (params.categoryId) queryParams.append("categoryId", String(params.categoryId));
+  if (params.status) queryParams.append("status", params.status);
+  if (params.requestedPriority) queryParams.append("requestedPriority", params.requestedPriority);
+  if (params.itPriority) queryParams.append("itPriority", params.itPriority);
+  if (params.assignedStaffId) queryParams.append("assignedStaffId", params.assignedStaffId);
+  if (params.sort) queryParams.append("sort", params.sort);
+  if (params.page) queryParams.append("page", String(params.page));
+  if (params.limit) queryParams.append("limit", String(params.limit));
+
+  const res = await fetch(`${API_URL}/api/staff/tickets?${queryParams.toString()}`, {
+    method: "GET",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to fetch staff tickets queue");
+  return res.json();
+}
+
+export async function fetchStaffTicketDetailApi(ticketId: number): Promise<Ticket> {
+  const res = await fetch(`${API_URL}/api/staff/tickets/${ticketId}`, {
+    method: "GET",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to fetch ticket detail");
+  return res.json();
+}
+
+export async function assignStaffTicketApi(
+  ticketId: number,
+  target: { assignedStaffId?: number | null; claim?: boolean }
+): Promise<Ticket> {
+  const res = await fetch(`${API_URL}/api/staff/tickets/${ticketId}/assign`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(target),
+  });
+  const data = await res.json().catch(() => ({ error: "Failed to update assignment" }));
+  if (!res.ok) throw new Error(data.error || "Failed to update assignment");
+  return data;
+}
+
+export async function updateItPriorityApi(ticketId: number, itPriority: string): Promise<Ticket> {
+  const res = await fetch(`${API_URL}/api/staff/tickets/${ticketId}/priority`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ itPriority }),
+  });
+  const data = await res.json().catch(() => ({ error: "Failed to update IT priority" }));
+  if (!res.ok) throw new Error(data.error || "Failed to update IT priority");
+  return data;
+}
+
+export async function updateTicketStatusApi(ticketId: number, status: string): Promise<Ticket> {
+  const res = await fetch(`${API_URL}/api/staff/tickets/${ticketId}/status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ status }),
+  });
+  const data = await res.json().catch(() => ({ error: "Failed to update ticket status" }));
+  if (!res.ok) throw new Error(data.error || "Failed to update ticket status");
+  return data;
+}
+
+export async function fetchInternalNotesApi(ticketId: number): Promise<TicketInternalNote[]> {
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/notes`, {
+    method: "GET",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to fetch internal notes");
+  return res.json();
+}
+
+export async function createInternalNoteApi(ticketId: number, content: string): Promise<TicketInternalNote> {
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/notes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ content }),
+  });
+  const data = await res.json().catch(() => ({ error: "Failed to post internal note" }));
+  if (!res.ok) throw new Error(data.error || "Failed to post internal note");
+  return data;
+}
+
+export interface AdminUser {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  mustChangePassword: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export async function fetchAdminUsersApi(search?: string, role?: string): Promise<AdminUser[]> {
+  const queryParams = new URLSearchParams();
+  if (search) queryParams.append("search", search);
+  if (role && role !== "ALL") queryParams.append("role", role);
+
+  const res = await fetch(`${API_URL}/api/admin/users?${queryParams.toString()}`, {
+    method: "GET",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to fetch admin users");
+  return res.json();
+}
+
+export async function createAdminUserApi(user: {
+  name: string;
+  email: string;
+  role: string;
+  initialPassword?: string;
+  password?: string;
+  isActive?: boolean;
+}): Promise<AdminUser> {
+  const res = await fetch(`${API_URL}/api/admin/users`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(user),
+  });
+  const data = await res.json().catch(() => ({ error: "Failed to create user" }));
+  if (!res.ok) {
+    const errorObj: any = new Error(data.error || "Failed to create user");
+    errorObj.code = data.code;
+    throw errorObj;
+  }
+  return data;
+}
+
+export async function updateAdminUserApi(
+  id: number,
+  updates: { name?: string; email?: string; role?: string; isActive?: boolean }
+): Promise<AdminUser> {
+  const res = await fetch(`${API_URL}/api/admin/users/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(updates),
+  });
+  const data = await res.json().catch(() => ({ error: "Failed to update user" }));
+  if (!res.ok) {
+    const errorObj: any = new Error(data.error || "Failed to update user");
+    errorObj.code = data.code;
+    throw errorObj;
+  }
+  return data;
+}
+
+export async function resetAdminUserPasswordApi(
+  id: number,
+  initialPassword: string
+): Promise<{ message: string; user: AdminUser }> {
+  const res = await fetch(`${API_URL}/api/admin/users/${id}/reset-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ initialPassword }),
+  });
+  const data = await res.json().catch(() => ({ error: "Failed to reset password" }));
+  if (!res.ok) {
+    const errorObj: any = new Error(data.error || "Failed to reset password");
+    errorObj.code = data.code;
+    throw errorObj;
+  }
+  return data;
+}
+
+
