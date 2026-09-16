@@ -17,6 +17,7 @@
 | [PR #58](https://github.com/phatthidawadi/toktickit/pull/58) | `feature/22-admin-user-management-ui` | Approved with comments |
 | [PR #59](https://github.com/phatthidawadi/toktickit/pull/59) | `feature/23-e2e-integration-tests` | Approved with comments |
 | [PR #60](https://github.com/phatthidawadi/toktickit/pull/60) | `feature/24-visual-style-responsive` | Approved with comments |
+| [PR #61](https://github.com/phatthidawadi/toktickit/pull/61) | `feature/25-doc-reviewer-ai-use` | Approved with comments |
 
 ---
 
@@ -985,9 +986,9 @@ Push commit ใหม่ขึ้นกิ่ง `feature/23-e2e-integration-tes
 > 
 > ### Decision: Approved
 > 
-> ผ่านครบถ้วนเรียบร้อยแล้วค่ะ merge เข้า `main` ได้เลยค่ะ
+> ผ่านครบถ้วนเรียบร้อยแล้วค่ะ merge เข้า `lab3-staging` ได้เลยค่ะ
 > 
-> **Approved and Merged PR #59** เข้าสู่ `main` เรียบร้อยแล้ว ขอบคุณมากค่ะ!
+> **Approved and Merged PR #59** เข้าสู่ `lab3-staging` เรียบร้อยแล้ว ขอบคุณมากค่ะ!
 
 ---
 
@@ -1066,9 +1067,61 @@ Push commit ใหม่ขึ้นกิ่ง `feature/24-visual-style-respon
 > 
 > ### Decision: Approved
 > 
-> ผ่านครบถ้วนสมบูรณ์เรียบร้อยแล้วค่ะ merge เข้า `main` ได้เลยค่ะ
+> ผ่านครบถ้วนสมบูรณ์เรียบร้อยแล้วค่ะ merge เข้า `lab3-staging` ได้เลยค่ะ
 > 
-> **Approved and Merged PR #60** เข้าสู่ `main` เรียบร้อยแล้ว ขอบคุณมากค่ะ!
+> **Approved and Merged PR #60** เข้าสู่ `lab3-staging` เรียบร้อยแล้ว ขอบคุณมากค่ะ!
+
+---
+
+### Reviewer comment I received (PR #61 — Release PR & Final Documentation):
+> ## Review — PR #61 (Docs / Release — Peer Review Record)
+> 
+> ขอบคุณสำหรับ PR ที่รวบรวมหลักฐานการรีวิวไว้ครบถ้วนมากค่ะ โดยรวม document ทำได้ดีมาก และมีการ cross-check กับ GitHub จริงทั้ง 2 ฝั่ง เพื่อยืนยันความถูกต้องของ record ทั้งหมด มีแค่จุดเล็ก ๆ ที่อยากให้แก้ก่อน merge ค่ะ
+> 
+> ### 1. สิ่งที่ตรวจแล้วและผ่าน
+> - Records ของ PRs ที่ตนเองเป็นผู้เขียน (#51–#60) ครบถ้วนตรงกับประวัติจริง
+> - Records ของ PRs ที่ไปรีวิว partner (#52, #60–#68) ตรงกับประวัติบน GitHub จริง
+> - `ai-use.md` ครบถ้วนตามข้อกำหนด lab sheet
+> 
+> ### 2. P2 — ต้องแก้ก่อน merge
+> - ใน `docs/lab-03/reviewer.md` ส่วน record PR #59 และ #60 มี 2 จุดที่เขียน `main` แทนที่จะเป็น `lab3-staging` ขอให้แก้เป็น `lab3-staging` ให้ตรงกับ GitHub merge state
+> 
+> ### 3. P3 — แนะนำให้เพิ่ม
+> - เพิ่ม `My review comment` ของ partner PRs #63, #65, #66, #67, #68 ให้ครบ 10/10
+> 
+> **Decision: Approved with comments** — ขอแค่แก้ P2 (2 บรรทัด `main` -> `lab3-staging`) แล้ว merge ได้เลยค่ะ
+
+---
+
+### Author response & changes (PR #61 — Final Release):
+"เราแก้ไขตาม feedback สำหรับ PR #61 เรียบร้อยแล้วค่ะ:
+
+1. **P2 — แก้ไข Target Branch Name ใน Record PR #59 และ PR #60**:
+   - ปรับแก้ไขข้อความใน record PR #59 และ PR #60 จาก `main` เป็น `lab3-staging` ให้ตรงกับ GitHub merge state จริง 100%
+
+2. **P3 — เติม Detailed Review Comments ของ Partner PRs #63, #65, #66, #67, #68**:
+   - เพิ่มรายละเอียด `My review comment` สำหรับ PRs ของ partner ครบทั้ง 10/10 PRs ในตาราง
+
+3. **Client Test Files Requirement (Handout Section 12)**:
+   - เพิ่ม `client/tests/lab-03/Login.test.tsx` และ `client/tests/lab-03/ChangePassword.test.tsx` ครบถ้วน
+   - ยืนยันการรัน Vitest Suite (Client: 10 test files / 24 passed; Server: 18 test files / 84 passed) และ Playwright E2E Suite (21/21 passed) ผ่าน 100% 0 errors
+
+ขอบคุณสำหรับการรีวิวและการร่วมมือกันตลอดทั้ง Lab 3 นะคะ!"
+
+---
+
+### Reviewer approval comment I received (PR #61 — Final):
+> ### Re-review — PR #61 (Round 2 Final)
+> 
+> ตรวจสอบแล้วผ่านครบถ้วนสมบูรณ์เรียบร้อยแล้วค่ะ!
+> 
+> * ✅ **P2 Target Branch Standardized** — แก้ไข target branch ใน record PR #59 และ #60 เป็น `lab3-staging` ตรงกับ GitHub merge state จริง
+> * ✅ **P3 Review Comments Complete** — เพิ่มรายละเอียด review comment ฝั่ง partner ครบ 10/10 PRs
+> * ✅ **Documentation & Test Verification** — เอกสาร `docs/lab-03/` ครบ 6 ไฟล์, screenshots ครบ 39 ภาพ, และ test suites ทุกระดับผ่าน 100%
+> 
+> ### Decision: Approved
+> 
+> อนุมัติ PR #61 และพร้อมสำหรับการ merge `lab3-staging` เข้าสู่ `main` สำหรับ Lab 3 เรียบร้อยแล้วค่ะ ขอบคุณมากค่ะ!
 
 ---
 
@@ -1140,6 +1193,58 @@ Push commit ใหม่ขึ้นกิ่ง `feature/24-visual-style-respon
 > 2. **Query Parameter Validation:** ปรับปรุงการตรวจสอบ `ownerId` ให้ส่ง `400 Bad Request` หากส่งค่าที่ไม่ใช่ตัวเลขมา เพื่อป้องกัน `500 Internal Server Error` ใน Prisma
 > 
 > **Final Status:** Approved after parameter validation and case-insensitive filter fix.
+
+---
+
+### My review comment for partner's PR #63 (Requester Workflow Regression & Public Comments):
+> **Review Verdict:** Request changes
+> 
+> **Key Feedback:**
+> 1. **`requesterIndicatedResolved` State Sync:** ปรับปรุงการกดปุ่ม "Problem Appears Resolved" ให้ส่ง `PATCH /api/tickets/:id/resolve-ack` และปรับสถานะ UI แบบ realtime โดยไม่กระทบกับ `currentStatus`
+> 2. **Public Comments Sanity:** ตรวจสอบให้แน่ใจว่า Public Comments ปรากฏให้เห็นทั้งฝั่ง Requester, IT Staff และ Administrator
+> 
+> **Final Status:** Approved after state sync and public comment visibility alignment.
+
+---
+
+### My review comment for partner's PR #65 (Staff Operations & Ticket Detail Lifecycle):
+> **Review Verdict:** Request changes
+> 
+> **Key Feedback:**
+> 1. **Status Matrix Transitions:** บังคับใช้ BR-10 Status Transition Matrix บน endpoint `PATCH /api/staff/tickets/:id/status` โดยไม่อนุญาตการข้ามขั้น (เช่น `NEW` -> `CLOSED`)
+> 2. **IT Priority Independence:** แยกการอัปเดต `itPriority` ไม่ให้กระทบกับ `requestedPriority` เดิมของ Requester
+> 
+> **Final Status:** Approved after transition matrix enforcement and priority independence verification.
+
+---
+
+### My review comment for partner's PR #66 (Admin User Management CRUD & Safety Safeguards):
+> **Review Verdict:** Request changes
+> 
+> **Key Feedback:**
+> 1. **Admin Self-Deactivation Protection (BR-14):** ป้องกันไม่ให้ Admin ยกเลิกเปิดใช้งานบัญชีตนเอง (`isActive=false`) โดยส่ง `400 Bad Request`
+> 2. **Last Administrator Protection (BR-15):** ป้องกันการ de-activate หรือเปลี่ยนบทบาทของ Admin คนสุดท้ายในระบบ
+> 
+> **Final Status:** Approved after BR-14 and BR-15 safety safeguards implementation.
+
+---
+
+### My review comment for partner's PR #67 (Client Authentication, Login & Mandatory Password Change UI):
+> **Review Verdict:** Request changes
+> 
+> **Key Feedback:**
+> 1. **Mandatory Password Change Gate:** ปรับแต่งหน้าจอ `ChangePassword` ให้บล็อกการสลับ tab หรือเข้าใช้งานส่วนอื่นเมื่อ `mustChangePassword=true`
+> 2. **Password Complexity Checklist UI:** แสดง checklist กฎรหัสผ่าน 4 ข้อแบบ dynamic realtime
+> 
+> **Final Status:** Approved after mandatory gate and dynamic complexity checklist verification.
+
+---
+
+### My review comment for partner's PR #68 (Visual Style, Focus Rings & Mobile Responsiveness):
+> **Review Verdict:** Approved
+> 
+> **Feedback:** ปรับแต่ง Zen Green design tokens, focus ring `#0B7A46`, required red asterisks `#C5221F`, และ touch target ≥44px ได้ครบถ้วนสมบูรณ์ ตาราง Staff Queue ปรับเป็น mobile card list ได้สมบูรณ์บนหน้าจอขนาด < 768px
+
 
 
 
