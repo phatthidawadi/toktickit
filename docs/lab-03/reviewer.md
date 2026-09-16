@@ -16,6 +16,7 @@
 | [PR #57](https://github.com/phatthidawadi/toktickit/pull/57) | `feature/21-admin-user-management` | Approved with comments |
 | [PR #58](https://github.com/phatthidawadi/toktickit/pull/58) | `feature/22-admin-user-management-ui` | Approved with comments |
 | [PR #59](https://github.com/phatthidawadi/toktickit/pull/59) | `feature/23-e2e-integration-tests` | Approved with comments |
+| [PR #60](https://github.com/phatthidawadi/toktickit/pull/60) | `feature/24-visual-style-responsive` | Pending review |
 
 ---
 
