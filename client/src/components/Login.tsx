@@ -53,7 +53,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label htmlFor="login-email" className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
-            Email Address
+            Email Address <span className="required-asterisk text-rose-600" style={{ color: "#C5221F" }}>*</span>
           </label>
           <input
             id="login-email"
@@ -69,7 +69,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
         <div>
           <label htmlFor="login-password" className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
-            Password
+            Password <span className="required-asterisk text-rose-600" style={{ color: "#C5221F" }}>*</span>
           </label>
           <input
             id="login-password"

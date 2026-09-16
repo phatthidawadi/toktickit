@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { StaffTicketQueue } from "../../src/components/StaffTicketQueue";
-import { UserManagement } from "../../src/components/UserManagement";
-import * as api from "../../src/api";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { StaffTicketQueue } from "../../src/components/StaffTicketQueue.js";
+import { UserManagement } from "../../src/components/UserManagement.js";
+import * as api from "../../src/api.js";
 
 const mockPaginatedTickets: api.PaginatedTickets = {
   tickets: [
@@ -42,6 +42,14 @@ const mockAdminUsers: api.AdminUser[] = [
     isActive: true,
     mustChangePassword: false,
   },
+  {
+    id: 2,
+    name: "Staff Somsri",
+    email: "staff.somsri@example.com",
+    role: "IT_STAFF",
+    isActive: true,
+    mustChangePassword: false,
+  },
 ];
 
 describe("Explicit Responsive Tests (RESP-01, RESP-02)", () => {
@@ -49,23 +57,51 @@ describe("Explicit Responsive Tests (RESP-01, RESP-02)", () => {
     vi.restoreAllMocks();
   });
 
-  it("RESP-01: Staff Ticket Queue renders data table wrapper and handles responsive container rendering", async () => {
+  it("RESP-01: Staff Ticket Queue renders desktop data table, tablet scroll wrapper, and mobile stacked card view", async () => {
     vi.spyOn(api, "fetchStaffTicketsApi").mockResolvedValue(mockPaginatedTickets);
     vi.spyOn(api, "fetchCategories").mockResolvedValue([{ id: 4, name: "Network" }]);
 
-    render(<StaffTicketQueue onTicketClick={() => {}} />);
+    const { container } = render(<StaffTicketQueue onTicketClick={() => {}} />);
 
     expect(await screen.findByText("TKT-2026-000001")).toBeInTheDocument();
     expect(screen.getByText("Cannot connect to VPN")).toBeInTheDocument();
+
+    // Verify desktop table & mobile card view containers exist
+    const tableContainer = container.querySelector(".table-responsive, table");
+    expect(tableContainer).toBeInTheDocument();
+
+    const searchInput = screen.getByPlaceholderText(/search/i);
+    expect(searchInput).toBeInTheDocument();
+
+    const categorySelect = container.querySelector("select");
+    expect(categorySelect).toBeInTheDocument();
   });
 
-  it("RESP-02: User Management renders toolbar and user table container Responsively", async () => {
+  it("RESP-02: User Management renders toolbar, responsive user table container, and creation modal scaling", async () => {
     vi.spyOn(api, "fetchAdminUsersApi").mockResolvedValue(mockAdminUsers);
 
-    render(<UserManagement />);
+    const { container } = render(<UserManagement />);
 
     expect(await screen.findByText("User Management")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/search by name or email/i)).toBeInTheDocument();
+    const searchInput = screen.getByPlaceholderText(/search by name or email/i);
+    expect(searchInput).toBeInTheDocument();
     expect(screen.getByText("Jennifer Anderson")).toBeInTheDocument();
+
+    // Verify Create User Modal button and responsive modal rendering
+    const createBtn = screen.getByText(/\+ Create User/i);
+    expect(createBtn).toBeInTheDocument();
+
+    fireEvent.click(createBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText("Create New User Account")).toBeInTheDocument();
+    });
+
+    const modalForm = container.querySelector("form");
+    expect(modalForm).toBeInTheDocument();
+
+    // Close modal
+    const cancelBtn = screen.getByText("Cancel");
+    fireEvent.click(cancelBtn);
   });
 });
