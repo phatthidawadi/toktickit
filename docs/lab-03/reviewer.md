@@ -2108,16 +2108,16 @@ Push commit ใหม่ขึ้นกิ่ง feature/23-e2e-integration-test
 | [PR #52](https://github.com/jejaebubu/toktickit/pull/52) | `feature/lab03-issue1-specs` | Approved with comments |
 | [PR #60](https://github.com/jejaebubu/toktickit/pull/60) | `feature/lab03-issue2-migration` | Approved with comments |
 | [PR #61](https://github.com/jejaebubu/toktickit/pull/61) | `feature/lab03-issue3-auth` | Approved with comments |
-| [PR #62](https://github.com/jejaebubu/toktickit/pull/62) | `feature/lab03-issue4-rbac` | Approved |
+| [PR #62](https://github.com/jejaebubu/toktickit/pull/62) | `feature/lab03-issue4-rbac` | Approved with comments |
 | [PR #63](https://github.com/jejaebubu/toktickit/pull/63) | `feature/lab03-issue5-requester-regression` | Approved with comments |
 | [PR #64](https://github.com/jejaebubu/toktickit/pull/64) | `feature/lab03-issue6-staff-queue` | Approved with comments |
 | [PR #65](https://github.com/jejaebubu/toktickit/pull/65) | `feature/lab03-issue7-staff-operations` | Approved with comments |
-| [PR #66](https://github.com/jejaebubu/toktickit/pull/66) | `feature/lab03-issue9-admin-user-management` | Approved |
-| [PR #67](https://github.com/jejaebubu/toktickit/pull/67) | `feature/lab03-issue8-client-auth` | Approved |
+| [PR #66](https://github.com/jejaebubu/toktickit/pull/66) | `feature/lab03-issue9-admin-user-management` | Approved with comments |
+| [PR #67](https://github.com/jejaebubu/toktickit/pull/67) | `feature/lab03-issue8-client-auth` | Approved with comments |
 | [PR #68](https://github.com/jejaebubu/toktickit/pull/68) | `feature/lab03-issue10-ui-style-responsive` | Approved with comments |
-| [PR #69](https://github.com/jejaebubu/toktickit/pull/69) | `feature/lab03-issue11-e2e-testing` | Approved |
+| [PR #69](https://github.com/jejaebubu/toktickit/pull/69) | `feature/lab03-issue11-e2e-testing` | Approved with comments |
 | [PR #70](https://github.com/jejaebubu/toktickit/pull/70) | `release/lab03-post-merge-verification` | Changes requested |
-| [PR #71](https://github.com/jejaebubu/toktickit/pull/71) | `fix/lab03-revert-pr69-e2e` | Approved |
+| [PR #71](https://github.com/jejaebubu/toktickit/pull/71) | `fix/lab03-revert-pr69-e2e` | Approved with comments |
 | [PR #72](https://github.com/jejaebubu/toktickit/pull/72) | `feature/lab03-issue11-e2e-testing` | Approved with comments |
 
 ---
