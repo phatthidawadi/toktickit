@@ -77,7 +77,7 @@ describe("Zen Green Design System Style Verification Tests", () => {
     expect(headingElem.style.color).toBe("rgb(146, 64, 14)"); // #92400E
   });
 
-  it("STYLE-03: Asserts focus rings, required red asterisks (#C5221F), and min button touch targets (>= 44px)", () => {
+  it("STYLE-03: Asserts focus ring class token (focus:ring-2), required red asterisks (#C5221F), and button touch target class token (py-3.5)", () => {
     const { container } = render(<Login />);
 
     // 1. Required red asterisks (* #C5221F)
@@ -88,12 +88,12 @@ describe("Zen Green Design System Style Verification Tests", () => {
       expect(elem.style.color).toBe("rgb(197, 34, 31)"); // #C5221F
     });
 
-    // 2. Minimum button touch target height (>= 44px)
+    // 2. Minimum button touch target class token (py-3.5)
     const submitBtn = container.querySelector("#login-submit-btn") as HTMLButtonElement;
     expect(submitBtn).toBeInTheDocument();
     expect(submitBtn.className).toContain("py-3.5");
 
-    // 3. Focus rings styling on form inputs
+    // 3. Focus ring class token on form inputs
     const emailInput = container.querySelector("#login-email") as HTMLInputElement;
     expect(emailInput).toBeInTheDocument();
     expect(emailInput.className).toContain("focus:ring-2");

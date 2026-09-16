@@ -989,6 +989,69 @@ Push commit ใหม่ขึ้นกิ่ง `feature/23-e2e-integration-tes
 > 
 > **Approved and Merged PR #59** เข้าสู่ `main` เรียบร้อยแล้ว ขอบคุณมากค่ะ!
 
+---
+
+### Reviewer comment I received (PR #60):
+> ## Review — PR #60 (Style/Responsive)
+> 
+> Design tokens กับ tests (`STYLE-01/02/03`, `RESP-01/02`) ทำมาดีค่ะ และตรงกับ AC-20 — badge borders, focus ring `#0B7A46`, asterisk `#C5221F` และ touch target 44px
+> 
+> แต่เจอ P1 ใน `App.tsx`:
+> 
+> ### P1 — Login bypass ผ่าน dev requester (BR-01 พัง)
+> 
+> ใน `AuthGate` ตอนนี้มี logic แบบนี้:
+> 
+> ```tsx
+> if (!user) {
+>   if (selectedRequester) return <MainContent />;   // เข้าแอปได้โดยไม่ login
+>   return (<><Login /><RequesterSelectorScreen /></>);
+> }
+> ```
+> 
+> ทำให้:
+> - มี stored dev requester ใน `localStorage` → เข้า `MainContent` ได้โดยไม่ต้อง login
+> - user ใหม่ → `RequesterSelectorScreen` (overlay เต็มจอ) ทับหน้า Login → เลือก dev requester แล้วเข้าแอปได้โดยไม่ต้อง login
+> 
+> ขอให้แก้ดังนี้:
+> 1. `if (!user) return <Login .../>` ตรง ๆ
+> 2. ลบ `RequesterSelectorScreen` ออกจากทั้ง `AuthGate` และ `MainContent` เพราะ `RequesterContext` จะ sync user ให้หลัง login อยู่แล้ว
+> 3. เคลม E2E `21/21` ให้ re-run และยืนยันอีกครั้งหลังแก้ เพราะ overlay นี้อาจ block `#login-email` fill ใน fresh context ได้
+> 
+> การลบ dev requester นี้เป็นสิ่งที่ sheet ข้อ 5.2/8.2 บังคับด้วยค่ะ
+> 
+> ### P2 — Scope
+> การเพิ่ม `<PublicComments/>` ใน `TicketDetailView.tsx` เป็น functional change ควรแยก PR หรือระบุไว้ใน description ค่ะ แต่ behavior ตอนนี้ถูกต้องดีอยู่
+> 
+> ### P3 — STYLE-03
+> ที่อ้างว่า verify `≥44px` / focus-ring จริง ๆ test assert แค่ `className` ค่ะ รบกวนปรับ wording ใน test ให้ตรงกับสิ่งที่ตรวจจริง (class token)
+> 
+> **Decision: Not Yet** — รบกวนแก้ P1 (เป็นทั้ง security และ sheet-requirement breaker) แล้ว re-run ทั้ง vitest + E2E จริง พร้อมยืนยันจำนวน test ที่ผ่านอีกครั้งค่ะ
+
+---
+
+### Author response & changes (PR #60 — Round 1):
+"เราแก้ไขตาม feedback ใน PR #60 เรียบร้อยแล้วค่ะ:
+
+1. **P1 — ลบ Login Bypass & RequesterSelectorScreen Overlay ออกจาก App.tsx**:
+   - ปรับแก้ไข `AuthGate` ใน `App.tsx` ให้คืนค่า `<Login onLoginSuccess={() => refreshUser?.()} />` โดยตรงเมื่อยังไม่ได้เข้าสู่ระบบ (`!user`)
+   - ลบ `RequesterSelectorScreen` ออกจากทั้ง `AuthGate` และ `MainContent` เพื่อป้องกันการ bypass login ผ่าน stored dev requester และขจัด modal overlay ที่ทับหน้าจอ Login ตามข้อกำหนด
+   - ยืนยันการรัน E2E Test Suite (`npx playwright test --config e2e/playwright.config.ts`) ผ่านครบถ้วน 21/21 tests 100% (Chromium, Tablet, Mobile)
+
+2. **P2 — Clarification on PublicComments in TicketDetailView.tsx**:
+   - การเพิ่ม `<PublicComments />` ใน `TicketDetailView.tsx` ดำเนินการเพื่อรองรับ Requester Public Comment Stream ในตั๋วฝั่ง Requester ตามข้อกำหนดตั๋วฝั่ง Lab 3
+
+3. **P3 — ปรับ Wording ใน STYLE-03 Test Description**:
+   - อัปเดตข้อความใน `STYLE-03` (`UIStyle.test.tsx`) ให้ระบุสิ่งที่ตรวจสอบจริงอย่างตรงไปตรงมา: focus ring class token (`focus:ring-2`), required red asterisks (`#C5221F`), และ button touch target class token (`py-3.5`)
+
+4. **Re-verification Status**:
+   - Client Unit Tests (`npx vitest run tests/lab-03`): ผ่านครบ 8/8 test files (21/21 passed)
+   - Client Build (`npm run build`): ผ่านเรียบร้อย 0 errors
+   - Server Unit Tests (`npx vitest run --fileParallelism=false`): ผ่านครบ 18/18 test files (84/84 passed)
+   - Playwright E2E Tests (`npx playwright test --config e2e/playwright.config.ts`): ผ่านครบ 21/21 tests
+
+Push commit ใหม่ขึ้นกิ่ง `feature/24-visual-style-responsive` สำหรับ PR #60 เรียบร้อยแล้ว รบกวนช่วย re-check อีกครั้งนะคะ ขอบคุณมากค่ะ"
+
 
 
 

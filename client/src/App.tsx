@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext.js";
-import { RequesterProvider, useRequester } from "./context/RequesterContext.js";
+import { RequesterProvider } from "./context/RequesterContext.js";
 import { Header } from "./components/Header.js";
-import { RequesterSelectorScreen } from "./components/RequesterSelectorScreen.js";
 import { CreateTicketForm } from "./components/CreateTicketForm.js";
 import { MyTicketsView } from "./components/MyTicketsView.js";
 import { TicketDetailView } from "./components/TicketDetailView.js";
@@ -59,7 +58,6 @@ function MainContent() {
           setCurrentNav(nav);
         }}
       />
-      <RequesterSelectorScreen />
 
       <main className="container py-4" style={{ maxWidth: 1100 }}>
         {currentNav === "create-ticket" && (
@@ -104,15 +102,9 @@ function AuthGate() {
     authContext = useAuth();
   } catch (_e) {}
 
-  let requesterContext: any = null;
-  try {
-    requesterContext = useRequester();
-  } catch (_e) {}
-
   const user = authContext?.user || null;
   const loading = authContext?.loading ?? false;
   const refreshUser = authContext?.refreshUser;
-  const selectedRequester = requesterContext?.selectedRequester;
 
   if (loading) {
     return (
@@ -123,15 +115,7 @@ function AuthGate() {
   }
 
   if (!user) {
-    if (selectedRequester) {
-      return <MainContent />;
-    }
-    return (
-      <>
-        <Login onLoginSuccess={() => refreshUser?.()} />
-        <RequesterSelectorScreen />
-      </>
-    );
+    return <Login onLoginSuccess={() => refreshUser?.()} />;
   }
 
   if (user.mustChangePassword) {
