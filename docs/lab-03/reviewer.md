@@ -18,6 +18,7 @@
 | [PR #59](https://github.com/phatthidawadi/toktickit/pull/59) | `feature/23-e2e-integration-tests` | Approved with comments |
 | [PR #60](https://github.com/phatthidawadi/toktickit/pull/60) | `feature/24-visual-style-responsive` | Approved with comments |
 | [PR #61](https://github.com/phatthidawadi/toktickit/pull/61) | `feature/25-doc-reviewer-ai-use` | Approved with comments |
+| [PR #62](https://github.com/phatthidawadi/toktickit/pull/62) | `lab3-staging` -> `main` | Pending Re-review (Security Fix Applied) |
 
 ---
 
@@ -3254,3 +3255,63 @@ Verify: migrate reset + vitest = 71/71 ผ่าน (15 ไฟล์)  + tsc
 > ผลการทดสอบเรียบร้อยครบถ้วน PR #72 APPROVED เรียบร้อย เดี๋ยวจะทำการอนุมัติและกด Merge เข้าสู่ lab3-staging ให้ ขอบคุณมาก
 
 ---
+
+### Reviewer comment I received for Release PR #62:
+> # Re-review — PR #62 — พบ P1 ต้องแก้ก่อน merge ⛔
+>
+> ขอบคุณที่ปิด PR description และเพิ่ม partner records (#69–#72) ค่ะ — ตรวจแล้วผ่านหมดค่ะ (Issues #38–#48 มีอยู่จริงตามที่ map และ reviews ใน `jejaebubu/toktickit` ครบทุกตัว)
+>
+> แต่รอบนี้พบ **security issue ตัวจริง** ที่ยังหลุดมาถึง release head:
+>
+> ### P1 — `server/src/app.ts`
+>
+> `getRequesterIdFromReq` ยังยอมรับ `x-requester-id` header ในกรณีที่ไม่มี session
+>
+> ส่งแค่ `x-requester-id: <id>` โดยไม่ต้อง login ก็สามารถใช้งานได้บน 8 endpoints:
+>
+> * `GET/POST /api/tickets`
+> * `GET /api/tickets/:id`
+> * `POST /api/tickets/:id/attachments`
+> * `GET /api/attachments/:id`
+> * `GET /api/attachments/:id/download`
+> * `DELETE /api/attachments/:id`
+> * `GET /api/related-systems`
+>
+> ทำให้สามารถอ่าน/ปลอมเป็น/ลบข้อมูลของ user ใดก็ได้ (IDOR)
+>
+> ประเด็นนี้ละเมิด **BR-03** โดยตรง (ใน sheet ระบุว่า *“The authenticated user identity, not a requesterId supplied by the client, determines ownership of Requester operations”*)
+>
+> สาเหตุที่ยังพบปัญหานี้ เพราะ Lab 02 tests ยังส่ง header นี้อยู่ 44 จุด ใน:
+>
+> * `create-ticket`
+> * `my-tickets`
+> * `ticket-detail`
+> * `attachments.api.test.ts`
+>
+> ### รบกวนแก้ 3 จุดนี้ค่ะ
+>
+> 1. ลบ fallback `x-requester-id` ออกจาก `getRequesterIdFromReq` → ให้อ่าน identity จาก session token อย่างเดียว (แบบเดียวกับ `getUserFromReq`) และในจุดที่ตอนนี้ตอบ `400 "Missing x-requester-id header"` ให้เปลี่ยนเป็น `401 UNAUTHORIZED` พร้อม `code` ตามกฎใน sheet §6.2 ที่กำหนดให้แยกกรณี **unauthenticated (401)** กับ **forbidden (403)** ค่ะ
+> 2. แก้ Lab 02 API tests ทั้ง 4 ไฟล์ให้ login ผ่าน `/api/auth/login` (JWT session) แทนการส่ง header — แบบเดียวกับที่ทำสำเร็จในฝั่ง partner repo แล้ว (E2E Lab 02)
+> 3. Re-run server tests ทั้งหมด + E2E เพื่อยืนยันว่าไม่มี test ไหนพัง
+>
+> ยืนยันว่าประเด็นนี้เป็น **ประเด็นเดียวที่ต้องแก้** ค่ะ — นอกนั้น release ผ่านหมดค่ะ
+
+### How I responded (PR #62):
+"แก้ไขจุด Blocking P1 Security Issue ครบถ้วนทั้ง 3 จุดเรียบร้อยแล้วใน commit `f076022`:
+
+1. **`server/src/app.ts` — Security Fix (BR-03 & §6.2)**
+   - ลบ fallback `x-requester-id` header ออกจาก `getRequesterIdFromReq` สมบูรณ์ 100% โดยให้อ่าน identity จาก JWT session cookie (`toktickit_session`) อย่างเดียวแบบเดียวกับ `getUserFromReq`
+   - เปลี่ยนการตอบกลับกรณี unauthenticated บน requester endpoints ทั้งหมดจาก HTTP 400 เป็น **HTTP 401 UNAUTHORIZED** พร้อม `{ error: "Authentication required", code: "UNAUTHORIZED" }` ตามเกณฑ์ §6.2
+2. **Lab 02 API Tests Update**
+   - อัปเดตไฟล์ทดสอบ Lab 02 ทั้ง 4 ไฟล์ (`create-ticket.api.test.ts`, `my-tickets.api.test.ts`, `ticket-detail.api.test.ts`, `attachments.api.test.ts`) ให้ใช้ JWT Session Cookies (`getAuthCookie`) ในการยืนยันตัวตนแทนการส่ง `x-requester-id` header และเปลี่ยน assertion เคส unauthenticated เป็น HTTP 401 UNAUTHORIZED
+3. **Client API & Test Verification Passed**
+   - เพิ่ม `credentials: "include"` ให้กับ `fetch` ใน `client/src/api.ts` ครบทุกจุดเพื่อให้ browser ส่ง session cookie ในการยิง API
+   - ผลการทดสอบเรียบร้อยครบถ้วน:
+     - Server Vitest: 18/18 files passed (84/84 tests)
+     - Client Vitest: 10/10 files passed (24/24 tests)
+     - Playwright E2E: 21/21 passed across 3 viewports (Chromium, Mobile Safari, Tablet WebKit)
+
+รบกวน re-review สำหรับ Release PR #62 ให้ด้วยนะคะ ขอบคุณมากค่ะ"
+
+---
+
