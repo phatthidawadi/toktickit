@@ -191,7 +191,7 @@ test.describe('E2E-02: IT Staff Ticket Queue & Lifecycle Workflow E2E Journey', 
     await reqTicketRow.click({ force: true });
 
     // Hard Assertion 1: Public Comment IS visible to Requester
-    await expect(page.locator('p:has-text("Investigated Outlook connection issue")')).toBeVisible();
+    await expect(page.locator('p:has-text("Investigated Outlook connection issue")').first()).toBeVisible();
 
     // Hard Assertion 2: Internal Note container / text is NOT visible to Requester
     await expect(page.locator('#internal-notes-container')).not.toBeVisible();
