@@ -1,3 +1,4 @@
+import path from 'path';
 import { test, expect, Page } from '@playwright/test';
 
 async function resetDbViaApi(request?: any) {
@@ -93,7 +94,7 @@ test.describe('E2E-03: Admin User Management & Safety Safeguards E2E Journey', (
     await page.locator('#create-password-input').fill('Password123!');
 
     await page.screenshot({
-      path: `artifacts/lab-03/screenshots/user-management/01-create-user-modal-${projectName}.png`,
+      path: path.resolve(__dirname, `../../artifacts/lab-03/screenshots/user-management/01-create-user-modal-${projectName}.png`),
       fullPage: true,
     });
 
@@ -106,7 +107,7 @@ test.describe('E2E-03: Admin User Management & Safety Safeguards E2E Journey', (
     await expect(newUserRow).toContainText('E2E Test User');
 
     await page.screenshot({
-      path: `artifacts/lab-03/screenshots/user-management/02-user-created-table-${projectName}.png`,
+      path: path.resolve(__dirname, `../../artifacts/lab-03/screenshots/user-management/02-user-created-table-${projectName}.png`),
       fullPage: true,
     });
   });
@@ -151,7 +152,7 @@ test.describe('E2E-03: Admin User Management & Safety Safeguards E2E Journey', (
     await expect(resetSuccessMsg).toBeVisible();
 
     await page.screenshot({
-      path: `artifacts/lab-03/screenshots/user-management/03-role-edited-password-reset-${projectName}.png`,
+      path: path.resolve(__dirname, `../../artifacts/lab-03/screenshots/user-management/03-role-edited-password-reset-${projectName}.png`),
       fullPage: true,
     });
 
@@ -179,7 +180,7 @@ test.describe('E2E-03: Admin User Management & Safety Safeguards E2E Journey', (
     await expect(selfDeactError).toContainText(/prohibited from deactivating/i);
 
     await page.screenshot({
-      path: `artifacts/lab-03/screenshots/user-management/04-self-deactivation-warning-${projectName}.png`,
+      path: path.resolve(__dirname, `../../artifacts/lab-03/screenshots/user-management/04-self-deactivation-warning-${projectName}.png`),
       fullPage: true,
     });
 
@@ -200,7 +201,7 @@ test.describe('E2E-03: Admin User Management & Safety Safeguards E2E Journey', (
     await expect(lastAdminError).toContainText(/last active administrator/i);
 
     await page.screenshot({
-      path: `artifacts/lab-03/screenshots/user-management/05-last-admin-protection-warning-${projectName}.png`,
+      path: path.resolve(__dirname, `../../artifacts/lab-03/screenshots/user-management/05-last-admin-protection-warning-${projectName}.png`),
       fullPage: true,
     });
 

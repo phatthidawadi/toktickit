@@ -1,3 +1,4 @@
+import path from 'path';
 import { test, expect, Page } from '@playwright/test';
 
 async function resetDbViaApi(request?: any) {
@@ -73,7 +74,7 @@ test.describe('E2E-02: IT Staff Ticket Queue & Lifecycle Workflow E2E Journey', 
     await page.keyboard.press('Enter');
 
     await page.screenshot({
-      path: `artifacts/lab-03/screenshots/staff-queue/01-staff-queue-search-${projectName}.png`,
+      path: path.resolve(__dirname, `../../artifacts/lab-03/screenshots/staff-queue/01-staff-queue-search-${projectName}.png`),
       fullPage: true,
     });
 
@@ -97,7 +98,7 @@ test.describe('E2E-02: IT Staff Ticket Queue & Lifecycle Workflow E2E Journey', 
     await expect(assignedBadge).toBeVisible();
 
     await page.screenshot({
-      path: `artifacts/lab-03/screenshots/staff-ticket-detail/01-staff-ticket-claimed-${projectName}.png`,
+      path: path.resolve(__dirname, `../../artifacts/lab-03/screenshots/staff-ticket-detail/01-staff-ticket-claimed-${projectName}.png`),
       fullPage: true,
     });
   });
@@ -163,7 +164,7 @@ test.describe('E2E-02: IT Staff Ticket Queue & Lifecycle Workflow E2E Journey', 
     await expect(internalNote).toBeVisible();
 
     await page.screenshot({
-      path: `artifacts/lab-03/screenshots/staff-ticket-detail/02-resolved-comment-notes-${projectName}.png`,
+      path: path.resolve(__dirname, `../../artifacts/lab-03/screenshots/staff-ticket-detail/02-resolved-comment-notes-${projectName}.png`),
       fullPage: true,
     });
 
@@ -202,7 +203,7 @@ test.describe('E2E-02: IT Staff Ticket Queue & Lifecycle Workflow E2E Journey', 
     await expect(page.locator('text="Re-synced Exchange AD token"')).not.toBeVisible();
 
     await page.screenshot({
-      path: `artifacts/lab-03/screenshots/staff-ticket-detail/03-requester-privacy-view-${projectName}.png`,
+      path: path.resolve(__dirname, `../../artifacts/lab-03/screenshots/staff-ticket-detail/03-requester-privacy-view-${projectName}.png`),
       fullPage: true,
     });
   });
