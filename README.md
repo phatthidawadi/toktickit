@@ -161,38 +161,4 @@ npm run build
 # Run from repository root
 npx playwright test --config e2e/playwright.config.ts
 # Executes 21 E2E tests across Desktop, Tablet, and Mobile viewports (100% Pass)
-```
-
----
-
-## Project Structure & Documentation Index
-
-```text
-toktickit/
-├── docs/
-│   ├── lab-01/                   # Lab 1 Specification & Test Notes
-│   ├── lab-02/                   # Lab 2 Specification, API Spec, Tests & Reviewer Record
-│   └── lab-03/                   # Lab 3 Core Engineering Contracts
-│       ├── specification.md      # Lab 3 Functional Specs, Business Rules & Matrices
-│       ├── ui-spec.md            # Zen Green Design Tokens & Component UI Wireframes
-│       ├── api-spec.md           # REST API Endpoint Contracts & Error Schemas
-│       ├── tests.md              # Test Strategy & AC-to-Test Traceability Matrix
-│       ├── reviewer.md           # Peer Reviewer Records (PR #51 - PR #62)
-│       └── ai-use.md             # AI Pair Programming Prompts & Reflection
-├── server/
-│   ├── prisma/                   # Prisma Schema, Migrations & Seed Script
-│   ├── src/                      # Express App, Controllers, Middleware & Auth Utils
-│   └── tests/                    # Server Unit & API Test Suites (lab-01, lab-02, lab-03)
-├── client/
-│   ├── src/                      # React Components, Context, API Fetch & CSS Tokens
-│   └── tests/                    # Client UI Component Test Suites (lab-02, lab-03)
-├── e2e/
-│   ├── lab-03/                   # Playwright E2E Specs (Authentication, Staff Flow, Admin)
-│   └── playwright.config.ts      # Playwright Multi-Viewport Configuration
-└── artifacts/
-    └── lab-03/screenshots/       # Automated E2E Screenshot Evidence
-        ├── authentication/       # Login, Password Change, Authenticated Shell, Logout
-        ├── staff-queue/          # Staff Ticket Queue Data & Search Screenshots
-        ├── staff-ticket-detail/  # Claimed Operations, Comments/Notes & Requester View
-        └── user-management/      # User Table, Create Modal, Password Reset, Safety Warnings
-```
+```
