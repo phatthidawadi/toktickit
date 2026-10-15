@@ -10,6 +10,7 @@ import {
 import { useRequester } from "../context/RequesterContext.js";
 import { useAuth } from "../context/AuthContext.js";
 import { PublicComments } from "./PublicComments.js";
+import { ActionsTakenSection } from "./ActionsTakenSection.js";
 
 interface TicketDetailViewProps {
   ticketId: number;
@@ -659,6 +660,9 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({ ticketId, on
           </ul>
         )}
       </div>
+
+      {/* Actions Taken (Read-Only for Requester) */}
+      <ActionsTakenSection ticketId={ticketId} isReadOnly={true} />
 
       {/* Public Comments Stream */}
       <PublicComments ticketId={ticketId} />

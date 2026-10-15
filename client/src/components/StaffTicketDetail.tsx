@@ -12,6 +12,7 @@ import {
 } from "../api";
 import { PublicComments } from "./PublicComments";
 import { InternalNotes } from "./InternalNotes";
+import { ActionsTakenSection } from "./ActionsTakenSection";
 
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   NEW: ["OPEN", "IN_PROGRESS", "CANCELLED"],
@@ -36,7 +37,7 @@ export const StaffTicketDetail: React.FC<StaffTicketDetailProps> = ({ ticketId, 
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<"comments" | "notes" | "attachments">("comments");
+  const [activeTab, setActiveTab] = useState<"actions" | "comments" | "notes" | "attachments">("actions");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState<boolean>(false);
   const [removeModalAttachment, setRemoveModalAttachment] = useState<AttachmentSummary | null>(null);
@@ -366,6 +367,22 @@ export const StaffTicketDetail: React.FC<StaffTicketDetailProps> = ({ ticketId, 
       {/* Tabs Navigation */}
       <div style={{ display: "flex", borderBottom: "2px solid #E5E7EB", marginBottom: "20px" }}>
         <button
+          id="tab-actions-btn"
+          onClick={() => setActiveTab("actions")}
+          style={{
+            padding: "12px 24px",
+            fontSize: "0.875rem",
+            fontWeight: 600,
+            border: "none",
+            borderBottom: activeTab === "actions" ? "3px solid #006B3C" : "none",
+            backgroundColor: "transparent",
+            color: activeTab === "actions" ? "#006B3C" : "#6B7280",
+            cursor: "pointer",
+          }}
+        >
+          Actions Taken
+        </button>
+        <button
           id="tab-comments-btn"
           onClick={() => setActiveTab("comments")}
           style={{
@@ -416,6 +433,8 @@ export const StaffTicketDetail: React.FC<StaffTicketDetailProps> = ({ ticketId, 
       </div>
 
       {/* Tab Contents */}
+      {activeTab === "actions" && <ActionsTakenSection ticketId={ticket.id} isReadOnly={false} />}
+
       {activeTab === "comments" && <PublicComments ticketId={ticket.id} />}
 
       {activeTab === "notes" && <InternalNotes ticketId={ticket.id} />}

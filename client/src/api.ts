@@ -559,4 +559,128 @@ export async function resetAdminUserPasswordApi(
   return data;
 }
 
+// ---------------------------------------------------------------------------
+// Lab 4 — Actions Taken Interfaces and API Functions
+// ---------------------------------------------------------------------------
+export type ActionTakenStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+
+export interface ActionTaken {
+  id: number;
+  ticketId: number;
+  actionDateTime: string;
+  description: string;
+  result: string;
+  status: ActionTakenStatus;
+  followUpRequired: boolean;
+  followUpNote: string | null;
+  attachmentNotes: string | null;
+  performedById: number;
+  assigneeId: number | null;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+  performedBy?: {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+  };
+  assignee?: {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+  } | null;
+}
+
+export interface CreateActionTakenInput {
+  description: string;
+  result: string;
+  status?: ActionTakenStatus;
+  followUpRequired?: boolean;
+  followUpNote?: string | null;
+  attachmentNotes?: string | null;
+  assigneeId?: number | null;
+}
+
+export interface UpdateActionTakenInput {
+  description?: string;
+  result?: string;
+  status?: ActionTakenStatus;
+  followUpRequired?: boolean;
+  followUpNote?: string | null;
+  attachmentNotes?: string | null;
+  assigneeId?: number | null;
+  version?: number;
+}
+
+export async function fetchActionsTakenApi(ticketId: number): Promise<ActionTaken[]> {
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/actions`, {
+    method: "GET",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ error: "Failed to fetch actions taken" }));
+    const errorObj: any = new Error(errorData.error || "Failed to fetch actions taken");
+    errorObj.status = res.status;
+    errorObj.code = errorData.code;
+    throw errorObj;
+  }
+  return res.json();
+}
+
+export async function createActionTakenApi(
+  ticketId: number,
+  input: CreateActionTakenInput
+): Promise<ActionTaken> {
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/actions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(input),
+  });
+
+  const data = await res.json().catch(() => ({ error: "Failed to create action taken" }));
+  if (!res.ok) {
+    const errorObj: any = new Error(data.error || "Failed to create action taken");
+    errorObj.status = res.status;
+    errorObj.code = data.code;
+    throw errorObj;
+  }
+  return data;
+}
+
+export async function updateActionTakenApi(
+  actionId: number,
+  input: UpdateActionTakenInput
+): Promise<ActionTaken> {
+  const res = await fetch(`${API_URL}/api/actions/${actionId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(input),
+  });
+
+  const data = await res.json().catch(() => ({ error: "Failed to update action taken" }));
+  if (!res.ok) {
+    const errorObj: any = new Error(data.error || "Failed to update action taken");
+    errorObj.status = res.status;
+    errorObj.code = data.code;
+    throw errorObj;
+  }
+  return data;
+}
+
+export async function fetchStaffAssigneesApi(): Promise<Array<{ id: number; name: string; email: string; role: string }>> {
+  const res = await fetch(`${API_URL}/api/staff/assignees`, {
+    method: "GET",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    return [];
+  }
+  return res.json();
+}
+
+
 

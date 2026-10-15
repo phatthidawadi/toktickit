@@ -1751,6 +1751,28 @@ app.post(
   }
 );
 
+// GET /api/staff/assignees — List active staff and administrators for action assignment
+app.get(
+  "/api/staff/assignees",
+  authenticateSession,
+  requireRole(["IT_STAFF", "ADMINISTRATOR"]),
+  async (req: Request, res: Response) => {
+    try {
+      const staffMembers = await getPrisma().user.findMany({
+        where: {
+          isActive: true,
+          role: { in: ["IT_STAFF", "ADMINISTRATOR"] },
+        },
+        select: { id: true, name: true, email: true, role: true },
+        orderBy: { name: "asc" },
+      });
+      return res.status(200).json(staffMembers);
+    } catch (error) {
+      return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+    }
+  }
+);
+
 // GET /api/tickets/:id/actions — List Actions Taken for Ticket
 app.get(
   "/api/tickets/:id/actions",
