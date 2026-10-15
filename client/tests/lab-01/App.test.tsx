@@ -24,38 +24,42 @@ describe("App", () => {
     expect(screen.getByText(/TokTickIT/i)).toBeInTheDocument();
   });
 
-  it("shows Online and the seeded categories on success", async () => {
-    const user = userEvent.setup();
-    const mockCategories = [
-      { id: 1, name: "Account and Access" },
-      { id: 2, name: "Hardware" },
-    ];
-    vi.spyOn(api, "checkSystem").mockResolvedValueOnce({
-      online: true,
-      categories: mockCategories,
+  it("shows Sign In heading when unauthenticated", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation((url) => {
+      if (typeof url === "string" && url.includes("/api/auth/me")) {
+        return Promise.resolve({
+          ok: false,
+          status: 401,
+          json: () => Promise.resolve({ message: "Unauthenticated" }),
+        } as Response);
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve([]),
+      } as Response);
     });
 
     render(<App />);
-    const button = screen.getByRole("button", { name: /check system/i });
-    await user.click(button);
-
-    // Assert online badge and categories
-    expect(await screen.findByText(/online/i)).toBeInTheDocument();
-    expect((await screen.findAllByText("Account and Access")).length).toBeGreaterThan(0);
-    expect((await screen.findAllByText("Hardware")).length).toBeGreaterThan(0);
+    expect(await screen.findByText(/Sign In to TokTickIT/i)).toBeInTheDocument();
   });
 
-  it("shows an Offline error message when the API is unavailable", async () => {
-    const user = userEvent.setup();
-    vi.spyOn(api, "checkSystem").mockRejectedValueOnce(new Error("Offline"));
+  it("shows portal content when authenticated user session exists", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation((url) => {
+      if (typeof url === "string" && url.includes("/api/auth/me")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ id: 1, name: "Jennifer Anderson", email: "jennifer.a@example.com", role: "REQUESTER" }),
+        } as Response);
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve([]),
+      } as Response);
+    });
 
     render(<App />);
-    const button = screen.getByRole("button", { name: /check system/i });
-    await user.click(button);
-
-    // Assert offline message
-    expect(await screen.findByText(/offline:/i)).toBeInTheDocument();
-    expect(screen.getByText(/api is currently unavailable/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Jennifer Anderson/i)).toBeInTheDocument();
   });
 });
 

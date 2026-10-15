@@ -9,17 +9,13 @@ describe("RequesterSelectorScreen UI Component", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders Development Requester Selection modal when no requester selected", async () => {
-    const mockRequesters = [
-      { id: 1, name: "Jennifer Anderson", email: "jennifer.a@example.com", department: "Human Resources", isActive: true },
-      { id: 2, name: "Michael Brown", email: "michael.b@example.com", department: "Finance", isActive: true },
-    ];
-
+  it("renders Login screen when no authenticated session exists in Lab 3", async () => {
     vi.spyOn(globalThis, "fetch").mockImplementation((url) => {
-      if (typeof url === "string" && url.includes("/api/requesters")) {
+      if (typeof url === "string" && url.includes("/api/auth/me")) {
         return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve(mockRequesters),
+          ok: false,
+          status: 401,
+          json: () => Promise.resolve({ message: "Unauthenticated" }),
         } as Response);
       }
       return Promise.resolve({
@@ -31,10 +27,9 @@ describe("RequesterSelectorScreen UI Component", () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByText("Select Development Requester")).toBeDefined();
+      expect(screen.getByText("Sign In to TokTickIT")).toBeDefined();
     });
 
-    expect(screen.getByText(/Choose a development requester/i)).toBeDefined();
-    expect(screen.getByText(/Authentication coming in Lab 3/i)).toBeDefined();
+    expect(screen.getByText(/Enter your credentials to access your portal/i)).toBeDefined();
   });
 });

@@ -44,6 +44,14 @@ describe("End-to-End User Journey (E2E Verification)", () => {
       const urlString = typeof url === "string" ? url : (url as Request).url;
       const method = init?.method || "GET";
 
+      if (urlString.includes("/api/auth/me")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ id: 1, name: "Jennifer Anderson", email: "jennifer.a@example.com", role: "REQUESTER", mustChangePassword: false }),
+        } as Response);
+      }
+
       if (urlString.includes("/api/requesters")) {
         return Promise.resolve({
           ok: true,
@@ -108,15 +116,7 @@ describe("End-to-End User Journey (E2E Verification)", () => {
 
     render(<App />);
 
-    // Step 1: Select Requester
-    await waitFor(() => {
-      expect(screen.getByText("Select Development Requester")).toBeDefined();
-    });
-
-    const continueButton = await screen.findByText("Continue");
-    fireEvent.click(continueButton);
-
-    // Step 2: Verify Selected Requester appears in Header
+    // Step 1: Verify Authenticated Requester appears in Header
     await waitFor(() => {
       expect(screen.getAllByText("Jennifer Anderson").length).toBeGreaterThan(0);
     });
