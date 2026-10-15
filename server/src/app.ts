@@ -1652,6 +1652,270 @@ app.post("/api/admin/users/:id/reset-password", authenticateSession, requireRole
   }
 });
 
+// ---------------------------------------------------------------------------
+// Lab 4 — Actions Taken REST Endpoints (ACT-API-01 to ACT-API-09)
+// ---------------------------------------------------------------------------
+
+// POST /api/tickets/:id/actions — Create Action Taken
+app.post(
+  "/api/tickets/:id/actions",
+  authenticateSession,
+  requireRole(["IT_STAFF", "ADMINISTRATOR"]),
+  async (req: Request, res: Response) => {
+    try {
+      const ticketId = parseInt(req.params.id, 10);
+      if (isNaN(ticketId)) {
+        return res.status(400).json({ error: "Invalid ticket ID", code: "INVALID_ID" });
+      }
+
+      const ticket = await getPrisma().ticket.findUnique({ where: { id: ticketId } });
+      if (!ticket) {
+        return res.status(404).json({ error: "Ticket not found", code: "TICKET_NOT_FOUND" });
+      }
+
+      const {
+        description,
+        result,
+        status = "COMPLETED",
+        followUpRequired = false,
+        followUpNote,
+        attachmentNotes,
+        assigneeId,
+      } = req.body;
+
+      // Validation
+      if (!description || typeof description !== "string" || !description.trim()) {
+        return res.status(400).json({ error: "Description is required", code: "VALIDATION_ERROR" });
+      }
+      if (!result || typeof result !== "string" || !result.trim()) {
+        return res.status(400).json({ error: "Result is required", code: "VALIDATION_ERROR" });
+      }
+
+      const validStatuses = ["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ error: "Invalid status value", code: "VALIDATION_ERROR" });
+      }
+
+      const isFollowUp = Boolean(followUpRequired);
+      if (isFollowUp) {
+        if (!followUpNote || typeof followUpNote !== "string" || !followUpNote.trim()) {
+          return res.status(400).json({
+            error: "Follow-up note is required when follow-up is requested",
+            code: "VALIDATION_ERROR",
+          });
+        }
+      }
+
+      let parsedAssigneeId: number | null = null;
+      if (assigneeId !== undefined && assigneeId !== null && assigneeId !== "") {
+        parsedAssigneeId = parseInt(assigneeId, 10);
+        if (isNaN(parsedAssigneeId)) {
+          return res.status(400).json({ error: "Invalid assignee ID", code: "VALIDATION_ERROR" });
+        }
+        const assignedUser = await getPrisma().user.findUnique({ where: { id: parsedAssigneeId } });
+        if (!assignedUser || !assignedUser.isActive || (assignedUser.role !== "IT_STAFF" && assignedUser.role !== "ADMINISTRATOR")) {
+          return res.status(400).json({
+            error: "Assigned user is inactive or not IT staff",
+            code: "INVALID_ASSIGNEE",
+          });
+        }
+      }
+
+      const action = await getPrisma().actionTaken.create({
+        data: {
+          ticketId,
+          description: description.trim(),
+          result: result.trim(),
+          status: status as any,
+          followUpRequired: isFollowUp,
+          followUpNote: isFollowUp ? followUpNote.trim() : null,
+          attachmentNotes: attachmentNotes && typeof attachmentNotes === "string" ? attachmentNotes.trim() : null,
+          performedById: (req as any).user.userId,
+          assigneeId: parsedAssigneeId,
+          version: 1,
+        },
+        include: {
+          performedBy: {
+            select: { id: true, name: true, email: true, role: true },
+          },
+          assignee: {
+            select: { id: true, name: true, email: true, role: true },
+          },
+        },
+      });
+
+      return res.status(201).json(action);
+    } catch (error) {
+      return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+    }
+  }
+);
+
+// GET /api/tickets/:id/actions — List Actions Taken for Ticket
+app.get(
+  "/api/tickets/:id/actions",
+  authenticateSession,
+  async (req: Request, res: Response) => {
+    try {
+      const ticketId = parseInt(req.params.id, 10);
+      if (isNaN(ticketId)) {
+        return res.status(400).json({ error: "Invalid ticket ID", code: "INVALID_ID" });
+      }
+
+      const ticket = await getPrisma().ticket.findUnique({ where: { id: ticketId } });
+      if (!ticket) {
+        return res.status(404).json({ error: "Ticket not found", code: "TICKET_NOT_FOUND" });
+      }
+
+      const currentUser = (req as any).user;
+      if (currentUser.role === "REQUESTER" && ticket.requesterId !== currentUser.userId) {
+        return res.status(403).json({
+          error: "You do not have permission to view actions on this ticket",
+          code: "FORBIDDEN",
+        });
+      }
+
+      const actions = await getPrisma().actionTaken.findMany({
+        where: { ticketId },
+        orderBy: [{ actionDateTime: "asc" }, { id: "asc" }],
+        include: {
+          performedBy: {
+            select: { id: true, name: true, email: true, role: true },
+          },
+          assignee: {
+            select: { id: true, name: true, email: true, role: true },
+          },
+        },
+      });
+
+      return res.status(200).json(actions);
+    } catch (error) {
+      return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+    }
+  }
+);
+
+// PATCH /api/actions/:id — Update Action Taken (Optimistic Concurrency Control)
+app.patch(
+  "/api/actions/:id",
+  authenticateSession,
+  requireRole(["IT_STAFF", "ADMINISTRATOR"]),
+  async (req: Request, res: Response) => {
+    try {
+      const actionId = parseInt(req.params.id, 10);
+      if (isNaN(actionId)) {
+        return res.status(400).json({ error: "Invalid action ID", code: "INVALID_ID" });
+      }
+
+      const existingAction = await getPrisma().actionTaken.findUnique({ where: { id: actionId } });
+      if (!existingAction) {
+        return res.status(404).json({ error: "Action Taken record not found", code: "ACTION_NOT_FOUND" });
+      }
+
+      const {
+        description,
+        result,
+        status,
+        followUpRequired,
+        followUpNote,
+        attachmentNotes,
+        assigneeId,
+        version,
+      } = req.body;
+
+      // Optimistic concurrency check
+      if (version !== undefined && version !== existingAction.version) {
+        return res.status(409).json({
+          error: "The action item was updated by another user. Please refresh and review.",
+          code: "CONCURRENCY_CONFLICT",
+        });
+      }
+
+      const updateData: any = {
+        version: { increment: 1 },
+      };
+
+      if (description !== undefined) {
+        if (typeof description !== "string" || !description.trim()) {
+          return res.status(400).json({ error: "Description cannot be empty", code: "VALIDATION_ERROR" });
+        }
+        updateData.description = description.trim();
+      }
+
+      if (result !== undefined) {
+        if (typeof result !== "string" || !result.trim()) {
+          return res.status(400).json({ error: "Result cannot be empty", code: "VALIDATION_ERROR" });
+        }
+        updateData.result = result.trim();
+      }
+
+      if (status !== undefined) {
+        const validStatuses = ["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
+        if (!validStatuses.includes(status)) {
+          return res.status(400).json({ error: "Invalid status value", code: "VALIDATION_ERROR" });
+        }
+        updateData.status = status;
+      }
+
+      const effectiveFollowUp = followUpRequired !== undefined ? Boolean(followUpRequired) : existingAction.followUpRequired;
+      updateData.followUpRequired = effectiveFollowUp;
+
+      if (effectiveFollowUp) {
+        const noteToCheck = followUpNote !== undefined ? followUpNote : existingAction.followUpNote;
+        if (!noteToCheck || typeof noteToCheck !== "string" || !noteToCheck.trim()) {
+          return res.status(400).json({
+            error: "Follow-up note is required when follow-up is requested",
+            code: "VALIDATION_ERROR",
+          });
+        }
+        updateData.followUpNote = noteToCheck.trim();
+      } else {
+        updateData.followUpNote = null;
+      }
+
+      if (attachmentNotes !== undefined) {
+        updateData.attachmentNotes = attachmentNotes ? String(attachmentNotes).trim() : null;
+      }
+
+      if (assigneeId !== undefined) {
+        if (assigneeId === null || assigneeId === "") {
+          updateData.assigneeId = null;
+        } else {
+          const parsedAssigneeId = parseInt(assigneeId, 10);
+          if (isNaN(parsedAssigneeId)) {
+            return res.status(400).json({ error: "Invalid assignee ID", code: "VALIDATION_ERROR" });
+          }
+          const assignedUser = await getPrisma().user.findUnique({ where: { id: parsedAssigneeId } });
+          if (!assignedUser || !assignedUser.isActive || (assignedUser.role !== "IT_STAFF" && assignedUser.role !== "ADMINISTRATOR")) {
+            return res.status(400).json({
+              error: "Assigned user is inactive or not IT staff",
+              code: "INVALID_ASSIGNEE",
+            });
+          }
+          updateData.assigneeId = parsedAssigneeId;
+        }
+      }
+
+      const updatedAction = await getPrisma().actionTaken.update({
+        where: { id: actionId },
+        data: updateData,
+        include: {
+          performedBy: {
+            select: { id: true, name: true, email: true, role: true },
+          },
+          assignee: {
+            select: { id: true, name: true, email: true, role: true },
+          },
+        },
+      });
+
+      return res.status(200).json(updatedAction);
+    } catch (error) {
+      return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+    }
+  }
+);
+
 export default app;
 
 
