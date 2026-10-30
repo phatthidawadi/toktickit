@@ -40,6 +40,17 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({ ticketId, on
   const [showCancelModal, setShowCancelModal] = useState<boolean>(false);
   const [isCancelling, setIsCancelling] = useState<boolean>(false);
 
+  // Close Cancel Confirmation Modal on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && showCancelModal && !isCancelling) {
+        setShowCancelModal(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showCancelModal, isCancelling]);
+
   // Attachment Management States
   const [uploading, setUploading] = useState<boolean>(false);
   const [uploadError, setUploadError] = useState<string | null>(null);

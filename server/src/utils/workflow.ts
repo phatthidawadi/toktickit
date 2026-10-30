@@ -1,10 +1,10 @@
 export const PERMITTED_STATUS_TRANSITIONS: Record<string, { to: string[]; adminOnlyTo?: string[] }> = {
   NEW: { to: ["OPEN", "IN_PROGRESS", "CANCELLED"] },
-  OPEN: { to: ["IN_PROGRESS", "WAITING_FOR_REQUESTER", "RESOLVED", "CANCELLED"] },
+  OPEN: { to: ["IN_PROGRESS", "WAITING_FOR_REQUESTER", "CANCELLED"] },
   IN_PROGRESS: { to: ["WAITING_FOR_REQUESTER", "RESOLVED", "CANCELLED"] },
   WAITING_FOR_REQUESTER: { to: ["IN_PROGRESS", "RESOLVED", "CANCELLED"] },
   RESOLVED: { to: ["CLOSED", "REOPENED"] },
-  REOPENED: { to: ["IN_PROGRESS", "RESOLVED", "CANCELLED"] },
+  REOPENED: { to: ["IN_PROGRESS"] },
   CLOSED: { to: [], adminOnlyTo: ["REOPENED"] },
   CANCELLED: { to: [] },
 };
