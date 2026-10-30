@@ -62,13 +62,7 @@ export const Header: React.FC<HeaderProps> = ({ currentNav, onNavigate }) => {
         <div className="site-header-brand-nav">
           <div
             className="site-brand"
-            onClick={() => {
-              if (role === "IT_STAFF" || role === "ADMINISTRATOR") {
-                onNavigate("ticket-queue");
-              } else {
-                onNavigate("my-tickets");
-              }
-            }}
+            onClick={() => onNavigate("dashboard")}
           >
             <span>TokTickIT</span>
           </div>
@@ -76,6 +70,13 @@ export const Header: React.FC<HeaderProps> = ({ currentNav, onNavigate }) => {
           <nav className="site-nav">
             {(!role || role === "REQUESTER") && (
               <>
+                <button
+                  id="nav-dashboard"
+                  onClick={() => onNavigate("dashboard")}
+                  className={`nav-btn ${currentNav === "dashboard" ? "active" : ""}`}
+                >
+                  Dashboard
+                </button>
                 <button
                   onClick={() => onNavigate("my-tickets")}
                   className={`nav-btn ${currentNav === "my-tickets" ? "active" : ""}`}
@@ -92,16 +93,32 @@ export const Header: React.FC<HeaderProps> = ({ currentNav, onNavigate }) => {
             )}
 
             {role === "IT_STAFF" && (
-              <button
-                onClick={() => onNavigate("ticket-queue")}
-                className={`nav-btn ${currentNav === "ticket-queue" ? "active" : ""}`}
-              >
-                Ticket Queue
-              </button>
+              <>
+                <button
+                  id="nav-dashboard"
+                  onClick={() => onNavigate("dashboard")}
+                  className={`nav-btn ${currentNav === "dashboard" ? "active" : ""}`}
+                >
+                  Dashboard
+                </button>
+                <button
+                  onClick={() => onNavigate("ticket-queue")}
+                  className={`nav-btn ${currentNav === "ticket-queue" ? "active" : ""}`}
+                >
+                  Ticket Queue
+                </button>
+              </>
             )}
 
             {role === "ADMINISTRATOR" && (
               <>
+                <button
+                  id="nav-dashboard"
+                  onClick={() => onNavigate("dashboard")}
+                  className={`nav-btn ${currentNav === "dashboard" ? "active" : ""}`}
+                >
+                  Dashboard
+                </button>
                 <button
                   onClick={() => onNavigate("ticket-queue")}
                   className={`nav-btn ${currentNav === "ticket-queue" ? "active" : ""}`}

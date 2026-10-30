@@ -16,12 +16,12 @@ import { ActionsTakenSection } from "./ActionsTakenSection";
 
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   NEW: ["OPEN", "IN_PROGRESS", "CANCELLED"],
-  OPEN: ["IN_PROGRESS", "WAITING_FOR_REQUESTER", "RESOLVED", "CANCELLED"],
+  OPEN: ["IN_PROGRESS", "WAITING_FOR_REQUESTER", "CANCELLED"],
   IN_PROGRESS: ["WAITING_FOR_REQUESTER", "RESOLVED", "CANCELLED"],
   WAITING_FOR_REQUESTER: ["IN_PROGRESS", "RESOLVED", "CANCELLED"],
   RESOLVED: ["CLOSED", "REOPENED"],
-  REOPENED: ["IN_PROGRESS", "RESOLVED", "CANCELLED"],
   CLOSED: ["REOPENED"],
+  REOPENED: ["IN_PROGRESS"],
   CANCELLED: [],
 };
 
@@ -90,11 +90,16 @@ export const StaffTicketDetail: React.FC<StaffTicketDetailProps> = ({ ticketId, 
     setActionError(null);
     setActionSuccess(null);
     try {
-      const updated = await updateTicketStatusApi(ticketId, newStatus);
+      const updated = await updateTicketStatusApi(ticketId, newStatus, ticket?.version);
       setTicket(updated);
       setActionSuccess(`Ticket status updated to ${newStatus}.`);
     } catch (err: any) {
-      setActionError(err.message || "Failed to update status.");
+      if (err.status === 409 || err.code === "CONCURRENCY_CONFLICT") {
+        setActionError("Ticket status was updated by another user. Reloading latest state...");
+        await loadTicket();
+      } else {
+        setActionError(err.message || "Failed to update status.");
+      }
     }
   };
 
@@ -197,6 +202,31 @@ export const StaffTicketDetail: React.FC<StaffTicketDetailProps> = ({ ticketId, 
         </div>
       )}
 
+      {/* Advisory Resolution Banner */}
+      {ticket.isRequesterResolved && (
+        <div
+          id="advisory-resolution-banner"
+          style={{
+            backgroundColor: "#FEF3C7",
+            border: "1px solid #F59E0B",
+            borderRadius: "8px",
+            padding: "12px 16px",
+            marginBottom: "16px",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            color: "#92400E",
+            fontWeight: 500,
+            fontSize: "0.875rem",
+          }}
+        >
+          <span>⚠️</span>
+          <span>
+            Requester indicated the problem appears resolved. Please verify intervention results before formally marking status as RESOLVED.
+          </span>
+        </div>
+      )}
+
       {/* Operational Controls Panel */}
       <div
         className="operational-panel"
@@ -274,22 +304,30 @@ export const StaffTicketDetail: React.FC<StaffTicketDetailProps> = ({ ticketId, 
           <select
             id="status-transition-select"
             value={currentStatus}
+            disabled={currentStatus === "CANCELLED"}
             onChange={(e) => handleStatusChange(e.target.value)}
             style={{
               padding: "6px 12px",
               borderRadius: "6px",
               border: "1px solid #D1D5DB",
               fontSize: "0.875rem",
-              backgroundColor: "#FFFFFF",
+              backgroundColor: currentStatus === "CANCELLED" ? "#E5E7EB" : "#FFFFFF",
               fontWeight: 600,
+              cursor: currentStatus === "CANCELLED" ? "not-allowed" : "pointer",
             }}
           >
-            <option value={currentStatus}>{currentStatus.replace(/_/g, " ")} (Current)</option>
-            {allowedNextStatuses.map((st: string) => (
-              <option key={st} value={st}>
-                Transition to {st.replace(/_/g, " ")}
-              </option>
-            ))}
+            {currentStatus === "CANCELLED" ? (
+              <option value="CANCELLED">Ticket is in a terminal state (Cancelled)</option>
+            ) : (
+              <>
+                <option value={currentStatus}>{currentStatus.replace(/_/g, " ")} (Current)</option>
+                {allowedNextStatuses.map((st: string) => (
+                  <option key={st} value={st}>
+                    Transition to {st.replace(/_/g, " ")}
+                  </option>
+                ))}
+              </>
+            )}
           </select>
         </div>
       </div>

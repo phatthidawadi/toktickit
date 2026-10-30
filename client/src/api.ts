@@ -51,6 +51,7 @@ export interface Ticket {
   itPriority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
   currentStatus: "NEW" | "IN_PROGRESS" | "WAITING_FOR_REQUESTER" | "RESOLVED" | "CLOSED" | "REOPENED" | "CANCELLED" | string;
   isRequesterResolved?: boolean;
+  version?: number;
   requesterId: number;
   assignedStaffId?: number | null;
   categoryId: number;
@@ -441,15 +442,58 @@ export async function updateItPriorityApi(ticketId: number, itPriority: string):
   return data;
 }
 
-export async function updateTicketStatusApi(ticketId: number, status: string): Promise<Ticket> {
+export async function updateTicketStatusApi(ticketId: number, status: string, version?: number): Promise<Ticket> {
+  const payload: any = { status };
+  if (version !== undefined) {
+    payload.version = version;
+  }
   const res = await fetch(`${API_URL}/api/staff/tickets/${ticketId}/status`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ status }),
+    body: JSON.stringify(payload),
   });
   const data = await res.json().catch(() => ({ error: "Failed to update ticket status" }));
-  if (!res.ok) throw new Error(data.error || "Failed to update ticket status");
+  if (!res.ok) {
+    const error: any = new Error(data.error || "Failed to update ticket status");
+    error.status = res.status;
+    error.code = data.code;
+    throw error;
+  }
+  return data;
+}
+
+export async function resolveAckTicketApi(ticketId: number, isRequesterResolved: boolean, version: number): Promise<Ticket> {
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/resolve-ack`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ isRequesterResolved, version }),
+  });
+  const data = await res.json().catch(() => ({ error: "Failed to acknowledge ticket resolution" }));
+  if (!res.ok) {
+    const error: any = new Error(data.error || "Failed to acknowledge ticket resolution");
+    error.status = res.status;
+    error.code = data.code;
+    throw error;
+  }
+  return data;
+}
+
+export async function cancelTicketApi(ticketId: number, version: number): Promise<Ticket> {
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/cancel`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ version }),
+  });
+  const data = await res.json().catch(() => ({ error: "Failed to cancel ticket" }));
+  if (!res.ok) {
+    const error: any = new Error(data.error || "Failed to cancel ticket");
+    error.status = res.status;
+    error.code = data.code;
+    throw error;
+  }
   return data;
 }
 
@@ -672,5 +716,62 @@ export async function fetchStaffAssigneesApi(): Promise<ActionTakenUser[]> {
   return res.json();
 }
 
+// ─── Dashboard API (Issue #30) ────────────────────────────────────────────────
 
+export interface DashboardTicketSummary {
+  id: number;
+  ticketNumber: string;
+  summary: string;
+  currentStatus: string;
+  requestedPriority?: string;
+  itPriority?: string | null;
+  updatedAt: string;
+  createdAt?: string;
+  requester?: { id: number; name: string; email: string };
+  assignedStaff?: { id: number; name: string; email: string } | null;
+}
 
+export interface RequesterDashboardData {
+  totalOpenTickets: number;
+  ticketsWaitingForRequester: number;
+  recentlyResolvedTickets: number;
+  myRecentTickets: DashboardTicketSummary[];
+}
+
+export interface StaffDashboardData {
+  unassignedTickets: number;
+  myAssignedTickets: number;
+  urgentTicketsCount: number;
+  ticketsByStatus: Record<string, number>;
+  ticketsByPriority: Record<string, number>;
+  recentQueueTickets: DashboardTicketSummary[];
+  adminUserSummary?: {
+    totalUsers: number;
+    activeUsers: number;
+    usersByRole: Record<string, number>;
+  };
+}
+
+export async function fetchRequesterDashboard(): Promise<RequesterDashboardData> {
+  const res = await fetch(`${API_URL}/api/dashboard/requester`, {
+    method: "GET",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw Object.assign(new Error(err.error || "Failed to load requester dashboard"), { status: res.status, code: err.code });
+  }
+  return res.json();
+}
+
+export async function fetchStaffDashboard(): Promise<StaffDashboardData> {
+  const res = await fetch(`${API_URL}/api/dashboard/staff`, {
+    method: "GET",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw Object.assign(new Error(err.error || "Failed to load staff dashboard"), { status: res.status, code: err.code });
+  }
+  return res.json();
+}

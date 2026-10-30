@@ -10,6 +10,8 @@
 | [PR #72](https://github.com/phatthidawadi/toktickit/pull/72) | `feature/26-doc-spec-tests` | Approved with comments |
 | [PR #73](https://github.com/phatthidawadi/toktickit/pull/73) | `feature/27-actions-taken-foundation` | Approved with comments |
 | [PR #74](https://github.com/phatthidawadi/toktickit/pull/74) | `feature/28-actions-taken-ui` | Approved with comments |
+| [PR #75](https://github.com/phatthidawadi/toktickit/pull/75) | `feature/29-ticket-workflow-and-resolution` | Approved with comments |
+| [PR #76](https://github.com/phatthidawadi/toktickit/pull/76) | `feature/30-role-based-dashboards` | Approved with comments |
 
 ---
 
@@ -193,6 +195,115 @@
 > ได้รันชุดทดสอบ Client Tests ผ่าน 5/5 tests และ Client Production Build ผ่าน 100% เรียบร้อยครับ
 
 ---
+
+### Reviewer approval verdict (PR #74):
+> ### Review — PR #74: Actions Taken UI (Issue #28)
+> 
+> ตรวจโค้ดจริงบน branch `feature/28-actions-taken-ui` รวมทั้ง commit `a4fc2d7` ล่าสุดเรียบร้อยแล้วค่ะ:
+> 
+> - ✅ **Actions Taken UI**: คอมโพเนนต์ `ActionsTakenSection` เชื่อมต่อกับหน้ารายละเอียดตั๋วทั้ง 2 ฝั่งถูกต้อง (Requester เป็น Read-only, Staff/Admin บันทึกและแก้ไขได้)
+> - ✅ **Responsive & Theme**: แสดงผลแบบ Table บนจอใหญ่ และปรับเป็น Stacked Cards บนจอมือถือ (< 768px) ป้องกันหน้าจอล้น สไตล์และสีตรงตาม Zen Green Theme
+> - ✅ **Optimistic Locking**: จัดการ 409 Conflict ได้นุ่มนวล มีปุ่ม Reload ข้อมูลล่าสุดโดยไม่ทำลายข้อมูลที่กรอกค้างไว้
+> - ✅ **Accessibility & Contract**: มีการดักปุ่ม `Escape` เพื่อปิด Modal ครบถ้วน และเอกสาร `docs/lab-04/api-spec.md` บันทึก endpoint `GET /api/staff/assignees` ครบถ้วนแล้ว
+> - ✅ **Tests**: ชุดทดสอบ `client/tests/lab-04/ActionsTaken.test.tsx` ผ่านครบ 5/5 tests
+
+---
+
+### Reviewer comment I received (PR #75):
+> ตรวจทานโค้ดจริงบน branch `feature/29-ticket-workflow-and-resolution` เทียบกับ **Lab 4 Handout (§4.5, §8.4)** และ **Specification (§5.1)** แล้ว ภาพรวมการทำ Resolution Gate, Optimistic Locking และหน้าบ้านทำมาได้ดีมาก
+>
+> แต่พบ **1 จุดที่เป็น Spec Deviation ที่ฝั่ง Backend** ที่อยากให้ปรับแก้ให้ตรงกันก่อน:
+>
+> **`server/src/utils/workflow.ts` (L3, L7) ยังมี Transition ที่ไม่อนุญาตตามสเปกค้างอยู่:**
+> - ใน `specification.md` §5.1 และใน `StaffTicketDetail.tsx`:
+>   - `OPEN` สามารถเปลี่ยนได้แค่ `["IN_PROGRESS", "WAITING_FOR_REQUESTER", "CANCELLED"]` เท่านั้น (ไม่อนุญาตให้ข้ามไป `RESOLVED` โดยตรงตามหลัก Resolution Gate)
+>   - `REOPENED` สามารถเปลี่ยนได้แค่ `["IN_PROGRESS"]` เท่านั้น
+> - แต่ใน `server/src/utils/workflow.ts` ตอนนั้นยังเป็น:
+>   - `OPEN: { to: ["IN_PROGRESS", "WAITING_FOR_REQUESTER", "RESOLVED", "CANCELLED"] }`
+>   - `REOPENED: { to: ["IN_PROGRESS", "RESOLVED", "CANCELLED"] }`
+>   ทำให้ถ้ามีการยิง API ตรง Backend จะยังยอมให้ `OPEN -> RESOLVED` ได้อยู่
+>
+> **จุดแนะนำเพิ่มเติม (Non-blocking):**
+> - ใน `TicketDetailView.tsx` สามารถเพิ่ม Escape key handler สำหรับปิด Cancel Confirmation Modal ได้
+
+### How I responded (PR #75):
+> ดำเนินการแก้ไขทั้ง 2 จุดเรียบร้อยแล้วใน commit `b4d2b57`:
+>
+> 1. **แก้ Transition Matrix ใน `server/src/utils/workflow.ts` ให้ตรงกับ specification.md §5.1:**
+>    - ปรับ `OPEN` ให้มี `to` เป็น `["IN_PROGRESS", "WAITING_FOR_REQUESTER", "CANCELLED"]` เท่านั้น โดยเอา `"RESOLVED"` ออก เพื่อบังคับให้ตั๋วต้องผ่านสถานะ `IN_PROGRESS` หรือ `WAITING_FOR_REQUESTER` ก่อนจะถึง `RESOLVED` ได้ ตามหลัก Resolution Gate
+>    - ปรับ `REOPENED` ให้มี `to` เป็น `["IN_PROGRESS"]` เท่านั้น โดยเอา `"RESOLVED"` และ `"CANCELLED"` ออก ทำให้ตั๋วที่ถูก Reopen ต้องกลับไปอยู่สถานะ `IN_PROGRESS` เสมอ
+>    - ตอนนี้ workflow.ts, StaffTicketDetail.tsx และ specification.md §5.1 สอดคล้องกัน 100% ป้องกัน `OPEN -> RESOLVED` Bypass ได้ทั้งในระดับ API และ UI
+>    - ชุดทดสอบ `ticket-workflow.api.test.ts` ผ่านครบ 10/10 tests
+>
+> 2. **เพิ่ม Escape Key Handler ใน `TicketDetailView.tsx`:**
+>    - เพิ่ม `useEffect` ดักจับ `keydown` Event บน window ตรวจสอบ `e.key === "Escape"` เมื่อ `showCancelModal` เป็น `true` และไม่อยู่ระหว่าง Cancelling เพื่อปิด Modal โดยเรียก `setShowCancelModal(false)` พร้อม Clean-up Event Listener อย่างถูกต้อง สอดคล้องกับ pattern เดียวกับ ActionsTakenSection.tsx
+
+---
+
+### Reviewer approval verdict (PR #75):
+> ### Re-review — PR #75 (Round 2) —
+>
+> ตรวจ head ล่าสุด commit `b4d2b57` เรียบร้อยแล้วค่ะ จุดที่ขอให้แก้ไขได้รับการปรับปรุงอย่างถูกต้องและรวดเร็วมาก:
+>
+> - **Resolution Gate Strictly Enforced**: ปรับปรุง `server/src/utils/workflow.ts` ให้ตัด `RESOLVED` ออกจาก `OPEN` และตัด `RESOLVED`, `CANCELLED` ออกจาก `REOPENED` ทำให้ Transition Matrix สอดคล้องกับ `specification.md` §5.1 และ `StaffTicketDetail.tsx` ครบ 100% ปิดช่องโหว่การ bypass ข้ามขั้นตอนได้อย่างสมบูรณ์
+> - **Keyboard Accessibility**: เพิ่ม `Escape` key event listener ใน `TicketDetailView.tsx` สำหรับปิด Cancel Confirmation Modal ช่วยให้การใช้งานผ่านคีย์บอร์ดสะดวกและตรงตามมาตรฐานสเปก
+> - **Test Verification**: ยืนยันผลการทดสอบ Server Integration Tests (`ticket-workflow.api.test.ts`) ผ่านครบ 10/10 tests และ Client Component Tests ผ่านครบถ้วน
+
+---
+
+
+### PR #76 — Issue #30: Role-Based Dashboards (feature/30-role-based-dashboards)
+
+### Reviewer comment I received (PR #76):
+> ตรวจทานโค้ดบนสาขา `feature/30-role-based-dashboards` (commit `31e44a7`) เทียบกับข้อกำหนด Lab 4 Handout, `specification.md` (FR-08 ถึง FR-12, BR-11 ถึง BR-13), `api-spec.md` และ `tests.md` เรียบร้อยแล้ว
+>
+> **จุดที่ต้องแก้ไข (Request Changes ⛔):**
+> 1. **การส่งต่อ Filter State จาก Dashboard ไปยัง Queue/Ticket Views (FR-11, AC-13):**
+>    - ใน `client/src/App.tsx` ฟังก์ชัน Callback ของ Dashboard ทั้งสอง (`onNavigateToTickets`, `onNavigateToQueue`) มีการประกาศ parameter `_filter` ไว้ แต่ไม่ได้ส่งต่อไปยัง Component ลูก (`StaffTicketQueue` และ `MyTicketsView`) ทำให้เมื่อผู้ใช้คลิกการ์ดตัวชี้วัด เช่น "Unassigned" หรือ "Urgent Priority" หรือ "Waiting on You" ตัวหน้า Queue/Ticket View ปลายทางไม่ได้ถูก Pre-filter ตามการ์ดที่กดจริง
+> 2. **โครงสร้าง Response ในเอกสาร `api-spec.md` ไม่ตรงกับการ Implement จริง (Spec Sync):**
+>    - ใน `docs/lab-04/api-spec.md` (§4.1 และ §4.2) ยังระบุตัวอย่าง Response ของทั้ง Requester และ Staff Dashboard ในรูปแบบที่มี wrapper ซ้อนอยู่ (`metrics: { ... }`) และใช้ชื่อฟิลด์เก่า แต่ในโค้ดจริงเป็น Flat object ที่ root (`totalOpenTickets`, `unassignedTickets`, ฯลฯ) และใช้ชื่อฟิลด์ `myRecentTickets`
+> 3. **ความสอดคล้องของนิยาม `myAssignedTickets` ในเอกสาร `api-spec.md`:**
+>    - ใน `api-spec.md` §4.2 ระบุว่า `myAssignedTickets` นับเฉพาะสถานะ `NOT IN ('CLOSED', 'CANCELLED')` แต่ในโค้ดจริงใช้ `ACTIVE_STATUSES` (ไม่รวม `RESOLVED` ด้วย) อยากให้ปรับคำอธิบายให้ระบุเงื่อนไขให้ตรงกับที่โค้ดทำงานจริง
+>
+> **คำแนะนำเพิ่มเติม (Suggestions / Non-blocking 💡):**
+> - ใน `server/src/app.ts` สำหรับ `GET /api/dashboard/staff` มีการดึง Ticket ทั้งหมดมาวนลูป group by ในหน่วยความจำ ในอนาคตหากมีตั๋วปริมาณมาก การใช้ Database Aggregation โดยตรงจะช่วยลด Memory Footprint ได้ดีขึ้น
+
+### How I responded (PR #76):
+> ดำเนินการปรับปรุงแก้ไขทั้ง 3 จุดเรียบร้อยแล้ว:
+>
+> 1. **เชื่อมต่อ Drill-Down Filtering ใน `client/src/App.tsx`, `StaffTicketQueue.tsx`, และ `MyTicketsView.tsx` (FR-11, AC-13):**
+>    - เพิ่ม state `queueFilter` และ `ticketsFilter` ใน `App.tsx` เพื่อรับ filter key จากการคลิกการ์ดบน `StaffDashboard` และ `RequesterDashboard`
+>    - ส่งต่อเป็น prop `initialFilter` ไปยัง `StaffTicketQueue` และ `MyTicketsView`
+>    - เพิ่ม helper `resolveInitialFilters` ใน `StaffTicketQueue` เพื่อ map filter (`"unassigned"`, `"my-assigned"`, `"urgent"`, `"waiting"`) ไปยัง state ตัวกรอง (`assignedStaffId`, `itPriority`, `status`) ส่งผลให้คิวถูก Pre-filter ทันทีที่เปิดหน้า และเคลียร์ filter เมื่อคลิกเปลี่ยนแท็บจาก Header
+>    - เพิ่ม helper `resolveMyTicketsFilter` ใน `MyTicketsView` เพื่อ map filter (`"waiting"`, `"resolved"`) เข้ากับ `selectedStatus` และเพิ่มตัวเลือกสถานะ (`OPEN`, `WAITING_FOR_REQUESTER`, `REOPENED`, `CANCELLED`) ใน status filter dropdown ให้ครบถ้วน
+>
+> 2. **ปรับปรุง Response Structure ใน `docs/lab-04/api-spec.md` (§4.1 และ §4.2) ให้ตรงกับ Implementation จริง:**
+>    - ปรับ JSON Response ตัวอย่างของทั้ง Requester Dashboard (`GET /api/dashboard/requester`) และ Staff Dashboard (`GET /api/dashboard/staff`) ให้เป็น Flat root object โดยนำ wrapper `metrics: {}` ออก
+>    - ปรับชื่อฟิลด์จาก `recentTickets` เป็น `myRecentTickets` พร้อมอธิบายโครงสร้างตั๋วที่คืนกลับมา
+>    - อัปเดต Zero-State behavior ให้ตรงกับผลลัพธ์จริง (คืนค่าเคาน์เตอร์ 0 ทุกตัว และ `myRecentTickets: []`)
+>
+> 3. **ปรับแก้คำอธิบายการคำนวณ `myAssignedTickets` และ `ticketsByPriority` ใน `api-spec.md` §4.2:**
+>    - ระบุชัดเจนว่านับเฉพาะ Active Workload สถานะ `IN ('NEW', 'OPEN', 'IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'REOPENED')` (ตัด RESOLVED/CLOSED/CANCELLED ออก)
+>    - ระบุเงื่อนไข `ticketsByPriority` ว่านับเฉพาะ active tickets เพื่อให้สอดคล้องกับพฤติกรรมจริงของระบบ
+>
+> 4. **การตรวจสอบและชุดทดสอบ:**
+>    - Server Integration Tests (`dashboard.api.test.ts` และชุดทดสอบทั้งหมด 21 ไฟล์): ผ่านครบ **112/112 tests**
+>    - Client Component Tests (`Dashboard.test.tsx`, `TicketWorkflow.test.tsx`, `ActionsTaken.test.tsx`): ผ่านครบ **13/13 tests**
+>    - Client Build (`npm run build`): ผ่านฉลุย (TypeScript + Vite)
+
+### Reviewer approval verdict (PR #76):
+> **คำตัดสิน: Approved with comments ✅**
+>
+> ได้รับการตรวจทานซ้ำ (Re-review) หลังจากการปรับปรุงใน commit `b24c6df` และ `e0ff16c` ครบถ้วน:
+> 1. เชื่อมต่อ Drill-Down Filtering ใน `App.tsx`, `StaffTicketQueue.tsx`, และ `MyTicketsView.tsx` ได้อย่างสมบูรณ์ รองรับการส่งต่อและรีเซ็ต filter state ตามการคลิกการ์ดตัวชี้วัด (AC-13, FR-11)
+> 2. ปรับปรุงเอกสาร `docs/lab-04/api-spec.md` (§4.1 และ §4.2) ให้มีโครงสร้าง Flat JSON Response และชื่อฟิลด์ `myRecentTickets` สอดคล้องกับ Server implementation จริง
+> 3. ปรับแก้นิยามการคำนวณ `myAssignedTickets` และ `ticketsByPriority` ให้ชัดเจนว่าประเมินเฉพาะ Active Tickets เท่านั้น
+> 4. ยืนยันผลการทดสอบ Server Integration Tests (112/112 tests), Client Component Tests (13/13 tests) และ Client Production Build ผ่านครบถ้วน 100%
+>
+> อนุมัติการรวมโค้ด (Approved & Ready to Merge) เข้าสู่สาขา `lab4-staging` เรียบร้อยครับ
+
+---
+
 
 ## Pull Requests I reviewed (authored by my partner)
 

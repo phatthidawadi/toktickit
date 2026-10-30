@@ -13,9 +13,19 @@ import { useAuth } from "../context/AuthContext.js";
 interface MyTicketsViewProps {
   onCreateClick: () => void;
   onTicketClick?: (ticketId: number) => void;
+  initialFilter?: string;
 }
 
-export const MyTicketsView: React.FC<MyTicketsViewProps> = ({ onCreateClick, onTicketClick }) => {
+// Map dashboard drill-down filter keys to MyTickets status filter
+function resolveMyTicketsFilter(filter?: string): string {
+  switch (filter) {
+    case "waiting": return "WAITING_FOR_REQUESTER";
+    case "resolved": return "RESOLVED";
+    default: return ""; // "open" shows all, filtering is applied via active statuses
+  }
+}
+
+export const MyTicketsView: React.FC<MyTicketsViewProps> = ({ onCreateClick, onTicketClick, initialFilter }) => {
   const { selectedRequester, setIsSelectorOpen } = useRequester();
   let authContext: any = null;
   try {
@@ -48,7 +58,7 @@ export const MyTicketsView: React.FC<MyTicketsViewProps> = ({ onCreateClick, onT
   const [search, setSearch] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedPriority, setSelectedPriority] = useState<string>("");
-  const [selectedStatus, setSelectedStatus] = useState<string>("");
+  const [selectedStatus, setSelectedStatus] = useState<string>(resolveMyTicketsFilter(initialFilter));
   const [selectedSort, setSelectedSort] = useState<string>("desc");
   const [page, setPage] = useState<number>(1);
 
@@ -369,9 +379,13 @@ export const MyTicketsView: React.FC<MyTicketsViewProps> = ({ onCreateClick, onT
           >
             <option value="">All Statuses</option>
             <option value="NEW">NEW</option>
+            <option value="OPEN">OPEN</option>
             <option value="IN_PROGRESS">IN_PROGRESS</option>
+            <option value="WAITING_FOR_REQUESTER">WAITING_FOR_REQUESTER</option>
             <option value="RESOLVED">RESOLVED</option>
             <option value="CLOSED">CLOSED</option>
+            <option value="REOPENED">REOPENED</option>
+            <option value="CANCELLED">CANCELLED</option>
           </select>
         </div>
 

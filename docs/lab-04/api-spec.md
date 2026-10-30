@@ -426,21 +426,19 @@ Dashboard endpoints compute summary metrics on the server from authoritative dat
 `GET /api/dashboard/requester`
 
 - **Purpose**: Supply authoritative summary counters and the 5 most recent tickets for the authenticated Requester.
-- **Authorized Roles**: `REQUESTER` only. (`IT_STAFF` or `ADMINISTRATOR` receive HTTP 403 Forbidden).
+- **Authorized Roles**: `REQUESTER` only. (`IT_STAFF` or `ADMINISTRATOR` receive HTTP 403 Forbidden `FORBIDDEN`).
 - **Query / Calculation Logic**:
   - `totalOpenTickets`: `COUNT(*)` where `requesterId == req.user.id` and `currentStatus IN ('NEW', 'OPEN', 'IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'REOPENED')`.
   - `ticketsWaitingForRequester`: `COUNT(*)` where `requesterId == req.user.id` and `currentStatus == 'WAITING_FOR_REQUESTER'`.
   - `recentlyResolvedTickets`: `COUNT(*)` where `requesterId == req.user.id`, `currentStatus == 'RESOLVED'`, and `updatedAt >= NOW() - INTERVAL '30 days'`.
   - `myRecentTickets`: Top 5 tickets owned by user sorted by `updatedAt DESC`.
-- **Response `200 OK`**:
+- **Response `200 OK`** (flat root object — no nested `metrics` wrapper):
   ```json
   {
-    "metrics": {
-      "totalOpenTickets": 2,
-      "ticketsWaitingForRequester": 1,
-      "recentlyResolvedTickets": 4
-    },
-    "recentTickets": [
+    "totalOpenTickets": 2,
+    "ticketsWaitingForRequester": 1,
+    "recentlyResolvedTickets": 4,
+    "myRecentTickets": [
       {
         "id": 101,
         "ticketNumber": "TKT-2026-000101",
@@ -461,8 +459,7 @@ Dashboard endpoints compute summary metrics on the server from authoritative dat
   }
   ```
 - **Zero-State Behavior**:
-  - If a requester has zero tickets:
-    `metrics: { totalOpenTickets: 0, ticketsWaitingForRequester: 0, recentlyResolvedTickets: 0 }`, `recentTickets: []`.
+  - If a requester has zero tickets: all counters return `0` and `myRecentTickets` is `[]`.
 
 ---
 
@@ -470,43 +467,39 @@ Dashboard endpoints compute summary metrics on the server from authoritative dat
 `GET /api/dashboard/staff`
 
 - **Purpose**: Supply operational queue metrics for IT Staff, plus user account breakdown if requested by an Administrator.
-- **Authorized Roles**: `IT_STAFF`, `ADMINISTRATOR`. (Requesters blocked with HTTP 403 Forbidden).
+- **Authorized Roles**: `IT_STAFF`, `ADMINISTRATOR`. (Requesters blocked with HTTP 403 Forbidden `FORBIDDEN`).
 - **Calculation Logic**:
   - `unassignedTickets`: `COUNT(*)` where `assignedStaffId IS NULL` and `currentStatus IN ('NEW', 'OPEN', 'IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'REOPENED')`.
-  - `myAssignedTickets`: `COUNT(*)` where `assignedStaffId == req.user.id` and `currentStatus NOT IN ('CLOSED', 'CANCELLED')`.
-  - `urgentTicketsCount`: `COUNT(*)` where `itPriority == 'URGENT'` and `currentStatus NOT IN ('CLOSED', 'CANCELLED')`.
-  - `waitingForRequesterCount`: `COUNT(*)` where `currentStatus == 'WAITING_FOR_REQUESTER'`.
-  - `ticketsByStatus`: Aggregated counts grouped by `currentStatus` for all 8 statuses.
-  - `ticketsByPriority`: Aggregated counts of open tickets grouped by `itPriority`.
-  - `recentQueueTickets`: Top 5 tickets updated across the helpdesk.
+  - `myAssignedTickets`: `COUNT(*)` where `assignedStaffId == req.user.id` and `currentStatus IN ('NEW', 'OPEN', 'IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'REOPENED')` (active workload only, excludes RESOLVED/CLOSED/CANCELLED).
+  - `urgentTicketsCount`: `COUNT(*)` where `itPriority == 'URGENT'` and `currentStatus IN ('NEW', 'OPEN', 'IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'REOPENED')`.
+  - `ticketsByStatus`: Count map keyed by all 8 `TicketStatus` values. Every status key is always present (value `0` if none).
+  - `ticketsByPriority`: Count map (`LOW`, `MEDIUM`, `HIGH`, `URGENT`) for **active tickets only** (same ACTIVE_STATUSES set). Excludes tickets with `NULL` priority.
+  - `recentQueueTickets`: Top 5 tickets sorted by `updatedAt DESC` across the entire helpdesk queue, including `requester` and `assignedStaff` nested objects.
   - `adminUserSummary`: Included **only** if `req.user.role === 'ADMINISTRATOR'`:
     - `totalUsers`: Total rows in `User`.
     - `activeUsers`: Count of users where `isActive == true`.
-    - `usersByRole`: Breakdown counts for `REQUESTER`, `IT_STAFF`, `ADMINISTRATOR`.
-- **Response `200 OK` (when invoked by `ADMINISTRATOR`)**:
+    - `usersByRole`: Count map for `REQUESTER`, `IT_STAFF`, `ADMINISTRATOR` roles.
+- **Response `200 OK`** (flat root object — no nested `metrics` wrapper, shown here for `ADMINISTRATOR`):
   ```json
   {
-    "metrics": {
-      "unassignedTickets": 5,
-      "myAssignedTickets": 3,
-      "urgentTicketsCount": 2,
-      "waitingForRequesterCount": 4,
-      "ticketsByStatus": {
-        "NEW": 4,
-        "OPEN": 3,
-        "IN_PROGRESS": 6,
-        "WAITING_FOR_REQUESTER": 4,
-        "RESOLVED": 10,
-        "CLOSED": 15,
-        "REOPENED": 1,
-        "CANCELLED": 2
-      },
-      "ticketsByPriority": {
-        "LOW": 3,
-        "MEDIUM": 8,
-        "HIGH": 4,
-        "URGENT": 2
-      }
+    "unassignedTickets": 5,
+    "myAssignedTickets": 3,
+    "urgentTicketsCount": 2,
+    "ticketsByStatus": {
+      "NEW": 4,
+      "OPEN": 3,
+      "IN_PROGRESS": 6,
+      "WAITING_FOR_REQUESTER": 4,
+      "RESOLVED": 10,
+      "CLOSED": 15,
+      "REOPENED": 1,
+      "CANCELLED": 2
+    },
+    "ticketsByPriority": {
+      "LOW": 3,
+      "MEDIUM": 8,
+      "HIGH": 4,
+      "URGENT": 2
     },
     "recentQueueTickets": [
       {
@@ -515,8 +508,9 @@ Dashboard endpoints compute summary metrics on the server from authoritative dat
         "summary": "Office printer paper jam",
         "currentStatus": "NEW",
         "itPriority": "LOW",
-        "assignedStaffName": null,
-        "updatedAt": "2026-10-15T17:25:00.000Z"
+        "updatedAt": "2026-10-15T17:25:00.000Z",
+        "requester": { "id": 5, "name": "Jennifer Anderson", "email": "jennifer.a@example.com" },
+        "assignedStaff": null
       }
     ],
     "adminUserSummary": {
@@ -530,8 +524,7 @@ Dashboard endpoints compute summary metrics on the server from authoritative dat
     }
   }
   ```
-- **Response `200 OK` (when invoked by `IT_STAFF`)**:
-  - Same as above, but `adminUserSummary` is strictly `null` or omitted from the response.
+- **Response `200 OK` (when invoked by `IT_STAFF`)**: Same structure as above, but `adminUserSummary` is **omitted** from the response entirely.
 
 ---
 
