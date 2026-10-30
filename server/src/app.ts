@@ -1860,9 +1860,21 @@ app.patch("/api/actions/:id", authenticateSession, requireRole(["IT_STAFF", "ADM
 
     updateData.version = { increment: 1 };
 
-    const updated = await getPrisma().actionTaken.update({
-      where: { id: actionId },
+    // Atomic update enforcing version matching at the database level
+    const updateResult = await getPrisma().actionTaken.updateMany({
+      where: { id: actionId, version },
       data: updateData,
+    });
+
+    if (updateResult.count === 0) {
+      return res.status(409).json({
+        error: "The action item was updated by another user. Please refresh and review.",
+        code: "CONCURRENCY_CONFLICT",
+      });
+    }
+
+    const updated = await getPrisma().actionTaken.findUnique({
+      where: { id: actionId },
       include: {
         performedBy: {
           select: { id: true, name: true, email: true, role: true },

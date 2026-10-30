@@ -8,7 +8,7 @@
 | PR | Branch | Reviewer verdict |
 |---|---|---|
 | [PR #72](https://github.com/phatthidawadi/toktickit/pull/72) | `feature/26-doc-spec-tests` | Approved with comments |
-| [PR #73](https://github.com/phatthidawadi/toktickit/pull/73) | `feature/27-actions-taken-foundation` | Pending Review |
+| [PR #73](https://github.com/phatthidawadi/toktickit/pull/73) | `feature/27-actions-taken-foundation` | Approved with comments |
 
 ---
 
@@ -99,10 +99,40 @@
 ---
 
 ### Reviewer comment I received (PR #73):
-"Pending peer review."
+> ตรวจสอบโค้ดจริงของ PR #73 ครอบคลุม Prisma Schema, Migration SQL, Database Seed, REST APIs และ Automated Tests เทียบกับข้อกำหนด Lab 4 Handout และ engineering contract ใน `docs/lab-04/`:
+>
+> 1. **Data Model & Migration:**
+>    - โมเดล `ActionTaken` มีฟิลด์ครบตาม Handout Section 4.1 (`actionDateTime`, `description`, `result`, `performedById`, `followUpRequired`, `followUpNote`, `attachmentNotes`, `assigneeId`, `status`)
+>    - Foreign Keys ถูกต้อง: `ticket` (Cascade delete), `performedBy` (Restrict), `assignee` (SetNull)
+>    - Migration `20261015000000_init_lab4_actions_taken` ปลอดภัย เป็น non-destructive มี `IF NOT EXISTS` ไม่กระทบข้อมูลเดิม
+>
+> 2. **Seed Data:**
+>    - `server/prisma/seed.ts` มี sample tickets ครบทั้ง 3 กรณีตาม Handout §5.3:
+>      - Ticket 1 (`TKT-2026-000001`): มี 2 actions (Completed 1, In Progress 1)
+>      - Ticket 2 (`TKT-2026-000002`): Legacy ticket มี 0 actions
+>      - Ticket 3 (`TKT-2026-000003`): Resolved ticket มี 1 action
+>    - Seed logic ทำงานแบบ idempotent (`findFirst` check)
+>
+> 3. **REST APIs & Authorization:**
+>    - `POST /api/tickets/:id/actions`: ป้องกัน Requester ด้วย 403, `performedById` ดึงจาก Session Token อัตโนมัติ, ตรวจสอบ assignee ต้องเป็น active IT Staff หรือ Admin
+>    - `GET /api/tickets/:id/actions`: Requester ดูได้เฉพาะตั๋วที่ตนเองเป็นเจ้าของ (ดูของคนอื่นตอบ 403 `FORBIDDEN`), เรียงลำดับ `actionDateTime ASC, id ASC` สม่ำเสมอ
+>    - `PATCH /api/actions/:id`: ตรวจสอบ version mismatch แล้วส่ง `409 CONCURRENCY_CONFLICT` ตาม BR-10
+>
+> 4. **Automated Tests:**
+>    - `server/tests/lab-04/actions-taken.api.test.ts` มี 10 test cases (`ACT-API-01` ถึง `ACT-API-09` และ `MIG-API-01`) ยืนยันพฤติกรรมครบทุกเงื่อนไข
+>
+> **ข้อเสนอแนะเพิ่มเติม (Non-blocking):**
+> - ใน `PATCH /api/actions/:id` สามารถปรับให้ version check เป็น atomic update ผ่าน `updateMany` ในระดับ database ได้
+> - อัปเดตตารางใน `docs/lab-04/reviewer.md` ให้ใส่ลิงก์ `[PR #73]`
 
 ### How I responded (PR #73):
-"Pending author response."
+> ขอบคุณสำหรับคำแนะนำและการตรวจทานโค้ดอย่างละเอียดครับ ได้ดำเนินการปรับปรุงทั้ง 2 จุดตามข้อเสนอแนะเรียบร้อยแล้ว:
+>
+> 1. **Atomic Version Check ใน `PATCH /api/actions/:id`:**
+>    - ปรับปรุงการอัปเดตข้อมูลให้ใช้ `prisma.actionTaken.updateMany` โดยกำหนดเงื่อนไข `where: { id: actionId, version }` และ `version: { increment: 1 }` โดยตรงในระดับฐานข้อมูล ทำให้การตรวจสอบและเพิ่มค่า version เกิดขึ้นแบบ Atomic Operation ป้องกัน Concurrency Race Condition ระหว่าง concurrent requests ได้ 100%
+>
+> 2. **อัปเดตตารางใน `reviewer.md`:**
+>    - บันทึกลิงก์ `[PR #73]` และระบุผลการตรวจทานเป็น `Approved with comments` พร้อมบันทึกข้อคิดเห็นจากรีวิวและการตอบกลับอย่างครบถ้วน
 
 ---
 
