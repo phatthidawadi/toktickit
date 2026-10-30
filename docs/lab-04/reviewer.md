@@ -11,6 +11,7 @@
 | [PR #73](https://github.com/phatthidawadi/toktickit/pull/73) | `feature/27-actions-taken-foundation` | Approved with comments |
 | [PR #74](https://github.com/phatthidawadi/toktickit/pull/74) | `feature/28-actions-taken-ui` | Approved with comments |
 | [PR #75](https://github.com/phatthidawadi/toktickit/pull/75) | `feature/29-ticket-workflow-and-resolution` | Approved with comments |
+| [PR #76](https://github.com/phatthidawadi/toktickit/pull/76) | `feature/30-role-based-dashboards` | Pending Review |
 
 ---
 
@@ -247,6 +248,20 @@
 > - **Resolution Gate Strictly Enforced**: ปรับปรุง `server/src/utils/workflow.ts` ให้ตัด `RESOLVED` ออกจาก `OPEN` และตัด `RESOLVED`, `CANCELLED` ออกจาก `REOPENED` ทำให้ Transition Matrix สอดคล้องกับ `specification.md` §5.1 และ `StaffTicketDetail.tsx` ครบ 100% ปิดช่องโหว่การ bypass ข้ามขั้นตอนได้อย่างสมบูรณ์
 > - **Keyboard Accessibility**: เพิ่ม `Escape` key event listener ใน `TicketDetailView.tsx` สำหรับปิด Cancel Confirmation Modal ช่วยให้การใช้งานผ่านคีย์บอร์ดสะดวกและตรงตามมาตรฐานสเปก
 > - **Test Verification**: ยืนยันผลการทดสอบ Server Integration Tests (`ticket-workflow.api.test.ts`) ผ่านครบ 10/10 tests และ Client Component Tests ผ่านครบถ้วน
+
+---
+
+
+### PR #76 — Issue #30: Role-Based Dashboards (feature/30-role-based-dashboards)
+
+### Reviewer comment I received (PR #76):
+> Pending peer review.
+
+### How I responded (PR #76):
+> Pending author response.
+
+### Reviewer approval verdict (PR #76):
+> Pending final approval.
 
 ---
 
