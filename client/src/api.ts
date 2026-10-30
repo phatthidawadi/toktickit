@@ -559,4 +559,118 @@ export async function resetAdminUserPasswordApi(
   return data;
 }
 
+// ---------------------------------------------------------------------------
+// Lab 4 — Actions Taken Types & APIs
+// ---------------------------------------------------------------------------
+
+export interface ActionTakenUser {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+}
+
+export interface ActionTaken {
+  id: number;
+  ticketId: number;
+  description: string;
+  result: string;
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+  followUpRequired: boolean;
+  followUpNote?: string | null;
+  attachmentNotes?: string | null;
+  performedById: number;
+  assigneeId?: number | null;
+  version: number;
+  actionDateTime: string;
+  createdAt: string;
+  updatedAt: string;
+  performedBy: ActionTakenUser;
+  assignee?: ActionTakenUser | null;
+}
+
+export async function fetchActionsTakenApi(ticketId: number): Promise<ActionTaken[]> {
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/actions`, {
+    method: "GET",
+    credentials: "include",
+  });
+  const data = await res.json().catch(() => []);
+  if (!res.ok) {
+    const errorObj: any = new Error(data.error || "Failed to load actions taken");
+    errorObj.code = data.code;
+    errorObj.status = res.status;
+    throw errorObj;
+  }
+  return data;
+}
+
+export async function createActionTakenApi(
+  ticketId: number,
+  payload: {
+    description: string;
+    result: string;
+    status?: string;
+    followUpRequired?: boolean;
+    followUpNote?: string | null;
+    attachmentNotes?: string | null;
+    assigneeId?: number | null;
+  }
+): Promise<ActionTaken> {
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/actions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json().catch(() => ({ error: "Failed to record action" }));
+  if (!res.ok) {
+    const errorObj: any = new Error(data.error || "Failed to record action");
+    errorObj.code = data.code;
+    errorObj.status = res.status;
+    throw errorObj;
+  }
+  return data;
+}
+
+export async function updateActionTakenApi(
+  actionId: number,
+  payload: {
+    version: number;
+    description?: string;
+    result?: string;
+    status?: string;
+    followUpRequired?: boolean;
+    followUpNote?: string | null;
+    attachmentNotes?: string | null;
+    assigneeId?: number | null;
+  }
+): Promise<ActionTaken> {
+  const res = await fetch(`${API_URL}/api/actions/${actionId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json().catch(() => ({ error: "Failed to update action" }));
+  if (!res.ok) {
+    const errorObj: any = new Error(data.error || "Failed to update action");
+    errorObj.code = data.code;
+    errorObj.status = res.status;
+    throw errorObj;
+  }
+  return data;
+}
+
+export async function fetchStaffAssigneesApi(): Promise<ActionTakenUser[]> {
+  const res = await fetch(`${API_URL}/api/staff/assignees`, {
+    method: "GET",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    return [];
+  }
+  return res.json();
+}
+
+
 

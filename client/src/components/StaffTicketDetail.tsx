@@ -12,6 +12,7 @@ import {
 } from "../api";
 import { PublicComments } from "./PublicComments";
 import { InternalNotes } from "./InternalNotes";
+import { ActionsTakenSection } from "./ActionsTakenSection";
 
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   NEW: ["OPEN", "IN_PROGRESS", "CANCELLED"],
@@ -361,6 +362,11 @@ export const StaffTicketDetail: React.FC<StaffTicketDetailProps> = ({ ticketId, 
             <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#0B7A46" }}>{(ticket as any).itPriority || ticket.requestedPriority}</span>
           </div>
         </div>
+      </div>
+
+      {/* Actions Taken Subsystem (Lab 4) */}
+      <div style={{ marginBottom: "24px" }}>
+        <ActionsTakenSection ticketId={ticket.id} isStaffOrAdmin={true} />
       </div>
 
       {/* Tabs Navigation */}
