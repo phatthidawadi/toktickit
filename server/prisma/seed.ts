@@ -112,15 +112,21 @@ export async function seedDatabase() {
   // 4. Seed Initial Sample Tickets
   const reqId = userMap.get("jennifer.a@example.com")!;
   const staffId = userMap.get("staff.somchai@example.com")!;
+  const staffSomsriId = userMap.get("staff.somsri@example.com")!;
+  const adminId = userMap.get("admin.toktickit@example.com")!;
   const catId = categoryMap.get("Account and Access")!;
   const sysId = systemMap.get("Email")!;
+  const hardCatId = categoryMap.get("Hardware")!;
+  const laptopSysId = systemMap.get("Corporate Laptop")!;
 
+  // Ticket 1: In Progress with 2 Actions Taken (Multiple actions)
   const ticketData = {
     summary: "Cannot access corporate email account",
     description: "Encountering invalid credentials error when signing into Outlook web portal.",
     requestedPriority: "HIGH" as const,
     itPriority: "HIGH" as const,
     currentStatus: "IN_PROGRESS" as const,
+    version: 1,
     requesterId: reqId,
     assignedStaffId: staffId,
     categoryId: catId,
@@ -157,7 +163,134 @@ export async function seedDatabase() {
       },
     });
   }
-  console.log("Sample ticket and notes seeded.");
+
+  // Seed Actions Taken for Ticket 1 (idempotent findFirst check)
+  const existingAction1 = await prisma.actionTaken.findFirst({
+    where: { ticketId: ticket.id, description: "Reset Kerberos authentication ticket and purged active sessions." },
+  });
+  if (!existingAction1) {
+    await prisma.actionTaken.create({
+      data: {
+        ticketId: ticket.id,
+        actionDateTime: new Date(Date.now() - 3600000 * 2),
+        description: "Reset Kerberos authentication ticket and purged active sessions.",
+        result: "Active Directory synchronized successfully.",
+        status: "COMPLETED",
+        followUpRequired: false,
+        followUpNote: null,
+        attachmentNotes: "ad_sync_log.txt",
+        performedById: staffId,
+        assigneeId: staffId,
+        version: 1,
+      },
+    });
+  }
+
+  const existingAction2 = await prisma.actionTaken.findFirst({
+    where: { ticketId: ticket.id, description: "Configuring two-factor authentication recovery code." },
+  });
+  if (!existingAction2) {
+    await prisma.actionTaken.create({
+      data: {
+        ticketId: ticket.id,
+        actionDateTime: new Date(Date.now() - 3600000),
+        description: "Configuring two-factor authentication recovery code.",
+        result: "Temporary OTP generated for user verification.",
+        status: "IN_PROGRESS",
+        followUpRequired: true,
+        followUpNote: "Confirm user login via telephone after delivery.",
+        attachmentNotes: "mfa_provisioning.pdf",
+        performedById: staffSomsriId,
+        assigneeId: staffSomsriId,
+        version: 1,
+      },
+    });
+  }
+
+  // Ticket 2: Legacy ticket (Zero actions taken, NEW status)
+  await prisma.ticket.upsert({
+    where: { ticketNumber: "TKT-2026-000002" },
+    update: {
+      summary: "Laptop battery draining quickly",
+      description: "Battery discharges from 100% to 10% within 45 minutes of regular usage.",
+      requestedPriority: "MEDIUM" as const,
+      itPriority: "MEDIUM" as const,
+      currentStatus: "NEW" as const,
+      version: 1,
+      requesterId: reqId,
+      assignedStaffId: null,
+      categoryId: hardCatId,
+      relatedSystemId: laptopSysId,
+    },
+    create: {
+      ticketNumber: "TKT-2026-000002",
+      summary: "Laptop battery draining quickly",
+      description: "Battery discharges from 100% to 10% within 45 minutes of regular usage.",
+      requestedPriority: "MEDIUM" as const,
+      itPriority: "MEDIUM" as const,
+      currentStatus: "NEW" as const,
+      version: 1,
+      requesterId: reqId,
+      assignedStaffId: null,
+      categoryId: hardCatId,
+      relatedSystemId: laptopSysId,
+    },
+  });
+
+  // Ticket 3: Resolved ticket with exactly 1 Action Taken
+  const ticket3 = await prisma.ticket.upsert({
+    where: { ticketNumber: "TKT-2026-000003" },
+    update: {
+      summary: "Monitor flickering at high refresh rate",
+      description: "External Dell 27-inch display flickers whenever HDMI cable is touched.",
+      requestedPriority: "LOW" as const,
+      itPriority: "LOW" as const,
+      currentStatus: "RESOLVED" as const,
+      isRequesterResolved: true,
+      version: 1,
+      requesterId: reqId,
+      assignedStaffId: staffId,
+      categoryId: hardCatId,
+      relatedSystemId: laptopSysId,
+    },
+    create: {
+      ticketNumber: "TKT-2026-000003",
+      summary: "Monitor flickering at high refresh rate",
+      description: "External Dell 27-inch display flickers whenever HDMI cable is touched.",
+      requestedPriority: "LOW" as const,
+      itPriority: "LOW" as const,
+      currentStatus: "RESOLVED" as const,
+      isRequesterResolved: true,
+      version: 1,
+      requesterId: reqId,
+      assignedStaffId: staffId,
+      categoryId: hardCatId,
+      relatedSystemId: laptopSysId,
+    },
+  });
+
+  const existingAction3 = await prisma.actionTaken.findFirst({
+    where: { ticketId: ticket3.id, description: "Replaced faulty HDMI 2.0 cable with shielded DisplayPort cable." },
+  });
+  if (!existingAction3) {
+    await prisma.actionTaken.create({
+      data: {
+        ticketId: ticket3.id,
+        actionDateTime: new Date(Date.now() - 86400000),
+        description: "Replaced faulty HDMI 2.0 cable with shielded DisplayPort cable.",
+        result: "Tested display output at 144Hz for 30 minutes without signal dropout.",
+        status: "COMPLETED",
+        followUpRequired: false,
+        followUpNote: null,
+        attachmentNotes: "cable_replacement_receipt.pdf",
+        performedById: staffId,
+        assigneeId: staffId,
+        version: 1,
+      },
+    });
+  }
+
+  console.log("Sample tickets, notes, and Actions Taken seeded successfully.");
 }
 
 if (process.argv[1]?.includes("seed")) {
