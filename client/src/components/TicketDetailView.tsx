@@ -4,6 +4,8 @@ import {
   uploadAttachment,
   getAttachmentDownloadUrl,
   softRemoveAttachment,
+  resolveAckTicketApi,
+  cancelTicketApi,
   Ticket,
   AttachmentSummary,
 } from "../api.js";
@@ -31,6 +33,12 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({ ticketId, on
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isForbidden, setIsForbidden] = useState<boolean>(false);
+
+  // Workflow & Resolution States
+  const [workflowError, setWorkflowError] = useState<string | null>(null);
+  const [workflowSuccess, setWorkflowSuccess] = useState<string | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState<boolean>(false);
+  const [isCancelling, setIsCancelling] = useState<boolean>(false);
 
   // Attachment Management States
   const [uploading, setUploading] = useState<boolean>(false);
@@ -101,16 +109,65 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({ ticketId, on
     }
   };
 
+  const handleToggleResolveAck = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!ticket || ticket.version === undefined) return;
+    setWorkflowError(null);
+    setWorkflowSuccess(null);
+    const nextVal = e.target.checked;
+    try {
+      const updated = await resolveAckTicketApi(ticket.id, nextVal, ticket.version);
+      setTicket(updated);
+      setWorkflowSuccess(nextVal ? "Marked as appearing resolved (Advisory for IT Staff)." : "Cleared advisory resolution indicator.");
+    } catch (err: any) {
+      if (err.status === 409 || err.code === "CONCURRENCY_CONFLICT") {
+        setWorkflowError("Ticket was modified by another session. Refreshing latest state...");
+        loadDetail();
+      } else {
+        setWorkflowError(err.message || "Failed to update resolution status.");
+      }
+    }
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!ticket || ticket.version === undefined) return;
+    setWorkflowError(null);
+    setWorkflowSuccess(null);
+    setIsCancelling(true);
+    try {
+      const updated = await cancelTicketApi(ticket.id, ticket.version);
+      setTicket(updated);
+      setShowCancelModal(false);
+      setWorkflowSuccess("Ticket has been cancelled.");
+    } catch (err: any) {
+      if (err.status === 409 || err.code === "CONCURRENCY_CONFLICT") {
+        setWorkflowError("Ticket was modified by another session. Refreshing latest state...");
+        loadDetail();
+      } else {
+        setWorkflowError(err.message || "Failed to cancel ticket.");
+      }
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   const getStatusBadgeStyle = (status: string) => {
     switch (status) {
       case "NEW":
         return { backgroundColor: "#DBEAFE", color: "#1E40AF", border: "1px solid #BFDBFE" };
+      case "OPEN":
+        return { backgroundColor: "#E0E7FF", color: "#3730A3", border: "1px solid #C7D2FE" };
       case "IN_PROGRESS":
         return { backgroundColor: "#FEF3C7", color: "#92400E", border: "1px solid #FDE68A" };
+      case "WAITING_FOR_REQUESTER":
+        return { backgroundColor: "#FEF3C7", color: "#B45309", border: "1px solid #FDE68A" };
       case "RESOLVED":
         return { backgroundColor: "#D1FAE5", color: "#065F46", border: "1px solid #A7F3D0" };
       case "CLOSED":
         return { backgroundColor: "#F3F4F6", color: "#374151", border: "1px solid #E5E7EB" };
+      case "REOPENED":
+        return { backgroundColor: "#E0E7FF", color: "#4338CA", border: "1px solid #C7D2FE" };
+      case "CANCELLED":
+        return { backgroundColor: "#FEE2E2", color: "#991B1B", border: "1px solid #FCA5A5" };
       default:
         return { backgroundColor: "#EAF6EF", color: "#006B3C", border: "1px solid #C8E6D5" };
     }
@@ -394,6 +451,80 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({ ticketId, on
         </div>
       )}
 
+      {/* Cancel Ticket Confirmation Modal Dialog */}
+      {showCancelModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1100,
+            padding: "16px",
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderRadius: "8px",
+              border: "1px solid #E0E6E2",
+              padding: "24px",
+              maxWidth: "480px",
+              width: "100%",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            }}
+          >
+            <h4 style={{ fontSize: "18px", fontWeight: "bold", color: "#C5221F", margin: "0 0 8px 0" }}>
+              Cancel Support Ticket
+            </h4>
+            <p style={{ fontSize: "14px", color: "#1F2925", marginBottom: "20px", lineHeight: "1.5" }}>
+              Are you sure you want to cancel this ticket? This action cannot be undone.
+            </p>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+              <button
+                type="button"
+                disabled={isCancelling}
+                onClick={() => setShowCancelModal(false)}
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  border: "1px solid #C8D2CC",
+                  color: "#1F2925",
+                  padding: "8px 16px",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                  cursor: isCancelling ? "not-allowed" : "pointer",
+                }}
+              >
+                Keep Ticket
+              </button>
+              <button
+                id="confirm-cancel-ticket-btn"
+                type="button"
+                disabled={isCancelling}
+                onClick={handleConfirmCancel}
+                style={{
+                  backgroundColor: "#C5221F",
+                  color: "#FFFFFF",
+                  border: "none",
+                  padding: "8px 18px",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  cursor: isCancelling ? "not-allowed" : "pointer",
+                }}
+              >
+                {isCancelling ? "Cancelling..." : "Confirm Cancellation"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Navigation Bar */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <button
@@ -427,6 +558,38 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({ ticketId, on
         </span>
       </div>
 
+      {workflowError && (
+        <div
+          id="workflow-error-banner"
+          style={{
+            backgroundColor: "#FDF2F2",
+            border: "1px solid #F87171",
+            color: "#C5221F",
+            padding: "12px 16px",
+            borderRadius: "6px",
+            fontSize: "14px",
+          }}
+        >
+          {workflowError}
+        </div>
+      )}
+
+      {workflowSuccess && (
+        <div
+          id="workflow-success-banner"
+          style={{
+            backgroundColor: "#EAF6EF",
+            border: "1px solid #A7F3D0",
+            color: "#065F46",
+            padding: "12px 16px",
+            borderRadius: "6px",
+            fontSize: "14px",
+          }}
+        >
+          {workflowSuccess}
+        </div>
+      )}
+
       {/* Ticket Header & Specification Card */}
       <div
         style={{
@@ -458,7 +621,7 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({ ticketId, on
             </h2>
           </div>
 
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ fontSize: "13px", ...getPriorityBadgeStyle(ticket.requestedPriority) }}>
               Priority: {ticket.requestedPriority}
             </span>
@@ -473,7 +636,74 @@ export const TicketDetailView: React.FC<TicketDetailViewProps> = ({ ticketId, on
             >
               {ticket.currentStatus}
             </span>
+
+            {ticket.currentStatus === "NEW" && (
+              <button
+                id="cancel-ticket-btn"
+                type="button"
+                onClick={() => setShowCancelModal(true)}
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  border: "1px solid #DC2626",
+                  color: "#DC2626",
+                  padding: "4px 12px",
+                  borderRadius: "6px",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel Ticket
+              </button>
+            )}
           </div>
+        </div>
+
+        {/* Advisory Resolution Toggle Banner / Control */}
+        <div
+          id="advisory-resolution-toggle-box"
+          style={{
+            backgroundColor: "#F9FAFB",
+            border: "1px solid #E5E7EB",
+            borderRadius: "6px",
+            padding: "10px 14px",
+            marginBottom: "16px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "10px",
+          }}
+        >
+          <label
+            htmlFor="resolve-ack-toggle"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              cursor: "pointer",
+              fontSize: "13px",
+              fontWeight: 500,
+              color: "#374151",
+            }}
+          >
+            <input
+              id="resolve-ack-toggle"
+              type="checkbox"
+              checked={!!ticket.isRequesterResolved}
+              onChange={handleToggleResolveAck}
+              style={{
+                width: "16px",
+                height: "16px",
+                accentColor: "#0B7A46",
+                cursor: "pointer",
+              }}
+            />
+            Mark problem as appearing resolved (Advisory for IT Staff)
+          </label>
+          <span style={{ fontSize: "12px", color: "#6B7280" }}>
+            This lets IT Staff know the solution worked. IT Staff will formally verify and resolve your ticket.
+          </span>
         </div>
 
         {/* Metadata Grid */}

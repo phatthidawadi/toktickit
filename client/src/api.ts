@@ -51,6 +51,7 @@ export interface Ticket {
   itPriority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
   currentStatus: "NEW" | "IN_PROGRESS" | "WAITING_FOR_REQUESTER" | "RESOLVED" | "CLOSED" | "REOPENED" | "CANCELLED" | string;
   isRequesterResolved?: boolean;
+  version?: number;
   requesterId: number;
   assignedStaffId?: number | null;
   categoryId: number;
@@ -441,15 +442,58 @@ export async function updateItPriorityApi(ticketId: number, itPriority: string):
   return data;
 }
 
-export async function updateTicketStatusApi(ticketId: number, status: string): Promise<Ticket> {
+export async function updateTicketStatusApi(ticketId: number, status: string, version?: number): Promise<Ticket> {
+  const payload: any = { status };
+  if (version !== undefined) {
+    payload.version = version;
+  }
   const res = await fetch(`${API_URL}/api/staff/tickets/${ticketId}/status`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ status }),
+    body: JSON.stringify(payload),
   });
   const data = await res.json().catch(() => ({ error: "Failed to update ticket status" }));
-  if (!res.ok) throw new Error(data.error || "Failed to update ticket status");
+  if (!res.ok) {
+    const error: any = new Error(data.error || "Failed to update ticket status");
+    error.status = res.status;
+    error.code = data.code;
+    throw error;
+  }
+  return data;
+}
+
+export async function resolveAckTicketApi(ticketId: number, isRequesterResolved: boolean, version: number): Promise<Ticket> {
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/resolve-ack`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ isRequesterResolved, version }),
+  });
+  const data = await res.json().catch(() => ({ error: "Failed to acknowledge ticket resolution" }));
+  if (!res.ok) {
+    const error: any = new Error(data.error || "Failed to acknowledge ticket resolution");
+    error.status = res.status;
+    error.code = data.code;
+    throw error;
+  }
+  return data;
+}
+
+export async function cancelTicketApi(ticketId: number, version: number): Promise<Ticket> {
+  const res = await fetch(`${API_URL}/api/tickets/${ticketId}/cancel`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ version }),
+  });
+  const data = await res.json().catch(() => ({ error: "Failed to cancel ticket" }));
+  if (!res.ok) {
+    const error: any = new Error(data.error || "Failed to cancel ticket");
+    error.status = res.status;
+    error.code = data.code;
+    throw error;
+  }
   return data;
 }
 

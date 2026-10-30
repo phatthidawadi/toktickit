@@ -9,7 +9,7 @@ export const PERMITTED_STATUS_TRANSITIONS: Record<string, { to: string[]; adminO
   CANCELLED: { to: [] },
 };
 
-export function isValidStatusTransition(fromStatus: string, toStatus: string, userRole: string): boolean {
+export function isValidStatusTransition(fromStatus: string, toStatus: string, userRole?: string): boolean {
   if (fromStatus === toStatus) return true;
   const allowed = PERMITTED_STATUS_TRANSITIONS[fromStatus];
   if (!allowed) return false;

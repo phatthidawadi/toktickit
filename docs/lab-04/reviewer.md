@@ -10,6 +10,7 @@
 | [PR #72](https://github.com/phatthidawadi/toktickit/pull/72) | `feature/26-doc-spec-tests` | Approved with comments |
 | [PR #73](https://github.com/phatthidawadi/toktickit/pull/73) | `feature/27-actions-taken-foundation` | Approved with comments |
 | [PR #74](https://github.com/phatthidawadi/toktickit/pull/74) | `feature/28-actions-taken-ui` | Approved with comments |
+| [PR #75](https://github.com/phatthidawadi/toktickit/pull/75) | `feature/29-ticket-workflow-and-resolution` | Pending Review |
 
 ---
 
@@ -191,6 +192,27 @@
 >    - เพิ่ม `useEffect` ดักจับ `keydown` Event บน window เพื่อตรวจสอบ `e.key === "Escape"` เมื่อเปิด Record Modal หรือ Edit Modal อยู่ ให้เรียกสั่งปิด `closeModals()` พร้อม Clean-up Event Listener อย่างถูกต้องตามมาตรฐาน WCAG 2.1 AA Keyboard Accessibility
 >
 > ได้รันชุดทดสอบ Client Tests ผ่าน 5/5 tests และ Client Production Build ผ่าน 100% เรียบร้อยครับ
+
+---
+
+### Reviewer approval verdict (PR #74):
+> ### Review — PR #74: Actions Taken UI (Issue #28)
+> 
+> ตรวจโค้ดจริงบน branch `feature/28-actions-taken-ui` รวมทั้ง commit `a4fc2d7` ล่าสุดเรียบร้อยแล้วค่ะ:
+> 
+> - ✅ **Actions Taken UI**: คอมโพเนนต์ `ActionsTakenSection` เชื่อมต่อกับหน้ารายละเอียดตั๋วทั้ง 2 ฝั่งถูกต้อง (Requester เป็น Read-only, Staff/Admin บันทึกและแก้ไขได้)
+> - ✅ **Responsive & Theme**: แสดงผลแบบ Table บนจอใหญ่ และปรับเป็น Stacked Cards บนจอมือถือ (< 768px) ป้องกันหน้าจอล้น สไตล์และสีตรงตาม Zen Green Theme
+> - ✅ **Optimistic Locking**: จัดการ 409 Conflict ได้นุ่มนวล มีปุ่ม Reload ข้อมูลล่าสุดโดยไม่ทำลายข้อมูลที่กรอกค้างไว้
+> - ✅ **Accessibility & Contract**: มีการดักปุ่ม `Escape` เพื่อปิด Modal ครบถ้วน และเอกสาร `docs/lab-04/api-spec.md` บันทึก endpoint `GET /api/staff/assignees` ครบถ้วนแล้ว
+> - ✅ **Tests**: ชุดทดสอบ `client/tests/lab-04/ActionsTaken.test.tsx` ผ่านครบ 5/5 tests
+
+---
+
+### Reviewer comment I received (PR #75):
+> Pending peer review.
+
+### How I responded (PR #75):
+> Pending author response.
 
 ---
 

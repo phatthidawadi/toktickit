@@ -523,7 +523,7 @@ app.patch("/api/staff/tickets/:id/status", authenticateSession, requireRole(["IT
       return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
     }
 
-    const { status } = req.body || {};
+    const { status, version } = req.body || {};
     if (!status || typeof status !== "string") {
       return res.status(400).json({ error: "Status field is required", code: "INVALID_INPUT" });
     }
@@ -531,7 +531,7 @@ app.patch("/api/staff/tickets/:id/status", authenticateSession, requireRole(["IT
     const isPermitted = isValidStatusTransition(ticket.currentStatus, status, req.user!.role);
     if (!isPermitted) {
       return res.status(400).json({
-        error: `Invalid ticket status transition from ${ticket.currentStatus} to ${status}`,
+        error: `Invalid status transition from ${ticket.currentStatus} to ${status}`,
         code: "INVALID_TRANSITION",
       });
     }
@@ -543,9 +543,178 @@ app.patch("/api/staff/tickets/:id/status", authenticateSession, requireRole(["IT
       updateData.assignedStaffId = req.user!.userId;
     }
 
-    const updatedTicket = await getPrisma().ticket.update({
+    if (version !== undefined && version !== null) {
+      const updateResult = await getPrisma().ticket.updateMany({
+        where: { id: ticketId, version: version },
+        data: {
+          ...updateData,
+          version: { increment: 1 },
+        },
+      });
+
+      if (updateResult.count === 0) {
+        return res.status(409).json({
+          error: "The ticket was updated by another session. Please refresh and retry.",
+          code: "CONCURRENCY_CONFLICT",
+        });
+      }
+    } else {
+      await getPrisma().ticket.update({
+        where: { id: ticketId },
+        data: {
+          ...updateData,
+          version: { increment: 1 },
+        },
+      });
+    }
+
+    const updatedTicket = await getPrisma().ticket.findUnique({
       where: { id: ticketId },
-      data: updateData,
+      include: {
+        assignedStaff: { select: { id: true, name: true, email: true, role: true } },
+        category: true,
+        relatedSystem: true,
+      },
+    });
+
+    return res.status(200).json(updatedTicket);
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+  }
+});
+
+// PATCH /api/tickets/:id/resolve-ack — Advisory Requester Resolution Acknowledgment
+app.patch("/api/tickets/:id/resolve-ack", authenticateSession, async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId) || ticketId <= 0) {
+      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
+    }
+
+    const ticket = await getPrisma().ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) {
+      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
+    }
+
+    // Role check: Requesters may only acknowledge their own tickets
+    if (req.user!.role === "REQUESTER" && ticket.requesterId !== req.user!.userId) {
+      return res.status(403).json({
+        error: "Access denied. You can only acknowledge resolution for your own tickets.",
+        code: "FORBIDDEN",
+      });
+    }
+
+    const { isRequesterResolved = true, version } = req.body || {};
+    if (typeof isRequesterResolved !== "boolean") {
+      return res.status(400).json({
+        error: "isRequesterResolved must be a boolean",
+        code: "INVALID_INPUT",
+      });
+    }
+
+    if (version !== undefined && version !== null) {
+      const updateResult = await getPrisma().ticket.updateMany({
+        where: { id: ticketId, version: version },
+        data: {
+          isRequesterResolved,
+          version: { increment: 1 },
+        },
+      });
+
+      if (updateResult.count === 0) {
+        return res.status(409).json({
+          error: "The ticket was updated by another session. Please refresh and retry.",
+          code: "CONCURRENCY_CONFLICT",
+        });
+      }
+    } else {
+      await getPrisma().ticket.update({
+        where: { id: ticketId },
+        data: {
+          isRequesterResolved,
+          version: { increment: 1 },
+        },
+      });
+    }
+
+    const updatedTicket = await getPrisma().ticket.findUnique({
+      where: { id: ticketId },
+      include: {
+        category: true,
+        relatedSystem: true,
+        assignedStaff: { select: { id: true, name: true, email: true, role: true } },
+      },
+    });
+
+    return res.status(200).json(updatedTicket);
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+  }
+});
+
+// PATCH /api/tickets/:id/cancel — Requester Ticket Cancellation (NEW status only)
+app.patch("/api/tickets/:id/cancel", authenticateSession, async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId) || ticketId <= 0) {
+      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
+    }
+
+    const ticket = await getPrisma().ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) {
+      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
+    }
+
+    // Role check: Requesters may only cancel their own tickets
+    if (req.user!.role === "REQUESTER" && ticket.requesterId !== req.user!.userId) {
+      return res.status(403).json({
+        error: "Access denied. You can only cancel your own tickets.",
+        code: "FORBIDDEN",
+      });
+    }
+
+    // Requester may only cancel tickets in NEW status
+    if (req.user!.role === "REQUESTER" && ticket.currentStatus !== "NEW") {
+      return res.status(403).json({
+        error: "Requesters may only cancel tickets in NEW status. Contact IT Staff for cancellations in active states.",
+        code: "FORBIDDEN",
+      });
+    }
+
+    const { version } = req.body || {};
+
+    if (version !== undefined && version !== null) {
+      const updateResult = await getPrisma().ticket.updateMany({
+        where: { id: ticketId, version: version },
+        data: {
+          currentStatus: "CANCELLED",
+          version: { increment: 1 },
+        },
+      });
+
+      if (updateResult.count === 0) {
+        return res.status(409).json({
+          error: "The ticket was updated by another session. Please refresh and retry.",
+          code: "CONCURRENCY_CONFLICT",
+        });
+      }
+    } else {
+      await getPrisma().ticket.update({
+        where: { id: ticketId },
+        data: {
+          currentStatus: "CANCELLED",
+          version: { increment: 1 },
+        },
+      });
+    }
+
+    const updatedTicket = await getPrisma().ticket.findUnique({
+      where: { id: ticketId },
+      include: {
+        category: true,
+        relatedSystem: true,
+        assignedStaff: { select: { id: true, name: true, email: true, role: true } },
+      },
     });
 
     return res.status(200).json(updatedTicket);
@@ -1248,54 +1417,14 @@ app.post("/api/tickets/:id/comments", async (req: Request, res: Response) => {
     if (user.role === "REQUESTER" && ticket.currentStatus === "WAITING_FOR_REQUESTER") {
       await getPrisma().ticket.update({
         where: { id: ticketId },
-        data: { currentStatus: "IN_PROGRESS" },
+        data: {
+          currentStatus: "IN_PROGRESS",
+          version: { increment: 1 },
+        },
       });
     }
 
     return res.status(201).json(newComment);
-  } catch (error) {
-    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
-  }
-});
-
-// PATCH /api/tickets/:id/resolve-ack — Requester Problem Appears Resolved toggle
-app.patch("/api/tickets/:id/resolve-ack", async (req: Request, res: Response) => {
-  try {
-    const user = await getUserFromReq(req);
-    if (!user) {
-      return res.status(401).json({ error: "Authentication required", code: "UNAUTHORIZED" });
-    }
-
-    if (user.mustChangePassword) {
-      return res.status(403).json({
-        error: "Mandatory password change required before accessing system features.",
-        code: "MUST_CHANGE_PASSWORD",
-      });
-    }
-
-    const ticketId = Number(req.params.id);
-    if (isNaN(ticketId) || ticketId <= 0) {
-      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
-    }
-
-    const ticket = await getPrisma().ticket.findUnique({
-      where: { id: ticketId },
-    });
-
-    if (!ticket) {
-      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
-    }
-
-    if (ticket.requesterId !== user.id) {
-      return res.status(403).json({ error: "Access denied. You can only acknowledge resolution for your own tickets.", code: "FORBIDDEN" });
-    }
-
-    const updatedTicket = await getPrisma().ticket.update({
-      where: { id: ticketId },
-      data: { isRequesterResolved: true },
-    });
-
-    return res.status(200).json(updatedTicket);
   } catch (error) {
     return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
   }
