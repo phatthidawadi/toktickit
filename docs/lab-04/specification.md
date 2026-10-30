@@ -104,10 +104,10 @@ As defined in Section 4.2 of the Lab 4 Handout, the following features are stric
 | **BR-04** | Follow-Up Note Requirement | If `followUpRequired` is set to `true`, `followUpNote` must be a non-empty string (trimmed length 1–1000 characters). If `followUpRequired` is `false`, `followUpNote` may be null or empty. |
 | **BR-05** | Active Assignee Constraint | An `ActionTaken` record may optionally specify an `assigneeId`. If provided, the user must have role `IT_STAFF` or `ADMINISTRATOR` and `isActive` must be `true`. Inactive or non-staff users cannot be assigned. |
 | **BR-06** | Authoritative Resolution Gate | A Requester setting `isRequesterResolved = true` is purely advisory for IT Staff. The ticket status remains unchanged. Only an authenticated `IT_STAFF` or `ADMINISTRATOR` can transition `currentStatus` to `RESOLVED`. |
-| **BR-07** | Permitted Status Transition Matrix | Status updates must strictly adhere to the permitted transitions table defined in Section 5.1. Any disallowed transition returns HTTP 400 with a descriptive error code `INVALID_STATUS_TRANSITION`. |
-| **BR-08** | Requester Cancellation Privilege | A Requester may cancel their owned ticket (`NEW -> CANCELLED`) only while the ticket is still in `NEW` status. Once transitioned to `OPEN` or `IN_PROGRESS`, only IT Staff or Administrators may cancel it. |
+| **BR-07** | Permitted Status Transition Matrix | Status updates must strictly adhere to the permitted transitions table defined in Section 5.1. Any disallowed transition returns HTTP 400 with a descriptive error code `INVALID_STATUS_TRANSITION`. Formal status changes are strictly restricted to IT Staff and Administrators. |
+| **BR-08** | Requester Cancellation Privilege | A Requester may cancel their owned ticket (`NEW -> CANCELLED`) only while the ticket is still in `NEW` status via `PATCH /api/tickets/:id/cancel`. Once transitioned to `OPEN` or `IN_PROGRESS`, only IT Staff or Administrators may cancel it. |
 | **BR-09** | Auto-Transition on Requester Comment | When a Requester submits a public comment on an owned ticket currently in `WAITING_FOR_REQUESTER`, the backend automatically transitions the ticket status to `IN_PROGRESS` (preserving BR-11 from Lab 3). |
-| **BR-10** | Optimistic Concurrency Conflict Rule | Any mutation on a Ticket or Action Taken must include the expected `version` integer. If the record in the database has a different `version`, the operation must reject with HTTP `409 Conflict` (`CONCURRENCY_CONFLICT`). On success, `version` is incremented by 1. |
+| **BR-10** | Optimistic Concurrency Conflict Rule | Any mutation on a Ticket (`/api/staff/tickets/:id/status`, `/api/tickets/:id/resolve-ack`, `/api/tickets/:id/cancel`) or Action Taken (`/api/actions/:id`) must include the expected `version` integer as a mandatory field in the request body. If the record in the database has a different `version`, the operation must reject with HTTP `409 Conflict` (`CONCURRENCY_CONFLICT`). On success, `version` is incremented by 1. |
 | **BR-11** | Authoritative Metric Calculation | All dashboard counters and aggregations must be computed dynamically via backend SQL/Prisma queries against authoritative database tables. The client must not calculate summary metrics from raw lists. |
 | **BR-12** | Requester Data Scoping | The Requester Dashboard endpoint (`GET /api/dashboard/requester`) must strictly scope all metric calculations, counts, and recent lists to `ticket.requesterId == session.user.id`. No cross-requester data leakage is permitted. |
 | **BR-13** | Timezone and Date Boundaries | Date-based metrics (e.g. "Recently Resolved in last 30 days") evaluate UTC timestamps against `NOW() - INTERVAL '30 days'`. Display formatting in UI converts timestamps to user local time (`Asia/Bangkok`, UTC+7). |
@@ -119,24 +119,24 @@ As defined in Section 4.2 of the Lab 4 Handout, the following features are stric
 
 ### 5.1 Ticket Status Transition Matrix
 
-The table below defines the authoritative lifecycle rules. Any transition not explicitly listed is strictly forbidden.
+The table below defines the authoritative lifecycle rules. Any transition not explicitly listed is strictly forbidden. Formal status transitions on tickets are executed solely by IT Staff and Administrators; Requesters interact with lifecycle states solely via the advisory resolution gate (`resolve-ack`), cancellation of `NEW` tickets, or automatic transition upon posting public comments.
 
 | Current Status | Target Status | Permitted Roles | Business Rationale / Conditions |
 | :--- | :--- | :--- | :--- |
 | `NEW` | `OPEN` | `IT_STAFF`, `ADMINISTRATOR` | IT triage accepts ticket into operational backlog. |
 | `NEW` | `IN_PROGRESS` | `IT_STAFF`, `ADMINISTRATOR` | IT staff immediately starts active work. |
-| `NEW` | `CANCELLED` | `REQUESTER`, `IT_STAFF`, `ADMIN` | Requester withdrawal before triage, or invalid ticket. |
+| `NEW` | `CANCELLED` | `REQUESTER` (own ticket), `IT_STAFF`, `ADMIN` | Requester withdrawal before triage commences, or staff rejection. |
 | `OPEN` | `IN_PROGRESS` | `IT_STAFF`, `ADMINISTRATOR` | Staff begins troubleshooting/investigation. |
 | `OPEN` | `WAITING_FOR_REQUESTER` | `IT_STAFF`, `ADMINISTRATOR` | Additional information needed from requester. |
 | `OPEN` | `CANCELLED` | `IT_STAFF`, `ADMINISTRATOR` | Ticket rejected or invalidated during analysis. |
 | `IN_PROGRESS` | `WAITING_FOR_REQUESTER` | `IT_STAFF`, `ADMINISTRATOR` | Diagnostic info or approval required from requester. |
-| `IN_PROGRESS` | `RESOLVED` | `IT_STAFF`, `ADMINISTRATOR` | **Resolution Gate**: IT verifies solution and marks resolved. |
+| `IN_PROGRESS` | `RESOLVED` | `IT_STAFF`, `ADMINISTRATOR` | **Resolution Gate**: IT verifies solution and formally resolves ticket. |
 | `IN_PROGRESS` | `CANCELLED` | `IT_STAFF`, `ADMINISTRATOR` | Request abandoned or made redundant. |
-| `WAITING_FOR_REQUESTER` | `IN_PROGRESS` | `REQUESTER` (auto/manual), `IT_STAFF`, `ADMIN` | Requester replies with comment or staff resumes work. |
+| `WAITING_FOR_REQUESTER` | `IN_PROGRESS` | `REQUESTER` (auto via comment), `IT_STAFF`, `ADMIN` | Requester replies with comment or staff resumes work. |
 | `WAITING_FOR_REQUESTER` | `RESOLVED` | `IT_STAFF`, `ADMINISTRATOR` | Issue resolved without further requester input. |
 | `WAITING_FOR_REQUESTER` | `CANCELLED` | `IT_STAFF`, `ADMINISTRATOR` | Requester failed to respond or abandoned request. |
-| `RESOLVED` | `CLOSED` | `REQUESTER`, `IT_STAFF`, `ADMIN` | Requester confirms satisfaction or automatic closing. |
-| `RESOLVED` | `REOPENED` | `REQUESTER`, `IT_STAFF`, `ADMIN` | Solution failed; requester reopens within grace window. |
+| `RESOLVED` | `CLOSED` | `IT_STAFF`, `ADMINISTRATOR` | IT Staff/Admin formally closes ticket upon verification or elapsed window. |
+| `RESOLVED` | `REOPENED` | `IT_STAFF`, `ADMINISTRATOR` | IT Staff/Admin reopens ticket if defect recurs or solution proves ineffective. |
 | `CLOSED` | `REOPENED` | `IT_STAFF`, `ADMINISTRATOR` | Administrative reopening for audit/rework. |
 | `REOPENED` | `IN_PROGRESS` | `IT_STAFF`, `ADMINISTRATOR` | Investigation resumed on recurring defect. |
 | `CANCELLED` | *(none)* | *(none)* | Terminal status. No further transitions permitted. |
@@ -408,12 +408,47 @@ The seed script (`server/prisma/seed.ts`) is designed to run repeatedly without 
   }
   ```
 - **Validation & Matrix Check**:
+  - `status`: Mandatory string matching one of the 8 `TicketStatus` enums.
+  - `version`: Mandatory integer matching current `ticket.version`.
   - Evaluates current status against target status per Section 5.1.
-  - Evaluates `version == ticket.version`.
 - **Responses**:
   - `200 OK`: Returns updated ticket object with new `currentStatus` and incremented `version`.
   - `400 Bad Request`: Disallowed transition (code: `INVALID_STATUS_TRANSITION`).
-  - `403 Forbidden`: Unauthorized role.
+  - `403 Forbidden`: Unauthorized role (Requesters rejected with 403).
+  - `404 Not Found`: Ticket not found.
+  - `409 Conflict`: Concurrency conflict (code: `CONCURRENCY_CONFLICT`).
+
+#### `PATCH /api/tickets/:id/resolve-ack`
+- **Description**: Requester advisory indicator that an issue appears resolved.
+- **Authorization**: `REQUESTER` (owned ticket), `IT_STAFF`, `ADMINISTRATOR`.
+- **Request Body**:
+  ```json
+  {
+    "isRequesterResolved": true,
+    "version": 1
+  }
+  ```
+- **Validation**: `version` is a mandatory integer matching current `ticket.version`.
+- **Responses**:
+  - `200 OK`: Returns updated ticket with `isRequesterResolved = true` and incremented `version` (status remains unchanged).
+  - `403 Forbidden`: Requester does not own this ticket.
+  - `404 Not Found`: Ticket not found.
+  - `409 Conflict`: Concurrency conflict (code: `CONCURRENCY_CONFLICT`).
+
+#### `PATCH /api/tickets/:id/cancel`
+- **Description**: Requester withdrawal of a ticket in `NEW` status.
+- **Authorization**: `REQUESTER` (owned ticket only).
+- **Request Body**:
+  ```json
+  {
+    "version": 1
+  }
+  ```
+- **Validation**: Ticket must be in `NEW` status and `version` must match current `ticket.version`.
+- **Responses**:
+  - `200 OK`: Returns updated ticket with `currentStatus = 'CANCELLED'` and incremented `version`.
+  - `400 Bad Request`: Ticket has already progressed past `NEW` (code: `INVALID_STATUS_TRANSITION`).
+  - `403 Forbidden`: Requester does not own this ticket.
   - `404 Not Found`: Ticket not found.
   - `409 Conflict`: Concurrency conflict (code: `CONCURRENCY_CONFLICT`).
 
@@ -517,6 +552,7 @@ The seed script (`server/prisma/seed.ts`) is designed to run repeatedly without 
 - **AC-14 (Responsive Layout Integrity)**: Given any major screen (Dashboard, Queue, Ticket Detail with Actions Taken, User Management), when rendered across Desktop (1280px), Tablet (768px), and Mobile (375px), then all content is legible, interactive elements exceed 44px touch height, and horizontal page scrolling is zero.
 - **AC-15 (Visible Keyboard Focus Rings)**: Given a user navigating via keyboard `Tab`, when focusing any input, dropdown, button, or link, then an emerald focus ring (`outline: 2px solid #0B7A46`) is clearly visible.
 - **AC-16 (Full Labs 1–3 Regression Preservation)**: Given the complete test suite for Labs 1 to 3 (authentication, attachments with 410 Gone soft deletion, comments, internal notes, admin safeguards against last admin deactivation), when executed against the Lab 4 codebase, then 100% of existing tests continue to pass.
+- **AC-17 (Performance-Smoke Latency Benchmarks)**: Given a database seeded with realistic operational volumes (100+ tickets and tickets with 20+ action lines), when executing authoritative dashboard queries (`GET /api/dashboard/requester`, `GET /api/dashboard/staff`) and actions history retrieval (`GET /api/tickets/:id/actions`), then p95 server response times remain strictly under 200ms and 150ms respectively with zero memory leaks.
 
 ---
 

@@ -252,7 +252,7 @@ To prevent lost updates when multiple staff members manage a ticket concurrently
 `PATCH /api/staff/tickets/:id/status`
 
 - **Purpose**: Transition ticket status adhering strictly to the Section 5.1 lifecycle matrix.
-- **Authorized Roles**: `IT_STAFF`, `ADMINISTRATOR`.
+- **Authorized Roles**: `IT_STAFF`, `ADMINISTRATOR`. (`REQUESTER` receives HTTP 403 Forbidden).
 - **Request Body**:
   ```json
   {
@@ -262,7 +262,7 @@ To prevent lost updates when multiple staff members manage a ticket concurrently
   ```
 - **Validation Rules**:
   - `status`: Mandatory string matching one of the 8 `TicketStatus` enums.
-  - `version`: Optional/checked integer. If supplied, must match `ticket.version`.
+  - `version`: Mandatory integer matching current `ticket.version`.
   - Matrix Evaluation: Evaluates `(currentStatus, targetStatus)` against the permitted transitions:
     - `NEW` $\to$ `OPEN`, `IN_PROGRESS`, `CANCELLED`
     - `OPEN` $\to$ `IN_PROGRESS`, `WAITING_FOR_REQUESTER`, `CANCELLED`
@@ -310,11 +310,15 @@ To prevent lost updates when multiple staff members manage a ticket concurrently
 - **Request Body**:
   ```json
   {
-    "isRequesterResolved": true
+    "isRequesterResolved": true,
+    "version": 1
   }
   ```
+- **Validation Rules**:
+  - `isRequesterResolved`: Mandatory boolean.
+  - `version`: Mandatory integer matching current `ticket.version`.
 - **Behavior (Resolution Gate Enforcement)**:
-  - Updates `ticket.isRequesterResolved` to `true` (or `false`).
+  - Updates `ticket.isRequesterResolved` to `true` (or `false`) and increments `ticket.version`.
   - **Does NOT modify `ticket.currentStatus`**. The ticket remains in its active status (`IN_PROGRESS` or `WAITING_FOR_REQUESTER`) until formally verified and updated by IT Staff.
 - **Response `200 OK`**:
   ```json
@@ -323,13 +327,22 @@ To prevent lost updates when multiple staff members manage a ticket concurrently
     "ticketNumber": "TKT-2026-000101",
     "isRequesterResolved": true,
     "currentStatus": "IN_PROGRESS",
+    "version": 2,
     "updatedAt": "2026-10-15T17:20:00.000Z"
   }
   ```
 - **Error Responses**:
+  - `400 Bad Request`: Validation failure.
   - `401 Unauthorized`: Unauthenticated.
   - `403 Forbidden`: Requester does not own this ticket.
   - `404 Not Found`: Ticket not found.
+  - `409 Conflict`:
+    ```json
+    {
+      "error": "The ticket was updated by another session. Please refresh and retry.",
+      "code": "CONCURRENCY_CONFLICT"
+    }
+    ```
 
 ---
 
@@ -337,13 +350,39 @@ To prevent lost updates when multiple staff members manage a ticket concurrently
 `PATCH /api/tickets/:id/cancel`
 
 - **Purpose**: Allow a Requester to withdraw a ticket before triage commences.
-- **Authorized Roles**: `REQUESTER` (owned ticket only).
+- **Authorized Roles**: `REQUESTER` (owned ticket only), `IT_STAFF`, `ADMINISTRATOR`.
+- **Request Body**:
+  ```json
+  {
+    "version": 1
+  }
+  ```
+- **Validation Rules**:
+  - `version`: Mandatory integer matching current `ticket.version`.
 - **Behavior**:
   - Validates that `ticket.currentStatus === 'NEW'`. If the ticket has already progressed to `OPEN` or `IN_PROGRESS`, Requester cancellation is rejected.
-- **Response `200 OK`**: Returns ticket with `currentStatus = 'CANCELLED'`.
+  - Increments `ticket.version` on transition to `CANCELLED`.
+- **Response `200 OK`**:
+  ```json
+  {
+    "id": 101,
+    "ticketNumber": "TKT-2026-000101",
+    "currentStatus": "CANCELLED",
+    "version": 2,
+    "updatedAt": "2026-10-15T17:25:00.000Z"
+  }
+  ```
 - **Error Responses**:
   - `400 Bad Request`: `{ "error": "Cannot cancel ticket once triage or work has commenced", "code": "INVALID_STATUS_TRANSITION" }`
   - `403 Forbidden`: Not ticket owner.
+  - `404 Not Found`: Ticket not found.
+  - `409 Conflict`:
+    ```json
+    {
+      "error": "The ticket was updated by another session. Please refresh and retry.",
+      "code": "CONCURRENCY_CONFLICT"
+    }
+    ```
 
 ---
 

@@ -38,12 +38,15 @@ Sprint 4 applies Spec-Driven Development (Spec DD) and Test-Driven Development (
 | **ACT-API-07** | API | FR-03, BR-14 | List actions ordering | HTTP 200 OK; actions strictly sorted by `actionDateTime ASC, id ASC` | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
 | **ACT-API-08** | API | FR-03, BR-02 | Update Action Taken (`PATCH /api/actions/:id`) | HTTP 200 OK; updates description, result, status, and assignee | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
 | **ACT-API-09** | Concurrency | AC-09, BR-10 | Optimistic concurrency conflict on Action Taken | HTTP 409 Conflict when submitting update with stale `version` | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
-| **FLOW-API-01**| Workflow | AC-06, BR-06 | Requester "Problem Appears Resolved" toggle (`PATCH /api/tickets/:id/resolve-ack`) | HTTP 200 OK; sets `isRequesterResolved=true` but preserves active status | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
+| **FLOW-API-01**| Workflow | AC-06, BR-06 | Requester "Problem Appears Resolved" toggle (`PATCH /api/tickets/:id/resolve-ack`) | HTTP 200 OK; sets `isRequesterResolved=true`, increments version, preserves active status | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
 | **FLOW-API-02**| Workflow | AC-07, FR-05 | IT Staff formal resolution (`IN_PROGRESS -> RESOLVED`) | HTTP 200 OK; updates `currentStatus` to `RESOLVED` and increments `version` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
 | **FLOW-API-03**| Workflow | AC-08, BR-07 | Invalid status transition rejection (`NEW -> RESOLVED`) | HTTP 400 Bad Request with error code `INVALID_STATUS_TRANSITION` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
 | **FLOW-API-04**| Workflow | BR-08 | Requester ticket cancellation in `NEW` status | HTTP 200 OK; transitions `NEW -> CANCELLED`; rejects cancellation if `OPEN` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
 | **FLOW-API-05**| Workflow | BR-09 | Auto-transition on Requester comment | Submitting public comment on `WAITING_FOR_REQUESTER` auto-transitions to `IN_PROGRESS` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
 | **FLOW-API-06**| Concurrency | AC-09, BR-10 | Optimistic locking on ticket status update | HTTP 409 Conflict when submitting status update with stale `ticket.version` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
+| **FLOW-API-07**| Concurrency | AC-09, BR-10 | Optimistic locking on resolve-ack toggle | HTTP 409 Conflict when submitting resolve-ack with stale `ticket.version` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
+| **FLOW-API-08**| Concurrency | AC-09, BR-10 | Optimistic locking on requester ticket cancellation | HTTP 409 Conflict when submitting cancel with stale `ticket.version` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
+| **FLOW-API-09**| Security | BR-07 | Requester formal status transition block | HTTP 403 Forbidden when Requester calls `/api/staff/tickets/:id/status` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
 | **DASH-API-01**| API | AC-10, FR-08 | Requester dashboard metrics (`GET /api/dashboard/requester`) | HTTP 200 OK; returns `totalOpenTickets`, `ticketsWaitingForRequester`, `recentlyResolvedTickets` | `server/tests/lab-04/requester-dashboard.api.test.ts` | Planned |
 | **DASH-API-02**| Security | BR-12 | Requester dashboard ownership isolation | HTTP 200 OK; metrics strictly omit tickets belonging to other requesters | `server/tests/lab-04/requester-dashboard.api.test.ts` | Planned |
 | **DASH-API-03**| API | FR-08, BR-13 | Requester dashboard recent tickets stream | HTTP 200 OK; returns up to 5 most recently updated owned tickets | `server/tests/lab-04/requester-dashboard.api.test.ts` | Planned |
@@ -92,6 +95,16 @@ Sprint 4 applies Spec-Driven Development (Spec DD) and Test-Driven Development (
 
 ---
 
+### 2.4 Performance-Smoke Tests (Handout Section 10)
+
+| Test ID | Layer | Requirement / AC | What It Tests | Expected Result | Automated Test File | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **PERF-SMK-01** | Performance | AC-17 | Dashboard metric queries latency under load (100+ tickets in DB) | `GET /api/dashboard/requester` and `/api/dashboard/staff` respond with p95 < 200ms | `server/tests/lab-04/performance-smoke.test.ts` | Planned |
+| **PERF-SMK-02** | Performance | AC-17 | Actions Taken chronological query latency (ticket with 20+ action lines) | `GET /api/tickets/:id/actions` responds with p95 < 150ms | `server/tests/lab-04/performance-smoke.test.ts` | Planned |
+| **PERF-SMK-03** | Performance | AC-17, BR-10 | Burst concurrency conflict throughput (10 concurrent updates) | 1 write succeeds, 9 fail with 409 Conflict safely; average latency < 300ms | `server/tests/lab-04/performance-smoke.test.ts` | Planned |
+
+---
+
 ## 3. Acceptance Criteria Traceability Matrix
 
 Every Acceptance Criterion defined in `specification.md` maps directly to verified automated test cases:
@@ -105,8 +118,8 @@ Every Acceptance Criterion defined in `specification.md` maps directly to verifi
 | **AC-05** (Cross-Requester Action Isolation) | `ACT-API-06` | Server ownership middleware | **100%** |
 | **AC-06** (Advisory Resolution Gate Enforcement)| `FLOW-API-01`, `UI-FLOW-02`, `E2E-02-A` | Server API, Client banner, E2E workflow | **100%** |
 | **AC-07** (Staff Formal Resolution Enforcement) | `FLOW-API-02`, `UI-FLOW-03`, `E2E-02-A` | Server transition matrix, Client submit, E2E | **100%** |
-| **AC-08** (Invalid Transition Matrix Rejection) | `FLOW-API-03`, `UI-FLOW-01`, `E2E-02-B` | Server 400 rejection, UI dropdown filtering | **100%** |
-| **AC-09** (Optimistic Concurrency Conflict 409) | `ACT-API-09`, `FLOW-API-06`, `UI-ACT-05`, `E2E-02-B` | Server 409 conflict, Client modal handling | **100%** |
+| **AC-08** (Invalid Transition Matrix Rejection) | `FLOW-API-03`, `FLOW-API-09`, `UI-FLOW-01`, `E2E-02-B` | Server 400 rejection, UI dropdown filtering | **100%** |
+| **AC-09** (Optimistic Concurrency Conflict 409) | `ACT-API-09`, `FLOW-API-06`, `FLOW-API-07`, `FLOW-API-08`, `UI-ACT-05`, `E2E-02-B` | Server 409 conflict, Client modal handling | **100%** |
 | **AC-10** (Requester Dashboard Metric Accuracy) | `DASH-API-01`, `DASH-API-03`, `UI-DASH-01`, `E2E-03-A` | Server aggregation, Client UI, E2E journey | **100%** |
 | **AC-11** (Staff Dashboard Queue Metrics Accuracy)| `DASH-API-05`, `UI-DASH-04`, `E2E-03-B` | Server queue aggregation, Client UI, E2E | **100%** |
 | **AC-12** (Administrator User Summary Presence) | `DASH-API-06`, `UI-DASH-05`, `E2E-03-B` | Server conditional payload, UI render, E2E | **100%** |
@@ -114,6 +127,7 @@ Every Acceptance Criterion defined in `specification.md` maps directly to verifi
 | **AC-14** (Responsive Layout Integrity) | `E2E-01-C`, `E2E-03-C` | Multi-viewport Playwright (Desktop/Tablet/Mobile) | **100%** |
 | **AC-15** (Visible Keyboard Focus Rings) | `E2E-01-C`, `E2E-03-C` | Keyboard Tab navigation & CSS focus styles | **100%** |
 | **AC-16** (Full Labs 1–3 Regression Preservation)| `MIG-API-01`, existing test suites | Server 84 tests, Client 24 tests, Playwright 21 tests | **100%** |
+| **AC-17** (Performance-Smoke Benchmarks) | `PERF-SMK-01`, `PERF-SMK-02`, `PERF-SMK-03` | Latency thresholds (< 200ms, < 150ms), burst safety | **100%** |
 
 ---
 

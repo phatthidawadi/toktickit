@@ -272,6 +272,27 @@ const PERMITTED_STATUS_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
 
 ---
 
+### 3.5 Requester Ticket Detail Workflow Controls
+
+On the Requester Ticket Detail screen (`RequesterTicketDetail.tsx`), the status of the ticket is strictly displayed as a **read-only status badge**. Requesters do not have access to any status transition dropdown. Requesters interact with ticket lifecycle strictly through two dedicated controls:
+
+1. **Advisory "Problem Appears Resolved" Toggle**:
+   - Placed in the ticket header banner alongside current status.
+   - Switch / Checkbox labeled: *"Mark problem as appearing resolved (Advisory for IT Staff)"*.
+   - When clicked, sends `PATCH /api/tickets/:id/resolve-ack` with payload `{ "isRequesterResolved": boolean, "version": ticket.version }`.
+   - Tooltip / helper text clarifies: *"This lets IT Staff know the solution worked. IT Staff will formally verify and resolve your ticket."*
+   - Conflict handling: If server returns HTTP 409, displays alert banner and reloads latest ticket state.
+
+2. **Requester Cancellation Button**:
+   - Rendered **only when `ticket.currentStatus === 'NEW'`**.
+   - Outline danger button: *"Cancel Ticket"*.
+   - When clicked, opens confirmation modal: *"Are you sure you want to cancel this ticket? This action cannot be undone."*
+   - Confirming sends `PATCH /api/tickets/:id/cancel` with `{ "version": ticket.version }`.
+   - When the ticket has progressed to `OPEN`, `IN_PROGRESS`, or subsequent statuses, the "Cancel Ticket" button is omitted from the UI.
+   - Conflict handling: If server returns HTTP 409, displays alert banner and reloads latest ticket state.
+
+---
+
 ## 4. Accessibility (a11y) & Interaction Standards
 
 1. **Visible Focus Indicators**:
