@@ -9,8 +9,8 @@
 
 | PR | Branch | Reviewer verdict | Status |
 |---|---|---|---|
-| [PR #72](https://github.com/phatthidawadi/toktickit/pull/72) | `feature/26-doc-spec-tests` | Under review (Changes requested) | Under Review |
-| PR #73 (Planned) | `feature/27-actions-taken-foundation` | Planned | Pending |
+| [PR #72](https://github.com/phatthidawadi/toktickit/pull/72) | `feature/26-doc-spec-tests` | Approved & Merged | Merged |
+| PR (Upcoming) | `feature/27-actions-taken-foundation` | Pending Review | Open |
 | PR #74 (Planned) | `feature/28-actions-taken-ui` | Planned | Pending |
 | PR #75 (Planned) | `feature/29-ticket-workflow` | Planned | Pending |
 | PR #76 (Planned) | `feature/30-role-dashboards` | Planned | Pending |
@@ -97,4 +97,7 @@
 >      - อัปเดตเกณฑ์ความครอบคลุมเป็น `FR-01` ถึง `FR-12`, `BR-01` ถึง `BR-16`, และ `AC-01` ถึง `AC-17`
 >    - ใน `docs/lab-04/ai-use.md`:
 >      - อัปเดตข้อความใน Prompt log และ Reflection ให้ระบุ 9 coverage layers สอดคล้องกันทั้งหมดครับ
+
+**Reviewer (@chanya06) Final Approval:**
+> Approved! All contracts are internally consistent, coverage layers are accurately updated, and all 4 initial concerns have been resolved. Proceeding with PR merge into `lab4-staging`.
 
