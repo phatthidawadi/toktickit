@@ -9,6 +9,7 @@
 |---|---|---|
 | [PR #72](https://github.com/phatthidawadi/toktickit/pull/72) | `feature/26-doc-spec-tests` | Approved with comments |
 | [PR #73](https://github.com/phatthidawadi/toktickit/pull/73) | `feature/27-actions-taken-foundation` | Approved with comments |
+| [PR #74](https://github.com/phatthidawadi/toktickit/pull/74) | `feature/28-actions-taken-ui` | Pending Review |
 
 ---
 
@@ -152,6 +153,14 @@
 > 3. ✅ **Test Suite & Verification**:
 >    - ชุดทดสอบ Actions Taken API (`ACT-API-01` ถึง `ACT-API-09` และ `MIG-API-01`) ผ่านครบ 10/10 tests
 >    - ชุดทดสอบ Full Regression ฝั่ง Server ผ่าน 94/94 tests ครอบคลุม 19 test files และ Client Production Build ผ่านสมบูรณ์
+
+---
+
+### Reviewer comment I received (PR #74):
+"Pending peer review."
+
+### How I responded (PR #74):
+"Pending author response."
 
 ---
 

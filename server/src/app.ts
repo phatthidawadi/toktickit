@@ -455,6 +455,28 @@ app.patch("/api/staff/tickets/:id/assign", authenticateSession, requireRole(["IT
   }
 });
 
+// GET /api/staff/assignees — Active IT Staff & Administrator users for assignment
+app.get("/api/staff/assignees", authenticateSession, requireRole(["IT_STAFF", "ADMINISTRATOR"]), async (_req: Request, res: Response) => {
+  try {
+    const assignees = await getPrisma().user.findMany({
+      where: {
+        role: { in: ["IT_STAFF", "ADMINISTRATOR"] },
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+      },
+      orderBy: { name: "asc" },
+    });
+    return res.status(200).json(assignees);
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+  }
+});
+
 // PATCH /api/staff/tickets/:id/priority — Update Operational IT Priority
 app.patch("/api/staff/tickets/:id/priority", authenticateSession, requireRole(["IT_STAFF", "ADMINISTRATOR"]), async (req: Request, res: Response) => {
   try {
