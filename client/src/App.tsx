@@ -27,6 +27,9 @@ function MainContent() {
   >("dashboard");
 
   const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
+  // Drill-down filter state from dashboard cards (AC-13, FR-11)
+  const [queueFilter, setQueueFilter] = useState<string | undefined>(undefined);
+  const [ticketsFilter, setTicketsFilter] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     setCurrentNav("dashboard");
@@ -53,6 +56,9 @@ function MainContent() {
         }
         onNavigate={(nav) => {
           setSelectedTicketId(null);
+          // Clear drill-down filters when navigating from header
+          setQueueFilter(undefined);
+          setTicketsFilter(undefined);
           setCurrentNav(nav as any);
         }}
       />
@@ -61,14 +67,14 @@ function MainContent() {
         {/* Dashboard — default landing (FR-12) */}
         {currentNav === "dashboard" && role === "REQUESTER" && (
           <RequesterDashboard
-            onNavigateToTickets={(_filter) => setCurrentNav("my-tickets")}
+            onNavigateToTickets={(filter) => { setTicketsFilter(filter); setCurrentNav("my-tickets"); }}
             onNavigateToTicketDetail={(id) => { setSelectedTicketId(id); setCurrentNav("ticket-detail"); }}
             onNavigateToCreate={() => setCurrentNav("create-ticket")}
           />
         )}
         {currentNav === "dashboard" && (role === "IT_STAFF" || role === "ADMINISTRATOR") && (
           <StaffDashboard
-            onNavigateToQueue={(_filter) => setCurrentNav("ticket-queue")}
+            onNavigateToQueue={(filter) => { setQueueFilter(filter); setCurrentNav("ticket-queue"); }}
             onNavigateToTicketDetail={(id) => { setSelectedTicketId(id); setCurrentNav("staff-ticket-detail"); }}
             onNavigateToUserManagement={() => setCurrentNav("user-management")}
           />
@@ -80,6 +86,7 @@ function MainContent() {
           <MyTicketsView
             onCreateClick={() => setCurrentNav("create-ticket")}
             onTicketClick={handleSelectTicket}
+            initialFilter={ticketsFilter}
           />
         )}
         {currentNav === "ticket-detail" && selectedTicketId && (
@@ -92,7 +99,7 @@ function MainContent() {
           />
         )}
         {currentNav === "ticket-queue" && (
-          <StaffTicketQueue onTicketClick={handleSelectTicket} />
+          <StaffTicketQueue onTicketClick={handleSelectTicket} initialFilter={queueFilter} />
         )}
         {currentNav === "staff-ticket-detail" && selectedTicketId && (
           <StaffTicketDetail

@@ -3,9 +3,22 @@ import { fetchStaffTicketsApi, fetchCategories, Category, Ticket, PaginatedTicke
 
 interface StaffTicketQueueProps {
   onTicketClick?: (ticketId: number) => void;
+  initialFilter?: string;
 }
 
-export const StaffTicketQueue: React.FC<StaffTicketQueueProps> = ({ onTicketClick }) => {
+// Map dashboard drill-down filter keys to queue filter fields
+function resolveInitialFilters(filter?: string): { status?: string; assignedStaffId?: string; itPriority?: string } {
+  switch (filter) {
+    case "unassigned": return { assignedStaffId: "unassigned" };
+    case "my-assigned": return { assignedStaffId: "me" };
+    case "urgent": return { itPriority: "URGENT" };
+    case "waiting": return { status: "WAITING_FOR_REQUESTER" };
+    default: return {};
+  }
+}
+
+export const StaffTicketQueue: React.FC<StaffTicketQueueProps> = ({ onTicketClick, initialFilter }) => {
+  const initFilters = resolveInitialFilters(initialFilter);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -13,10 +26,10 @@ export const StaffTicketQueue: React.FC<StaffTicketQueueProps> = ({ onTicketClic
 
   const [search, setSearch] = useState<string>("");
   const [categoryId, setCategoryId] = useState<string>("");
-  const [status, setStatus] = useState<string>("");
+  const [status, setStatus] = useState<string>(initFilters.status || "");
   const [requestedPriority, setRequestedPriority] = useState<string>("");
-  const [itPriority, setItPriority] = useState<string>("");
-  const [assignedStaffFilter, setAssignedStaffFilter] = useState<string>("");
+  const [itPriority, setItPriority] = useState<string>(initFilters.itPriority || "");
+  const [assignedStaffFilter, setAssignedStaffFilter] = useState<string>(initFilters.assignedStaffId || "");
   const [sort, setSort] = useState<string>("createdAt_desc");
   const [page, setPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
