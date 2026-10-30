@@ -170,7 +170,6 @@
 
 | PR | Branch | My review verdict |
 |---|---|---|
-| [PR #58](https://github.com/lmaybelgracel/TokTickit/pull/58) | `feature/27-sprint4-spec-and-tests` | Approved (Round 1: Changes Requested, Round 2: Approved) |
 | [PR #69](https://github.com/lmaybelgracel/TokTickit/pull/69) | `feature/27-sprint4-spec-and-tests` | Approved (Round 1: Changes Requested, Round 2: Approved) |
 | [PR #70](https://github.com/lmaybelgracel/TokTickit/pull/70) | `feature/28-database-and-seed` | Approved (Round 1: Changes Requested, Round 2: Approved) |
 | [PR #71](https://github.com/lmaybelgracel/TokTickit/pull/71) | `feature/29-actions-taken-api` | Approved (Round 1: Changes Requested, Round 2: Approved) |
@@ -180,40 +179,6 @@
 | [PR #75](https://github.com/lmaybelgracel/TokTickit/pull/75) | `feature/33-staff-dashboard-ui` | Approved (Round 1: Changes Requested, Round 2: Changes Requested, Round 3: Approved) |
 | [PR #76](https://github.com/lmaybelgracel/TokTickit/pull/76) | `feature/34-requester-dashboard-ui` | Approved (Round 1: Changes Requested, Round 2: Changes Requested, Round 3: Approved) |
 | [PR #77](https://github.com/lmaybelgracel/TokTickit/pull/77) | `feature/35-e2e-automation-and-audit` | Approved (Round 1: Changes Requested, Round 2: Changes Requested, Round 3: Approved) |
-
----
-
-### My review comment for partner's PR #58 (Issue 27):
-> ผลการประเมินภาพรวม (Overall Verdict)
-> คำตัดสิน: Request Changes (ขอให้แก้ไขก่อนอนุมัติ)
-> 
-> เหตุผล:
-> โครงสร้างข้อกำหนดของ Sprint 4 ได้รับการออกแบบมาอย่างเป็นระบบและครอบคลุมฟังก์ชันหลัก เช่น โมเดล Actions Taken แบบ 1:N และ State Transition Matrix พร้อม Resolution Gate ที่รัดกุม อย่างไรก็ตาม ยังมีประเด็นสำคัญที่ต้องได้รับการแก้ไขให้ถูกต้องก่อนจึงจะสามารถอนุมัติได้ ได้แก่ การขาดเมตริก "current-user Actions Taken" บน IT Staff Dashboard ซึ่งขัดกับเกณฑ์การให้คะแนน Part 5 ใน Handout, การระบุไวยากรณ์ความสัมพันธ์ย้อนกลับ (Inverse Relations) ของ Prisma บนโมเดล Ticket และ User ที่ยังไม่ครบถ้วนใน Section 7.1 ซึ่งจะทำให้ migration ล้มเหลว, และความไม่สอดคล้องกันระหว่างตาราง Traceability Matrix กับ Master Test Catalog ใน tests.md จึงขอให้ปรับปรุงแก้ไขจุดเหล่านี้ใน PR ก่อนทำการรวมเข้าสู่ lab4-staging
-
-### How partner responded (PR #58):
-> ดำเนินการปรับปรุงแก้ไขข้อกำหนดทางวิศวกรรมครบทั้ง 4 ประเด็นใน commit `2e3742a`:
-> 1. เพิ่มเมตริก `myActionsTakenCount` บน IT Staff Dashboard ใน `specification.md` (FR-13, BR-17), `api-spec.md` (§3.2), และ `ui-spec.md` (การ์ดใบที่ 3 "My Actions Recorded" พร้อมกฎ Responsive) รวมถึงเพิ่มรหัสทดสอบ `API-DASH-04` และ `UI-DASH-04`
-> 2. เพิ่ม Inverse Relations ใน Prisma Schema definition Section 7.1 ให้สมบูรณ์ (`Ticket.actionsTaken` และ `User.actionsTaken @relation("PerformedActions")`)
-> 3. ซิงค์ตาราง Master Test Catalog กับ Traceability Matrix ใน `tests.md` ครบ 100% 1-to-1 รวมถึงมีนิยามของ `API-MIG-01`, `REG-ALL-01`, `E2E-ALL-01`
-> 4. ปรับปรุงข้อมูลผู้ตรวจประเมินจริงใน `docs/lab-04/reviewer.md` เรียบร้อย
-
-### My approval review comment for partner's PR #58:
-> ### สรุปผลการตรวจสอบรอบที่ 2 (Round 2 Peer Review Verification)
-> 
-> - **Commit ที่ตรวจสอบ:** `2e3742a`
-> - **ผลการรันชุดทดสอบ Regression Labs 1–3:** **ผ่านทั้งหมด 29/29 ไฟล์ (204/204 เทสต์ ผ่าน 100% ไม่มีการข้ามเทสต์)**
-> 
-> #### ผลการตรวจติดตามข้อเสนอแนะจากรอบแรก:
-> - [x] **F-01 (Major - เมตริก Handout Part 5):** **RESOLVED (แก้ไขเรียบร้อย)** — ตรวจสอบพบการเพิ่ม `myActionsTakenCount` ใน `specification.md` (FR-13, BR-17), ใน `api-spec.md` (บรรทัด 180), และใน `ui-spec.md` (เพิ่มการ์ดใบที่ 3 "My Actions Recorded" พร้อมกฎ Responsive) รวมถึงเพิ่มรหัสทดสอบ `API-DASH-04` และ `UI-DASH-04` ครบถ้วน
-> - [x] **F-02 (Major - Prisma Inverse Relations):** **RESOLVED (แก้ไขเรียบร้อย)** — ตรวจสอบพบการระบุความสัมพันธ์ย้อนกลับใน `specification.md` Section 7.1 ครบถ้วน (`Ticket.actionsTaken` และ `User.actionsTaken @relation("PerformedActions")`) ไวยากรณ์ถูกต้องตามหลัก Prisma
-> - [x] **F-03 (Major - ตาราง Test Catalog):** **RESOLVED (แก้ไขเรียบร้อย)** — ตรวจสอบพบตาราง Master Test Catalog ใน `tests.md` ซิงค์กับ Traceability Matrix ครบทุกตัว 100% 1-to-1 รวมถึงมีนิยามของ `API-MIG-01`, `REG-ALL-01`, และ `E2E-ALL-01` เรียบร้อยแล้ว
-> - [x] **F-07 (Nit - ข้อมูลผู้ตรวจ):** **RESOLVED (แก้ไขเรียบร้อย)** — ระบุตัวตนผู้ตรวจจริงใน `reviewer.md` เรียบร้อย
-> 
-> #### ข้อแนะนำเพิ่มเติมสำหรับช่วงลงมือเขียนโค้ด (Implementation):
-> - ฐานข้อมูลและโค้ด Client เดิมใช้ชื่อฟิลด์ `currentStatus` อย่าลืมตรวจสอบให้แน่ใจว่า Controller ส่งค่าออกมาแบบ Backward-compatible หรือมี Data mapping ที่ปลอดภัย
-> - ใน Route Handler แนะนำให้เช็ค Validation บังคับส่ง `knownUpdatedAt` (`422 Unprocessable Entity`) เพื่อให้การดักจับ 409 Conflict ทำงานได้อย่างสมบูรณ์
-> 
-> **คำตัดสิน: APPROVE (อนุมัติ)** — ข้อกำหนดทางวิศวกรรมได้รับการแก้ไขอย่างถูกต้อง มีหลักฐานครบถ้วน
 
 ---
 
