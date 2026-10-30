@@ -9,7 +9,7 @@
 |---|---|---|
 | [PR #72](https://github.com/phatthidawadi/toktickit/pull/72) | `feature/26-doc-spec-tests` | Approved with comments |
 | [PR #73](https://github.com/phatthidawadi/toktickit/pull/73) | `feature/27-actions-taken-foundation` | Approved with comments |
-| [PR #74](https://github.com/phatthidawadi/toktickit/pull/74) | `feature/28-actions-taken-ui` | Pending Review |
+| [PR #74](https://github.com/phatthidawadi/toktickit/pull/74) | `feature/28-actions-taken-ui` | Approved with comments |
 
 ---
 
@@ -157,10 +157,40 @@
 ---
 
 ### Reviewer comment I received (PR #74):
-"Pending peer review."
+> ตรวจทานโค้ดจริงทั้งหมดใน branch `feature/28-actions-taken-ui` เทียบกับ **Lab 4 Handout (§4.3, §8.3)**, `specification.md`, `ui-spec.md` และ `tests.md` อย่างละเอียดเรียบร้อยแล้ว:
+>
+> 1. ✅ **Component Integration & Role-Based Visibility**:
+>    - นำคอมโพเนนต์ `ActionsTakenSection` ไปฝังในทั้ง `StaffTicketDetail.tsx` (Staff/Admin) และ `TicketDetailView.tsx` (Requester) ได้อย่างถูกต้อง
+>    - แยกสิทธิ์ชัดเจน: Requester เห็นประวัติการทำงานแบบ Read-only (ซ่อนปุ่มสร้างและแก้ไขทั้งหมด) ขณะที่ Staff/Admin มีปุ่ม `+ Record Action` และปุ่ม `Edit` ครบถ้วนตาม Handout §4.3
+>
+> 2. ✅ **Responsive Design & Dual Layout**:
+>    - รองรับการแสดงผลแบบตารางบน Desktop/Tablet ($\ge$ 768px) และสลับเป็น Stacked Cards บน Mobile (< 768px) อัตโนมัติ ป้องกันปัญหาหน้าจอล้น (No horizontal scrolling)
+>    - ปุ่มกดสำคัญผ่านเกณฑ์ Touch Target $\ge$ 44px และมี Visible Focus Ring (`2px solid #0B7A46`) ตามมาตรฐาน Zen Green Theme
+>
+> 3. ✅ **Validation & Dynamic UX**:
+>    - ตรวจสอบฟิลด์บังคับ Description และ Result (1–2,000 ตัวอักษร) พร้อม Toggle กล่องข้อความ Follow-up Note สีเหลืองอำพัน (`#FEF3C7`) เฉพาะเมื่อต้องการงานติดตามต่อ
+>    - เชื่อมต่อ Dropdown ผู้รับผิดชอบกับ Endpoint `GET /api/staff/assignees` ที่กรองเฉพาะ active IT Staff/Admin อย่างรัดกุม
+>
+> 4. ✅ **Optimistic Concurrency Conflict Handling (HTTP 409)**:
+>    - จัดการ Conflict ในระดับ UI ได้อย่างนุ่มนวล โดยแสดงแบนเนอร์แจ้งเตือนพร้อมปุ่ม `Reload Latest Data` เพื่อดึงเวอร์ชันล่าสุดมาให้แก้ไขใหม่โดยไม่ทำลายข้อมูลที่ผู้ใช้พิมพ์ค้างไว้
+>
+> 5. ✅ **Automated Tests**:
+>    - ชุดทดสอบ `client/tests/lab-04/ActionsTaken.test.tsx` ครอบคลุมครบทั้ง 5 เคส (`UI-ACT-01` ถึง `UI-ACT-05`) ผ่าน 100%
+>
+> **ข้อเสนอแนะเพิ่มเติม (Non-blocking):**
+> - ใน `docs/lab-04/api-spec.md` แนะนำเพิ่มการบันทึก Endpoint ใหม่ `GET /api/staff/assignees` ที่เพิ่มเข้ามาใน PR นี้ เพื่อให้เอกสารสัญญาตรงกับโค้ดจริง
+> - สามารถพิจารณาเพิ่ม Keyboard Event Listener ดักจับปุ่ม `Escape` สำหรับการปิด Modal เพื่อเพิ่มความสะดวกในการใช้งานผ่านคีย์บอร์ด
 
 ### How I responded (PR #74):
-"Pending author response."
+> ขอบคุณสำหรับข้อเสนอแนะและการตรวจทานโค้ดอย่างละเอียดครับ ได้ดำเนินการปรับปรุงและตอบสนองทั้ง 2 ข้อเรียบร้อยแล้ว:
+>
+> 1. **บันทึกเอกสาร API Spec (`GET /api/staff/assignees`):**
+>    - เพิ่มการบันทึก Endpoint `GET /api/staff/assignees` ใน `docs/lab-04/api-spec.md` (หัวข้อ 2.4 List Eligible Staff Assignees) พร้อมรายละเอียด Authorized Roles (`IT_STAFF`, `ADMINISTRATOR`), Request Headers และตัวอย่าง JSON Response ของเจ้าหน้าที่ที่พร้อมรับงานอย่างสมบูรณ์
+>
+> 2. **เพิ่ม Keyboard Event Listener ปิด Modal ด้วยปุ่ม `Escape`:**
+>    - เพิ่ม `useEffect` ดักจับ `keydown` Event บน window เพื่อตรวจสอบ `e.key === "Escape"` เมื่อเปิด Record Modal หรือ Edit Modal อยู่ ให้เรียกสั่งปิด `closeModals()` พร้อม Clean-up Event Listener อย่างถูกต้องตามมาตรฐาน WCAG 2.1 AA Keyboard Accessibility
+>
+> ได้รันชุดทดสอบ Client Tests ผ่าน 5/5 tests และ Client Production Build ผ่าน 100% เรียบร้อยครับ
 
 ---
 

@@ -246,6 +246,37 @@ To prevent lost updates when multiple staff members manage a ticket concurrently
 
 ---
 
+### 2.4 List Eligible Staff Assignees
+`GET /api/staff/assignees`
+
+- **Purpose**: Retrieve active IT Staff and Administrator users eligible to be assigned to an Action Taken or ticket.
+- **Authorized Roles**: `IT_STAFF`, `ADMINISTRATOR`. (`REQUESTER` receives HTTP 403 Forbidden).
+- **Request Headers**:
+  - `Cookie: toktickit_session=<jwt>`
+- **Response `200 OK`**:
+  ```json
+  [
+    {
+      "id": 2,
+      "name": "Staff Alice",
+      "email": "alice@toktickit.com",
+      "role": "IT_STAFF"
+    },
+    {
+      "id": 3,
+      "name": "Admin Bob",
+      "email": "admin@toktickit.com",
+      "role": "ADMINISTRATOR"
+    }
+  ]
+  ```
+- **Error Responses**:
+  - `401 Unauthorized`: Missing or invalid session cookie.
+  - `403 Forbidden`: Authenticated user lacks `IT_STAFF` or `ADMINISTRATOR` role.
+  - `500 Internal Error`: Database retrieval failure.
+
+---
+
 ## 3. Ticket Status & Workflow Endpoints
 
 ### 3.1 Authoritative Status Transition

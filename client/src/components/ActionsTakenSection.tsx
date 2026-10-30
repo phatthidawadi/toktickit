@@ -102,6 +102,16 @@ export const ActionsTakenSection: React.FC<ActionsTakenSectionProps> = ({
     setConcurrencyConflict(null);
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && (isRecordModalOpen || !!editingAction)) {
+        closeModals();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isRecordModalOpen, editingAction]);
+
   const handleRecordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
