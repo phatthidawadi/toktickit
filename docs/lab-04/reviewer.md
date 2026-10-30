@@ -9,7 +9,7 @@
 
 | PR | Branch | Reviewer verdict | Status |
 |---|---|---|---|
-| [PR #72](https://github.com/phatthidawadi/toktickit/pull/72) | `feature/26-doc-spec-tests` | Approved with comments | Pending Merge |
+| [PR #72](https://github.com/phatthidawadi/toktickit/pull/72) | `feature/26-doc-spec-tests` | Under review (Changes requested) | Under Review |
 | PR #73 (Planned) | `feature/27-actions-taken-foundation` | Planned | Pending |
 | PR #74 (Planned) | `feature/28-actions-taken-ui` | Planned | Pending |
 | PR #75 (Planned) | `feature/29-ticket-workflow` | Planned | Pending |
@@ -67,3 +67,34 @@
 >
 > 4. **เพิ่มไฟล์ประกอบ Lab 4:**
 >    - จัดทำไฟล์ `docs/lab-04/reviewer.md` และ `docs/lab-04/ai-use.md` เพิ่มเติมเข้ามาใน PR นี้ทันที ทำให้โครงสร้างโฟลเดอร์ `docs/lab-04/` ครบทั้ง 6 ไฟล์ตามเกณฑ์ Handout Section 12 ครับ
+
+---
+
+**Reviewer (@chanya06) Round 2 Feedback:**
+> ตรวจรอบล่าสุดแล้ว 4 ประเด็นหลักแก้ได้ดีขึ้นมาก โดยเฉพาะ mandatory versioning, performance-smoke tests และการเพิ่มไฟล์ประกอบ Lab 4
+> 
+> เหลือขอแก้อีก 3 จุดก่อน approve:
+> 1. `PATCH /api/tickets/:id/cancel` ยังระบุสิทธิ์ไม่ตรงกันระหว่าง `api-spec.md` กับ `specification.md` ว่า Staff/Admin ใช้ได้หรือไม่
+> 2. `reviewer.md` ระบุว่า PR #72 “Approved with comments” แล้ว แต่ตอนนี้ยังอยู่ระหว่างรีวิว ขอให้เปลี่ยนเป็น `Changes requested` หรือ `Under review` ก่อน
+> 3. เพิ่ม Performance-Smoke Tests แล้ว แต่ `tests.md` และ `ai-use.md` ยังระบุว่ามีเพียง 8 coverage layers ควรอัปเดตเป็น 9 layers
+> 
+> แก้ 3 จุดนี้แล้วส่งมาได้เลย
+
+**Author (@phatthidawadi) Round 2 Response & Resolution:**
+> ดำเนินการปรับปรุงทั้ง 3 จุดเรียบร้อยแล้วครับ:
+> 
+> 1. **ปรับสิทธิ์ `PATCH /api/tickets/:id/cancel` ให้ตรงกัน:**
+>    - ปรับใน `api-spec.md` (§3.3) ให้ตรงกับ `specification.md` (BR-08, §8.2) และ `ui-spec.md` (§3.5) อย่างสมบูรณ์:
+>      - `PATCH /api/tickets/:id/cancel` กำหนด Authorized Role เป็น **`REQUESTER` (owned ticket in `NEW` status only)** สำหรับการถอนตั๋วก่อน triage
+>      - ระบุหมายเหตุชัดเจนว่า `IT_STAFF` และ `ADMINISTRATOR` ทำการ cancel ตั๋วผ่าน endpoint หลัก `PATCH /api/staff/tickets/:id/status` ด้วย payload `{ "status": "CANCELLED", "version": <int> }` ซึ่งรองรับการยกเลิกจากหลายสถานะ (`NEW`, `OPEN`, `IN_PROGRESS`, `WAITING_FOR_REQUESTER`) ตาม Transition Matrix
+> 
+> 2. **อัปเดตสถานะใน `reviewer.md`:**
+>    - ปรับสถานะของ PR #72 ในตารางเป็น **`Under review (Changes requested)`** และ Status เป็น **`Under Review`** ให้ตรงกับสถานะจริงบน GitHub
+> 
+> 3. **อัปเดต Coverage Layers เป็น 9 Layers ครบทุกจุด:**
+>    - ใน `docs/lab-04/tests.md`:
+>      - อัปเดต §1 เป็น **9 Coverage Layers** โดยเพิ่มข้อ *9. Performance-Smoke Tests: Latency benchmarks across dashboard queries, actions retrieval, and burst concurrency conflict throughput under load.*
+>      - อัปเดตเกณฑ์ความครอบคลุมเป็น `FR-01` ถึง `FR-12`, `BR-01` ถึง `BR-16`, และ `AC-01` ถึง `AC-17`
+>    - ใน `docs/lab-04/ai-use.md`:
+>      - อัปเดตข้อความใน Prompt log และ Reflection ให้ระบุ 9 coverage layers สอดคล้องกันทั้งหมดครับ
+

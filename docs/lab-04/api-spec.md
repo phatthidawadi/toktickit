@@ -349,8 +349,9 @@ To prevent lost updates when multiple staff members manage a ticket concurrently
 ### 3.3 Requester Ticket Cancellation (NEW status only)
 `PATCH /api/tickets/:id/cancel`
 
-- **Purpose**: Allow a Requester to withdraw a ticket before triage commences.
-- **Authorized Roles**: `REQUESTER` (owned ticket only), `IT_STAFF`, `ADMINISTRATOR`.
+- **Purpose**: Allow a Requester to withdraw an owned ticket before triage commences.
+- **Authorized Roles**: `REQUESTER` (owned ticket in `NEW` status only).
+  - *Note*: `IT_STAFF` and `ADMINISTRATOR` execute ticket cancellations across all permitted lifecycle states via the authoritative status transition endpoint `PATCH /api/staff/tickets/:id/status` with payload `{ "status": "CANCELLED", "version": <int> }`.
 - **Request Body**:
   ```json
   {

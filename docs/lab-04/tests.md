@@ -9,7 +9,7 @@
 
 ## 1. Test Strategy and Testing Architecture
 
-Sprint 4 applies Spec-Driven Development (Spec DD) and Test-Driven Development (TDD) across the complete TokTickIT full-stack architecture. The testing strategy enforces 100% verification of all Functional Requirements (`FR-01` to `FR-12`), Business Rules (`BR-01` to `BR-16`), and Acceptance Criteria (`AC-01` to `AC-16`).
+Sprint 4 applies Spec-Driven Development (Spec DD) and Test-Driven Development (TDD) across the complete TokTickIT full-stack architecture. The testing strategy enforces 100% verification of all Functional Requirements (`FR-01` to `FR-12`), Business Rules (`BR-01` to `BR-16`), and Acceptance Criteria (`AC-01` to `AC-17`).
 
 ### Coverage Layers (Handout Section 10)
 1. **Unit & Domain Tests**: Optimistic locking conflict logic, ticket status transition matrix validator, and date interval boundaries.
@@ -20,6 +20,7 @@ Sprint 4 applies Spec-Driven Development (Spec DD) and Test-Driven Development (
 6. **Security & Authorization Tests**: Server-side role enforcement, cross-requester data isolation, rejection of inactive assignees, and Requester write protection on Actions Taken.
 7. **Migration & Regression Tests**: Non-destructive Prisma migration verification, legacy ticket compatibility (zero actions), and 100% passing test status for all Lab 1–3 test suites.
 8. **End-to-End (E2E) Browser Journeys (Playwright)**: Full multi-viewport browser journeys testing Actions Taken logging, ticket resolution workflow, and dashboard metric drill-downs across Chromium, Tablet, and Mobile.
+9. **Performance-Smoke Tests**: Latency benchmarks across dashboard aggregations (< 200ms), actions chronological queries (< 150ms), and burst concurrency conflict throughput under operational loads.
 
 ---
 
