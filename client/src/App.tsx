@@ -10,6 +10,8 @@ import { StaffTicketDetail } from "./components/StaffTicketDetail.js";
 import { UserManagement } from "./components/UserManagement.js";
 import { Login } from "./components/Login.js";
 import { ChangePassword } from "./components/ChangePassword.js";
+import { RequesterDashboard } from "./components/RequesterDashboard.js";
+import { StaffDashboard } from "./components/StaffDashboard.js";
 
 function MainContent() {
   let authContext: any = null;
@@ -21,17 +23,13 @@ function MainContent() {
   const role = user?.role;
 
   const [currentNav, setCurrentNav] = useState<
-    "my-tickets" | "create-ticket" | "ticket-detail" | "ticket-queue" | "staff-ticket-detail" | "user-management"
-  >(role === "IT_STAFF" || role === "ADMINISTRATOR" ? "ticket-queue" : "my-tickets");
+    "dashboard" | "my-tickets" | "create-ticket" | "ticket-detail" | "ticket-queue" | "staff-ticket-detail" | "user-management"
+  >("dashboard");
 
   const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
 
   useEffect(() => {
-    if (role === "IT_STAFF" || role === "ADMINISTRATOR") {
-      setCurrentNav("ticket-queue");
-    } else {
-      setCurrentNav("my-tickets");
-    }
+    setCurrentNav("dashboard");
   }, [role]);
 
   const handleSelectTicket = (ticketId: number) => {
@@ -55,11 +53,26 @@ function MainContent() {
         }
         onNavigate={(nav) => {
           setSelectedTicketId(null);
-          setCurrentNav(nav);
+          setCurrentNav(nav as any);
         }}
       />
 
       <main className="container py-4" style={{ maxWidth: 1100 }}>
+        {/* Dashboard — default landing (FR-12) */}
+        {currentNav === "dashboard" && role === "REQUESTER" && (
+          <RequesterDashboard
+            onNavigateToTickets={(_filter) => setCurrentNav("my-tickets")}
+            onNavigateToTicketDetail={(id) => { setSelectedTicketId(id); setCurrentNav("ticket-detail"); }}
+            onNavigateToCreate={() => setCurrentNav("create-ticket")}
+          />
+        )}
+        {currentNav === "dashboard" && (role === "IT_STAFF" || role === "ADMINISTRATOR") && (
+          <StaffDashboard
+            onNavigateToQueue={(_filter) => setCurrentNav("ticket-queue")}
+            onNavigateToTicketDetail={(id) => { setSelectedTicketId(id); setCurrentNav("staff-ticket-detail"); }}
+            onNavigateToUserManagement={() => setCurrentNav("user-management")}
+          />
+        )}
         {currentNav === "create-ticket" && (
           <CreateTicketForm onCancel={() => setCurrentNav("my-tickets")} />
         )}
