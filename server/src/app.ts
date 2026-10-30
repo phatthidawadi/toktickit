@@ -455,6 +455,28 @@ app.patch("/api/staff/tickets/:id/assign", authenticateSession, requireRole(["IT
   }
 });
 
+// GET /api/staff/assignees — Active IT Staff & Administrator users for assignment
+app.get("/api/staff/assignees", authenticateSession, requireRole(["IT_STAFF", "ADMINISTRATOR"]), async (_req: Request, res: Response) => {
+  try {
+    const assignees = await getPrisma().user.findMany({
+      where: {
+        role: { in: ["IT_STAFF", "ADMINISTRATOR"] },
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+      },
+      orderBy: { name: "asc" },
+    });
+    return res.status(200).json(assignees);
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+  }
+});
+
 // PATCH /api/staff/tickets/:id/priority — Update Operational IT Priority
 app.patch("/api/staff/tickets/:id/priority", authenticateSession, requireRole(["IT_STAFF", "ADMINISTRATOR"]), async (req: Request, res: Response) => {
   try {
@@ -501,7 +523,7 @@ app.patch("/api/staff/tickets/:id/status", authenticateSession, requireRole(["IT
       return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
     }
 
-    const { status } = req.body || {};
+    const { status, version } = req.body || {};
     if (!status || typeof status !== "string") {
       return res.status(400).json({ error: "Status field is required", code: "INVALID_INPUT" });
     }
@@ -509,7 +531,7 @@ app.patch("/api/staff/tickets/:id/status", authenticateSession, requireRole(["IT
     const isPermitted = isValidStatusTransition(ticket.currentStatus, status, req.user!.role);
     if (!isPermitted) {
       return res.status(400).json({
-        error: `Invalid ticket status transition from ${ticket.currentStatus} to ${status}`,
+        error: `Invalid status transition from ${ticket.currentStatus} to ${status}`,
         code: "INVALID_TRANSITION",
       });
     }
@@ -521,9 +543,178 @@ app.patch("/api/staff/tickets/:id/status", authenticateSession, requireRole(["IT
       updateData.assignedStaffId = req.user!.userId;
     }
 
-    const updatedTicket = await getPrisma().ticket.update({
+    if (version !== undefined && version !== null) {
+      const updateResult = await getPrisma().ticket.updateMany({
+        where: { id: ticketId, version: version },
+        data: {
+          ...updateData,
+          version: { increment: 1 },
+        },
+      });
+
+      if (updateResult.count === 0) {
+        return res.status(409).json({
+          error: "The ticket was updated by another session. Please refresh and retry.",
+          code: "CONCURRENCY_CONFLICT",
+        });
+      }
+    } else {
+      await getPrisma().ticket.update({
+        where: { id: ticketId },
+        data: {
+          ...updateData,
+          version: { increment: 1 },
+        },
+      });
+    }
+
+    const updatedTicket = await getPrisma().ticket.findUnique({
       where: { id: ticketId },
-      data: updateData,
+      include: {
+        assignedStaff: { select: { id: true, name: true, email: true, role: true } },
+        category: true,
+        relatedSystem: true,
+      },
+    });
+
+    return res.status(200).json(updatedTicket);
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+  }
+});
+
+// PATCH /api/tickets/:id/resolve-ack — Advisory Requester Resolution Acknowledgment
+app.patch("/api/tickets/:id/resolve-ack", authenticateSession, async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId) || ticketId <= 0) {
+      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
+    }
+
+    const ticket = await getPrisma().ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) {
+      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
+    }
+
+    // Role check: Requesters may only acknowledge their own tickets
+    if (req.user!.role === "REQUESTER" && ticket.requesterId !== req.user!.userId) {
+      return res.status(403).json({
+        error: "Access denied. You can only acknowledge resolution for your own tickets.",
+        code: "FORBIDDEN",
+      });
+    }
+
+    const { isRequesterResolved = true, version } = req.body || {};
+    if (typeof isRequesterResolved !== "boolean") {
+      return res.status(400).json({
+        error: "isRequesterResolved must be a boolean",
+        code: "INVALID_INPUT",
+      });
+    }
+
+    if (version !== undefined && version !== null) {
+      const updateResult = await getPrisma().ticket.updateMany({
+        where: { id: ticketId, version: version },
+        data: {
+          isRequesterResolved,
+          version: { increment: 1 },
+        },
+      });
+
+      if (updateResult.count === 0) {
+        return res.status(409).json({
+          error: "The ticket was updated by another session. Please refresh and retry.",
+          code: "CONCURRENCY_CONFLICT",
+        });
+      }
+    } else {
+      await getPrisma().ticket.update({
+        where: { id: ticketId },
+        data: {
+          isRequesterResolved,
+          version: { increment: 1 },
+        },
+      });
+    }
+
+    const updatedTicket = await getPrisma().ticket.findUnique({
+      where: { id: ticketId },
+      include: {
+        category: true,
+        relatedSystem: true,
+        assignedStaff: { select: { id: true, name: true, email: true, role: true } },
+      },
+    });
+
+    return res.status(200).json(updatedTicket);
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+  }
+});
+
+// PATCH /api/tickets/:id/cancel — Requester Ticket Cancellation (NEW status only)
+app.patch("/api/tickets/:id/cancel", authenticateSession, async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId) || ticketId <= 0) {
+      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
+    }
+
+    const ticket = await getPrisma().ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) {
+      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
+    }
+
+    // Role check: Requesters may only cancel their own tickets
+    if (req.user!.role === "REQUESTER" && ticket.requesterId !== req.user!.userId) {
+      return res.status(403).json({
+        error: "Access denied. You can only cancel your own tickets.",
+        code: "FORBIDDEN",
+      });
+    }
+
+    // Requester may only cancel tickets in NEW status
+    if (req.user!.role === "REQUESTER" && ticket.currentStatus !== "NEW") {
+      return res.status(403).json({
+        error: "Requesters may only cancel tickets in NEW status. Contact IT Staff for cancellations in active states.",
+        code: "FORBIDDEN",
+      });
+    }
+
+    const { version } = req.body || {};
+
+    if (version !== undefined && version !== null) {
+      const updateResult = await getPrisma().ticket.updateMany({
+        where: { id: ticketId, version: version },
+        data: {
+          currentStatus: "CANCELLED",
+          version: { increment: 1 },
+        },
+      });
+
+      if (updateResult.count === 0) {
+        return res.status(409).json({
+          error: "The ticket was updated by another session. Please refresh and retry.",
+          code: "CONCURRENCY_CONFLICT",
+        });
+      }
+    } else {
+      await getPrisma().ticket.update({
+        where: { id: ticketId },
+        data: {
+          currentStatus: "CANCELLED",
+          version: { increment: 1 },
+        },
+      });
+    }
+
+    const updatedTicket = await getPrisma().ticket.findUnique({
+      where: { id: ticketId },
+      include: {
+        category: true,
+        relatedSystem: true,
+        assignedStaff: { select: { id: true, name: true, email: true, role: true } },
+      },
     });
 
     return res.status(200).json(updatedTicket);
@@ -1226,54 +1417,14 @@ app.post("/api/tickets/:id/comments", async (req: Request, res: Response) => {
     if (user.role === "REQUESTER" && ticket.currentStatus === "WAITING_FOR_REQUESTER") {
       await getPrisma().ticket.update({
         where: { id: ticketId },
-        data: { currentStatus: "IN_PROGRESS" },
+        data: {
+          currentStatus: "IN_PROGRESS",
+          version: { increment: 1 },
+        },
       });
     }
 
     return res.status(201).json(newComment);
-  } catch (error) {
-    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
-  }
-});
-
-// PATCH /api/tickets/:id/resolve-ack — Requester Problem Appears Resolved toggle
-app.patch("/api/tickets/:id/resolve-ack", async (req: Request, res: Response) => {
-  try {
-    const user = await getUserFromReq(req);
-    if (!user) {
-      return res.status(401).json({ error: "Authentication required", code: "UNAUTHORIZED" });
-    }
-
-    if (user.mustChangePassword) {
-      return res.status(403).json({
-        error: "Mandatory password change required before accessing system features.",
-        code: "MUST_CHANGE_PASSWORD",
-      });
-    }
-
-    const ticketId = Number(req.params.id);
-    if (isNaN(ticketId) || ticketId <= 0) {
-      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
-    }
-
-    const ticket = await getPrisma().ticket.findUnique({
-      where: { id: ticketId },
-    });
-
-    if (!ticket) {
-      return res.status(404).json({ error: "Ticket not found", code: "NOT_FOUND" });
-    }
-
-    if (ticket.requesterId !== user.id) {
-      return res.status(403).json({ error: "Access denied. You can only acknowledge resolution for your own tickets.", code: "FORBIDDEN" });
-    }
-
-    const updatedTicket = await getPrisma().ticket.update({
-      where: { id: ticketId },
-      data: { isRequesterResolved: true },
-    });
-
-    return res.status(200).json(updatedTicket);
   } catch (error) {
     return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
   }
@@ -1647,6 +1798,245 @@ app.post("/api/admin/users/:id/reset-password", authenticateSession, requireRole
       message: "Initial password reset successfully",
       user: updatedUser,
     });
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Lab 4 — Actions Taken REST Endpoints (Issue 27)
+// ---------------------------------------------------------------------------
+
+// POST /api/tickets/:id/actions — Create Action Taken
+app.post("/api/tickets/:id/actions", authenticateSession, requireRole(["IT_STAFF", "ADMINISTRATOR"]), async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId) || ticketId <= 0) {
+      return res.status(404).json({ error: "Ticket not found", code: "TICKET_NOT_FOUND" });
+    }
+
+    const ticket = await getPrisma().ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) {
+      return res.status(404).json({ error: "Ticket not found", code: "TICKET_NOT_FOUND" });
+    }
+
+    const { description, result, status, followUpRequired, followUpNote, attachmentNotes, assigneeId } = req.body || {};
+
+    if (!description || typeof description !== "string" || description.trim().length === 0 || description.length > 2000) {
+      return res.status(400).json({ error: "Action Description is required (1-2000 characters)", code: "INVALID_INPUT" });
+    }
+
+    if (!result || typeof result !== "string" || result.trim().length === 0 || result.length > 2000) {
+      return res.status(400).json({ error: "Action Result is required (1-2000 characters)", code: "INVALID_INPUT" });
+    }
+
+    const isFollowUp = Boolean(followUpRequired);
+    if (isFollowUp) {
+      if (!followUpNote || typeof followUpNote !== "string" || followUpNote.trim().length === 0 || followUpNote.length > 1000) {
+        return res.status(400).json({ error: "Follow-up Note is required when follow-up is needed (1-1000 characters)", code: "INVALID_INPUT" });
+      }
+    }
+
+    const validStatuses = ["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
+    const actionStatus = status ? status : "COMPLETED";
+    if (!validStatuses.includes(actionStatus)) {
+      return res.status(400).json({ error: "Invalid status value", code: "INVALID_STATUS" });
+    }
+
+    let parsedAssigneeId: number | null = null;
+    if (assigneeId !== undefined && assigneeId !== null && assigneeId !== "") {
+      parsedAssigneeId = Number(assigneeId);
+      if (isNaN(parsedAssigneeId) || parsedAssigneeId <= 0) {
+        return res.status(400).json({ error: "Invalid assignee ID", code: "INVALID_ASSIGNEE" });
+      }
+
+      const targetAssignee = await getPrisma().user.findUnique({ where: { id: parsedAssigneeId } });
+      if (!targetAssignee || !targetAssignee.isActive || targetAssignee.role === "REQUESTER") {
+        return res.status(400).json({ error: "Assignee must be an active IT Staff or Administrator", code: "INVALID_ASSIGNEE" });
+      }
+    }
+
+    const newAction = await getPrisma().actionTaken.create({
+      data: {
+        ticketId,
+        description: description.trim(),
+        result: result.trim(),
+        status: actionStatus as any,
+        followUpRequired: isFollowUp,
+        followUpNote: isFollowUp ? (followUpNote ? followUpNote.trim() : null) : null,
+        attachmentNotes: attachmentNotes && typeof attachmentNotes === "string" ? attachmentNotes.trim() : null,
+        performedById: (req as any).user.userId || (req as any).user.id,
+        assigneeId: parsedAssigneeId,
+        version: 1,
+      },
+      include: {
+        performedBy: {
+          select: { id: true, name: true, email: true, role: true },
+        },
+        assignee: {
+          select: { id: true, name: true, email: true, role: true },
+        },
+      },
+    });
+
+    return res.status(201).json(newAction);
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+  }
+});
+
+// GET /api/tickets/:id/actions — List Actions Taken on Ticket
+app.get("/api/tickets/:id/actions", authenticateSession, async (req: Request, res: Response) => {
+  try {
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId) || ticketId <= 0) {
+      return res.status(404).json({ error: "Ticket not found", code: "TICKET_NOT_FOUND" });
+    }
+
+    const ticket = await getPrisma().ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) {
+      return res.status(404).json({ error: "Ticket not found", code: "TICKET_NOT_FOUND" });
+    }
+
+    const user = (req as any).user;
+    const currentUserId = user.userId || user.id;
+    if (user.role === "REQUESTER" && ticket.requesterId !== currentUserId) {
+      return res.status(403).json({ error: "You do not have permission to view actions on this ticket", code: "FORBIDDEN" });
+    }
+
+    const actions = await getPrisma().actionTaken.findMany({
+      where: { ticketId },
+      orderBy: [
+        { actionDateTime: "asc" },
+        { id: "asc" },
+      ],
+      include: {
+        performedBy: {
+          select: { id: true, name: true, email: true, role: true },
+        },
+        assignee: {
+          select: { id: true, name: true, email: true, role: true },
+        },
+      },
+    });
+
+    return res.status(200).json(actions);
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+  }
+});
+
+// PATCH /api/actions/:id — Update Action Taken (with Optimistic Concurrency Control)
+app.patch("/api/actions/:id", authenticateSession, requireRole(["IT_STAFF", "ADMINISTRATOR"]), async (req: Request, res: Response) => {
+  try {
+    const actionId = Number(req.params.id);
+    if (isNaN(actionId) || actionId <= 0) {
+      return res.status(404).json({ error: "Action Taken record not found", code: "ACTION_NOT_FOUND" });
+    }
+
+    const existingAction = await getPrisma().actionTaken.findUnique({ where: { id: actionId } });
+    if (!existingAction) {
+      return res.status(404).json({ error: "Action Taken record not found", code: "ACTION_NOT_FOUND" });
+    }
+
+    const { version, description, result, status, followUpRequired, followUpNote, attachmentNotes, assigneeId } = req.body || {};
+
+    if (version === undefined || version === null || typeof version !== "number") {
+      return res.status(400).json({ error: "version is required for optimistic locking", code: "INVALID_INPUT" });
+    }
+
+    if (existingAction.version !== version) {
+      return res.status(409).json({
+        error: "The action item was updated by another user. Please refresh and review.",
+        code: "CONCURRENCY_CONFLICT",
+      });
+    }
+
+    const updateData: any = {};
+
+    if (description !== undefined) {
+      if (typeof description !== "string" || description.trim().length === 0 || description.length > 2000) {
+        return res.status(400).json({ error: "Description must be 1-2000 characters", code: "INVALID_INPUT" });
+      }
+      updateData.description = description.trim();
+    }
+
+    if (result !== undefined) {
+      if (typeof result !== "string" || result.trim().length === 0 || result.length > 2000) {
+        return res.status(400).json({ error: "Result must be 1-2000 characters", code: "INVALID_INPUT" });
+      }
+      updateData.result = result.trim();
+    }
+
+    if (status !== undefined) {
+      const validStatuses = ["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ error: "Invalid status value", code: "INVALID_STATUS" });
+      }
+      updateData.status = status;
+    }
+
+    const finalFollowUpRequired = followUpRequired !== undefined ? Boolean(followUpRequired) : existingAction.followUpRequired;
+    updateData.followUpRequired = finalFollowUpRequired;
+
+    if (finalFollowUpRequired) {
+      const noteToCheck = followUpNote !== undefined ? followUpNote : existingAction.followUpNote;
+      if (!noteToCheck || typeof noteToCheck !== "string" || noteToCheck.trim().length === 0 || noteToCheck.length > 1000) {
+        return res.status(400).json({ error: "Follow-up Note is required when follow-up is needed (1-1000 characters)", code: "INVALID_INPUT" });
+      }
+      updateData.followUpNote = noteToCheck.trim();
+    } else {
+      updateData.followUpNote = null;
+    }
+
+    if (attachmentNotes !== undefined) {
+      updateData.attachmentNotes = attachmentNotes && typeof attachmentNotes === "string" ? attachmentNotes.trim() : null;
+    }
+
+    if (assigneeId !== undefined) {
+      if (assigneeId === null || assigneeId === "") {
+        updateData.assigneeId = null;
+      } else {
+        const parsedAssigneeId = Number(assigneeId);
+        if (isNaN(parsedAssigneeId) || parsedAssigneeId <= 0) {
+          return res.status(400).json({ error: "Invalid assignee ID", code: "INVALID_ASSIGNEE" });
+        }
+        const targetAssignee = await getPrisma().user.findUnique({ where: { id: parsedAssigneeId } });
+        if (!targetAssignee || !targetAssignee.isActive || targetAssignee.role === "REQUESTER") {
+          return res.status(400).json({ error: "Assignee must be an active IT Staff or Administrator", code: "INVALID_ASSIGNEE" });
+        }
+        updateData.assigneeId = parsedAssigneeId;
+      }
+    }
+
+    updateData.version = { increment: 1 };
+
+    // Atomic update enforcing version matching at the database level
+    const updateResult = await getPrisma().actionTaken.updateMany({
+      where: { id: actionId, version },
+      data: updateData,
+    });
+
+    if (updateResult.count === 0) {
+      return res.status(409).json({
+        error: "The action item was updated by another user. Please refresh and review.",
+        code: "CONCURRENCY_CONFLICT",
+      });
+    }
+
+    const updated = await getPrisma().actionTaken.findUnique({
+      where: { id: actionId },
+      include: {
+        performedBy: {
+          select: { id: true, name: true, email: true, role: true },
+        },
+        assignee: {
+          select: { id: true, name: true, email: true, role: true },
+        },
+      },
+    });
+
+    return res.status(200).json(updated);
   } catch (error) {
     return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
   }

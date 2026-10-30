@@ -32,6 +32,13 @@ enum TicketStatus {
   CANCELLED
 }
 
+enum ActionTakenStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
 model User {
   id                 Int                  @id @default(autoincrement())
   name               String
@@ -46,6 +53,8 @@ model User {
   assignedTickets    Ticket[]             @relation("TicketAssignee")
   publicComments     TicketComment[]
   internalNotes      TicketInternalNote[]
+  performedActions   ActionTaken[]        @relation("ActionPerformer")
+  assignedActions    ActionTaken[]        @relation("ActionAssignee")
 }
 
 model Category {
@@ -81,6 +90,7 @@ model Ticket {
   itPriority          TicketPriority
   currentStatus       TicketStatus         @default(NEW)
   isRequesterResolved Boolean              @default(false)
+  version             Int                  @default(1)
   requesterId         Int
   assignedStaffId     Int?
   categoryId          Int
@@ -94,12 +104,14 @@ model Ticket {
   attachments         Attachment[]
   comments            TicketComment[]
   internalNotes       TicketInternalNote[]
+  actionsTaken        ActionTaken[]
 
   @@index([requesterId])
   @@index([assignedStaffId])
   @@index([currentStatus])
   @@index([requestedPriority])
   @@index([itPriority])
+  @@index([updatedAt])
 }
 
 model TicketComment {
@@ -144,4 +156,31 @@ model Attachment {
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   @@index([ticketId])
+}
+
+model ActionTaken {
+  id               Int               @id @default(autoincrement())
+  ticketId         Int
+  actionDateTime   DateTime          @default(now())
+  description      String
+  result           String
+  status           ActionTakenStatus @default(COMPLETED)
+  followUpRequired Boolean           @default(false)
+  followUpNote     String?
+  attachmentNotes  String?
+  performedById    Int
+  assigneeId       Int?
+  version          Int               @default(1)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  ticket      Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  performedBy User   @relation("ActionPerformer", fields: [performedById], references: [id], onDelete: Restrict)
+  assignee    User?  @relation("ActionAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  @@index([ticketId])
+  @@index([performedById])
+  @@index([assigneeId])
+  @@index([actionDateTime])
+  @@index([status])
 }
