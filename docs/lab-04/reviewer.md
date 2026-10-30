@@ -255,13 +255,44 @@
 ### PR #76 — Issue #30: Role-Based Dashboards (feature/30-role-based-dashboards)
 
 ### Reviewer comment I received (PR #76):
-> Pending peer review.
+> ตรวจทานโค้ดบนสาขา `feature/30-role-based-dashboards` (commit `31e44a7`) เทียบกับข้อกำหนด Lab 4 Handout, `specification.md` (FR-08 ถึง FR-12, BR-11 ถึง BR-13), `api-spec.md` และ `tests.md` เรียบร้อยแล้ว
+>
+> **จุดที่ต้องแก้ไข (Request Changes ⛔):**
+> 1. **การส่งต่อ Filter State จาก Dashboard ไปยัง Queue/Ticket Views (FR-11, AC-13):**
+>    - ใน `client/src/App.tsx` ฟังก์ชัน Callback ของ Dashboard ทั้งสอง (`onNavigateToTickets`, `onNavigateToQueue`) มีการประกาศ parameter `_filter` ไว้ แต่ไม่ได้ส่งต่อไปยัง Component ลูก (`StaffTicketQueue` และ `MyTicketsView`) ทำให้เมื่อผู้ใช้คลิกการ์ดตัวชี้วัด เช่น "Unassigned" หรือ "Urgent Priority" หรือ "Waiting on You" ตัวหน้า Queue/Ticket View ปลายทางไม่ได้ถูก Pre-filter ตามการ์ดที่กดจริง
+> 2. **โครงสร้าง Response ในเอกสาร `api-spec.md` ไม่ตรงกับการ Implement จริง (Spec Sync):**
+>    - ใน `docs/lab-04/api-spec.md` (§4.1 และ §4.2) ยังระบุตัวอย่าง Response ของทั้ง Requester และ Staff Dashboard ในรูปแบบที่มี wrapper ซ้อนอยู่ (`metrics: { ... }`) และใช้ชื่อฟิลด์เก่า แต่ในโค้ดจริงเป็น Flat object ที่ root (`totalOpenTickets`, `unassignedTickets`, ฯลฯ) และใช้ชื่อฟิลด์ `myRecentTickets`
+> 3. **ความสอดคล้องของนิยาม `myAssignedTickets` ในเอกสาร `api-spec.md`:**
+>    - ใน `api-spec.md` §4.2 ระบุว่า `myAssignedTickets` นับเฉพาะสถานะ `NOT IN ('CLOSED', 'CANCELLED')` แต่ในโค้ดจริงใช้ `ACTIVE_STATUSES` (ไม่รวม `RESOLVED` ด้วย) อยากให้ปรับคำอธิบายให้ระบุเงื่อนไขให้ตรงกับที่โค้ดทำงานจริง
+>
+> **คำแนะนำเพิ่มเติม (Suggestions / Non-blocking 💡):**
+> - ใน `server/src/app.ts` สำหรับ `GET /api/dashboard/staff` มีการดึง Ticket ทั้งหมดมาวนลูป group by ในหน่วยความจำ ในอนาคตหากมีตั๋วปริมาณมาก การใช้ Database Aggregation โดยตรงจะช่วยลด Memory Footprint ได้ดีขึ้น
 
 ### How I responded (PR #76):
-> Pending author response.
+> ดำเนินการปรับปรุงแก้ไขทั้ง 3 จุดเรียบร้อยแล้ว:
+>
+> 1. **เชื่อมต่อ Drill-Down Filtering ใน `client/src/App.tsx`, `StaffTicketQueue.tsx`, และ `MyTicketsView.tsx` (FR-11, AC-13):**
+>    - เพิ่ม state `queueFilter` และ `ticketsFilter` ใน `App.tsx` เพื่อรับ filter key จากการคลิกการ์ดบน `StaffDashboard` และ `RequesterDashboard`
+>    - ส่งต่อเป็น prop `initialFilter` ไปยัง `StaffTicketQueue` และ `MyTicketsView`
+>    - เพิ่ม helper `resolveInitialFilters` ใน `StaffTicketQueue` เพื่อ map filter (`"unassigned"`, `"my-assigned"`, `"urgent"`, `"waiting"`) ไปยัง state ตัวกรอง (`assignedStaffId`, `itPriority`, `status`) ส่งผลให้คิวถูก Pre-filter ทันทีที่เปิดหน้า และเคลียร์ filter เมื่อคลิกเปลี่ยนแท็บจาก Header
+>    - เพิ่ม helper `resolveMyTicketsFilter` ใน `MyTicketsView` เพื่อ map filter (`"waiting"`, `"resolved"`) เข้ากับ `selectedStatus` และเพิ่มตัวเลือกสถานะ (`OPEN`, `WAITING_FOR_REQUESTER`, `REOPENED`, `CANCELLED`) ใน status filter dropdown ให้ครบถ้วน
+>
+> 2. **ปรับปรุง Response Structure ใน `docs/lab-04/api-spec.md` (§4.1 และ §4.2) ให้ตรงกับ Implementation จริง:**
+>    - ปรับ JSON Response ตัวอย่างของทั้ง Requester Dashboard (`GET /api/dashboard/requester`) และ Staff Dashboard (`GET /api/dashboard/staff`) ให้เป็น Flat root object โดยนำ wrapper `metrics: {}` ออก
+>    - ปรับชื่อฟิลด์จาก `recentTickets` เป็น `myRecentTickets` พร้อมอธิบายโครงสร้างตั๋วที่คืนกลับมา
+>    - อัปเดต Zero-State behavior ให้ตรงกับผลลัพธ์จริง (คืนค่าเคาน์เตอร์ 0 ทุกตัว และ `myRecentTickets: []`)
+>
+> 3. **ปรับแก้คำอธิบายการคำนวณ `myAssignedTickets` และ `ticketsByPriority` ใน `api-spec.md` §4.2:**
+>    - ระบุชัดเจนว่านับเฉพาะ Active Workload สถานะ `IN ('NEW', 'OPEN', 'IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'REOPENED')` (ตัด RESOLVED/CLOSED/CANCELLED ออก)
+>    - ระบุเงื่อนไข `ticketsByPriority` ว่านับเฉพาะ active tickets เพื่อให้สอดคล้องกับพฤติกรรมจริงของระบบ
+>
+> 4. **การตรวจสอบและชุดทดสอบ:**
+>    - Server Integration Tests (`dashboard.api.test.ts` และชุดทดสอบทั้งหมด 21 ไฟล์): ผ่านครบ **112/112 tests**
+>    - Client Component Tests (`Dashboard.test.tsx`, `TicketWorkflow.test.tsx`, `ActionsTaken.test.tsx`): ผ่านครบ **13/13 tests**
+>    - Client Build (`npm run build`): ผ่านฉลุย (TypeScript + Vite)
 
 ### Reviewer approval verdict (PR #76):
-> Pending final approval.
+> Pending re-review and merge from @chanya06.
 
 ---
 
