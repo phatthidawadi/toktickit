@@ -804,12 +804,6 @@
 
 ---
 
-## PR #77 — Issue 31: End-to-End Automated Testing Suite and Screenshot Evidence
-
-**Branch:** `feature/31-e2e-automated-testing-and-screenshots`
-**Resolves:** GitHub Issue #69
-**Reviewer verdict:** Pending review
-
 ### Reviewer comment I received (PR #77):
 
 > (Awaiting peer review from @chanya06)
