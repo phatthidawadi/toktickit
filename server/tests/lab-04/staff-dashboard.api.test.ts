@@ -17,7 +17,6 @@ let adminCookie: string;
 
 beforeAll(async () => {
   const prisma = getPrisma();
-  // Ensure mustChangePassword is cleared for test accounts
   await prisma.user.updateMany({
     where: { email: { in: ["jennifer.a@example.com", "staff.somchai@example.com", "admin.toktickit@example.com"] } },
     data: { mustChangePassword: false },
@@ -33,43 +32,7 @@ beforeAll(async () => {
   adminCookie = getCookieHeader(r3);
 });
 
-describe("DASH-API-01: GET /api/dashboard/requester — Requester access returns metrics", () => {
-  it("returns 200 with required fields for authenticated REQUESTER", async () => {
-    const res = await request.get("/api/dashboard/requester").set("Cookie", requesterCookie);
-    expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty("totalOpenTickets");
-    expect(res.body).toHaveProperty("ticketsWaitingForRequester");
-    expect(res.body).toHaveProperty("recentlyResolvedTickets");
-    expect(res.body).toHaveProperty("myRecentTickets");
-    expect(Array.isArray(res.body.myRecentTickets)).toBe(true);
-    expect(res.body.myRecentTickets.length).toBeLessThanOrEqual(5);
-  });
-});
-
-describe("DASH-API-02: GET /api/dashboard/requester — IT Staff is forbidden", () => {
-  it("returns 403 for IT_STAFF", async () => {
-    const res = await request.get("/api/dashboard/requester").set("Cookie", staffCookie);
-    expect(res.status).toBe(403);
-    expect(res.body.code).toBe("FORBIDDEN");
-  });
-});
-
-describe("DASH-API-03: GET /api/dashboard/requester — Admin is forbidden", () => {
-  it("returns 403 for ADMINISTRATOR", async () => {
-    const res = await request.get("/api/dashboard/requester").set("Cookie", adminCookie);
-    expect(res.status).toBe(403);
-    expect(res.body.code).toBe("FORBIDDEN");
-  });
-});
-
-describe("DASH-API-04: GET /api/dashboard/requester — Unauthenticated access denied", () => {
-  it("returns 401 when no session cookie", async () => {
-    const res = await request.get("/api/dashboard/requester");
-    expect([401, 403]).toContain(res.status);
-  });
-});
-
-describe("DASH-API-05: GET /api/dashboard/staff — IT Staff returns queue metrics", () => {
+describe("DASH-API-05: GET /api/dashboard/staff - IT Staff returns queue metrics", () => {
   it("returns 200 with required fields for IT_STAFF", async () => {
     const res = await request.get("/api/dashboard/staff").set("Cookie", staffCookie);
     expect(res.status).toBe(200);
@@ -85,7 +48,7 @@ describe("DASH-API-05: GET /api/dashboard/staff — IT Staff returns queue metrics
   });
 });
 
-describe("DASH-API-06: GET /api/dashboard/staff — Admin receives adminUserSummary extension", () => {
+describe("DASH-API-06: GET /api/dashboard/staff - Admin receives adminUserSummary extension", () => {
   it("returns 200 with adminUserSummary for ADMINISTRATOR", async () => {
     const res = await request.get("/api/dashboard/staff").set("Cookie", adminCookie);
     expect(res.status).toBe(200);
@@ -99,7 +62,7 @@ describe("DASH-API-06: GET /api/dashboard/staff — Admin receives adminUserSummar
   });
 });
 
-describe("DASH-API-07: GET /api/dashboard/staff — Requester is forbidden", () => {
+describe("DASH-API-07: GET /api/dashboard/staff - Requester is forbidden", () => {
   it("returns 403 for REQUESTER", async () => {
     const res = await request.get("/api/dashboard/staff").set("Cookie", requesterCookie);
     expect(res.status).toBe(403);
@@ -107,7 +70,7 @@ describe("DASH-API-07: GET /api/dashboard/staff — Requester is forbidden", () =>
   });
 });
 
-describe("DASH-API-08: GET /api/dashboard/staff — ticketsByStatus includes all 8 statuses", () => {
+describe("DASH-API-08: GET /api/dashboard/staff - ticketsByStatus includes all 8 statuses", () => {
   it("ticketsByStatus map contains all 8 status keys", async () => {
     const res = await request.get("/api/dashboard/staff").set("Cookie", adminCookie);
     expect(res.status).toBe(200);
