@@ -15,6 +15,7 @@ server/prisma/*.db
 scratch/
 test-results/
 server/uploads/
+uploads/
 toktickit/
 client/src/**/*.js
 client/tests/**/*.js

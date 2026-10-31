@@ -85,14 +85,14 @@ Sprint 4 applies Spec-Driven Development (Spec DD) and Test-Driven Development (
 
 | Test ID | Viewport | Requirement / AC | User Journey Tested | Expected Result | Automated Test File | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **E2E-01-A** | Desktop (1280px)| AC-01, AC-02 | IT Staff logs in, claims ticket, records Action Taken with follow-up note | Action line appears in list with green status pill and amber follow-up note | `e2e/lab-04/actions-taken-flow.spec.ts` | Planned |
-| **E2E-01-B** | Tablet (768px) | AC-04, AC-14 | Requester logs in, views owned ticket Actions Taken | Actions Taken rendered in read-only format; zero create/edit buttons visible | `e2e/lab-04/actions-taken-flow.spec.ts` | Planned |
-| **E2E-01-C** | Mobile (375px) | AC-14, AC-15 | Mobile stacked card view for Actions Taken | Actions table collapses into vertical cards; 44px touch targets; no horizontal scroll | `e2e/lab-04/actions-taken-flow.spec.ts` | Planned |
-| **E2E-02-A** | Desktop (1280px)| AC-06, AC-07 | Requester marks problem resolved $\to$ IT Staff verifies and marks `RESOLVED` | Advisory flag shown; only staff transition updates status to `RESOLVED` | `e2e/lab-04/ticket-resolution.spec.ts` | Planned |
-| **E2E-02-B** | Desktop (1280px)| AC-08, AC-09 | Permitted status transitions & optimistic locking | Permitted dropdown values verified; concurrent update conflict safely alerts user | `e2e/lab-04/ticket-resolution.spec.ts` | Planned |
-| **E2E-03-A** | Desktop (1280px)| AC-10, AC-13 | Requester logs in $\to$ lands on Dashboard $\to$ clicks drill-down | Dashboard renders accurate counts; drill-down filters ticket view | `e2e/lab-04/dashboards.spec.ts` | Planned |
-| **E2E-03-B** | Desktop (1280px)| AC-11, AC-12 | Admin logs in $\to$ views Staff Dashboard with User Summary card | Unassigned counts, status breakdown, and user administration counts match DB | `e2e/lab-04/dashboards.spec.ts` | Planned |
-| **E2E-03-C** | Mobile (375px) | AC-14, AC-15 | Mobile dashboard layout & focus indicators | Single-column stacked metric cards; visible focus rings; responsive navigation | `e2e/lab-04/dashboards.spec.ts` | Planned |
+| **E2E-01-A** | Desktop (1280px)| AC-01, AC-02 | IT Staff logs in, claims ticket, records Action Taken with follow-up note | Action line appears in list with green status pill and amber follow-up note | `e2e/lab-04/actions-taken-flow.spec.ts` | Passed |
+| **E2E-01-B** | Tablet (768px) | AC-04, AC-14 | Requester logs in, views owned ticket Actions Taken | Actions Taken rendered in read-only format; zero create/edit buttons visible | `e2e/lab-04/actions-taken-flow.spec.ts` | Passed |
+| **E2E-01-C** | Mobile (375px) | AC-14, AC-15 | Mobile stacked card view for Actions Taken | Actions table collapses into vertical cards; 44px touch targets; no horizontal scroll | `e2e/lab-04/actions-taken-flow.spec.ts` | Passed |
+| **E2E-02-A** | Desktop (1280px)| AC-06, AC-07 | Requester marks problem resolved $\to$ IT Staff verifies and marks `RESOLVED` | Advisory flag shown; only staff transition updates status to `RESOLVED` | `e2e/lab-04/ticket-resolution.spec.ts` | Passed |
+| **E2E-02-B** | Desktop (1280px)| AC-08, AC-09 | Permitted status transitions & optimistic locking | Permitted dropdown values verified; concurrent update conflict safely alerts user | `e2e/lab-04/ticket-resolution.spec.ts` | Passed |
+| **E2E-03-A** | Desktop (1280px)| AC-10, AC-13 | Requester logs in $\to$ lands on Dashboard $\to$ clicks drill-down | Dashboard renders accurate counts; drill-down filters ticket view | `e2e/lab-04/dashboards.spec.ts` | Passed |
+| **E2E-03-B** | Desktop (1280px)| AC-11, AC-12 | Admin logs in $\to$ views Staff Dashboard with User Summary card | Unassigned counts, status breakdown, and user administration counts match DB | `e2e/lab-04/dashboards.spec.ts` | Passed |
+| **E2E-03-C** | Mobile (375px) | AC-14, AC-15 | Mobile dashboard layout & focus indicators | Single-column stacked metric cards; visible focus rings; responsive navigation | `e2e/lab-04/dashboards.spec.ts` | Passed |
 
 ---
 
@@ -100,9 +100,9 @@ Sprint 4 applies Spec-Driven Development (Spec DD) and Test-Driven Development (
 
 | Test ID | Layer | Requirement / AC | What It Tests | Expected Result | Automated Test File | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **PERF-SMK-01** | Performance | AC-17 | Dashboard metric queries latency under load (100+ tickets in DB) | `GET /api/dashboard/requester` and `/api/dashboard/staff` respond with p95 < 200ms | `server/tests/lab-04/performance-smoke.test.ts` | Planned |
-| **PERF-SMK-02** | Performance | AC-17 | Actions Taken chronological query latency (ticket with 20+ action lines) | `GET /api/tickets/:id/actions` responds with p95 < 150ms | `server/tests/lab-04/performance-smoke.test.ts` | Planned |
-| **PERF-SMK-03** | Performance | AC-17, BR-10 | Burst concurrency conflict throughput (10 concurrent updates) | 1 write succeeds, 9 fail with 409 Conflict safely; average latency < 300ms | `server/tests/lab-04/performance-smoke.test.ts` | Planned |
+| **PERF-SMK-01** | Performance | AC-17 | Dashboard metric queries latency under load (100+ tickets in DB) | `GET /api/dashboard/requester` and `/api/dashboard/staff` respond with p95 < 200ms | `server/tests/lab-04/performance-smoke.test.ts` | Passed |
+| **PERF-SMK-02** | Performance | AC-17 | Actions Taken chronological query latency (ticket with 20+ action lines) | `GET /api/tickets/:id/actions` responds with p95 < 150ms | `server/tests/lab-04/performance-smoke.test.ts` | Passed |
+| **PERF-SMK-03** | Performance | AC-17, BR-10 | Burst concurrency conflict throughput (10 concurrent updates) | 1 write succeeds, 9 fail with 409 Conflict safely; average latency < 300ms | `server/tests/lab-04/performance-smoke.test.ts` | Passed |
 
 ---
 

@@ -123,7 +123,7 @@ export const RequesterDashboard: React.FC<RequesterDashboardProps> = ({
           <div style={{ padding: "32px", textAlign: "center", color: "#65756E", fontSize: "14px" }}>No tickets yet. Create your first ticket above.</div>
         ) : (
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+            <table id="dash-recent-tickets-table" style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
               <thead>
                 <tr style={{ backgroundColor: "#F5F7F6" }}>
                   {["Ticket #", "Summary", "Status", "Last Updated", ""].map((h) => (
