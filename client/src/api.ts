@@ -716,5 +716,62 @@ export async function fetchStaffAssigneesApi(): Promise<ActionTakenUser[]> {
   return res.json();
 }
 
+// ─── Dashboard API (Issue #30) ────────────────────────────────────────────────
 
+export interface DashboardTicketSummary {
+  id: number;
+  ticketNumber: string;
+  summary: string;
+  currentStatus: string;
+  requestedPriority?: string;
+  itPriority?: string | null;
+  updatedAt: string;
+  createdAt?: string;
+  requester?: { id: number; name: string; email: string };
+  assignedStaff?: { id: number; name: string; email: string } | null;
+}
 
+export interface RequesterDashboardData {
+  totalOpenTickets: number;
+  ticketsWaitingForRequester: number;
+  recentlyResolvedTickets: number;
+  myRecentTickets: DashboardTicketSummary[];
+}
+
+export interface StaffDashboardData {
+  unassignedTickets: number;
+  myAssignedTickets: number;
+  urgentTicketsCount: number;
+  ticketsByStatus: Record<string, number>;
+  ticketsByPriority: Record<string, number>;
+  recentQueueTickets: DashboardTicketSummary[];
+  adminUserSummary?: {
+    totalUsers: number;
+    activeUsers: number;
+    usersByRole: Record<string, number>;
+  };
+}
+
+export async function fetchRequesterDashboard(): Promise<RequesterDashboardData> {
+  const res = await fetch(`${API_URL}/api/dashboard/requester`, {
+    method: "GET",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw Object.assign(new Error(err.error || "Failed to load requester dashboard"), { status: res.status, code: err.code });
+  }
+  return res.json();
+}
+
+export async function fetchStaffDashboard(): Promise<StaffDashboardData> {
+  const res = await fetch(`${API_URL}/api/dashboard/staff`, {
+    method: "GET",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw Object.assign(new Error(err.error || "Failed to load staff dashboard"), { status: res.status, code: err.code });
+  }
+  return res.json();
+}

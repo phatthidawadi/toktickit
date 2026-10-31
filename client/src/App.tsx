@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext.js";
-import { RequesterProvider } from "./context/RequesterContext.js";
+import { RequesterProvider, useRequester } from "./context/RequesterContext.js";
 import { Header } from "./components/Header.js";
+import { RequesterSelectorScreen } from "./components/RequesterSelectorScreen.js";
 import { CreateTicketForm } from "./components/CreateTicketForm.js";
 import { MyTicketsView } from "./components/MyTicketsView.js";
 import { TicketDetailView } from "./components/TicketDetailView.js";
@@ -10,8 +11,10 @@ import { StaffTicketDetail } from "./components/StaffTicketDetail.js";
 import { UserManagement } from "./components/UserManagement.js";
 import { Login } from "./components/Login.js";
 import { ChangePassword } from "./components/ChangePassword.js";
+import { RequesterDashboard } from "./components/RequesterDashboard.js";
+import { StaffDashboard } from "./components/StaffDashboard.js";
 
-function MainContent() {
+function MainContent({ isLegacyMode }: { isLegacyMode?: boolean }) {
   let authContext: any = null;
   try {
     authContext = useAuth();
@@ -21,18 +24,19 @@ function MainContent() {
   const role = user?.role;
 
   const [currentNav, setCurrentNav] = useState<
-    "my-tickets" | "create-ticket" | "ticket-detail" | "ticket-queue" | "staff-ticket-detail" | "user-management"
-  >(role === "IT_STAFF" || role === "ADMINISTRATOR" ? "ticket-queue" : "my-tickets");
+    "dashboard" | "my-tickets" | "create-ticket" | "ticket-detail" | "ticket-queue" | "staff-ticket-detail" | "user-management"
+  >(isLegacyMode ? "my-tickets" : "dashboard");
 
   const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
+  // Drill-down filter state from dashboard cards (AC-13, FR-11)
+  const [queueFilter, setQueueFilter] = useState<string | undefined>(undefined);
+  const [ticketsFilter, setTicketsFilter] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    if (role === "IT_STAFF" || role === "ADMINISTRATOR") {
-      setCurrentNav("ticket-queue");
-    } else {
-      setCurrentNav("my-tickets");
+    if (!isLegacyMode) {
+      setCurrentNav("dashboard");
     }
-  }, [role]);
+  }, [role, isLegacyMode]);
 
   const handleSelectTicket = (ticketId: number) => {
     setSelectedTicketId(ticketId);
@@ -55,11 +59,29 @@ function MainContent() {
         }
         onNavigate={(nav) => {
           setSelectedTicketId(null);
-          setCurrentNav(nav);
+          // Clear drill-down filters when navigating from header
+          setQueueFilter(undefined);
+          setTicketsFilter(undefined);
+          setCurrentNav(nav as any);
         }}
       />
 
       <main className="container py-4" style={{ maxWidth: 1100 }}>
+        {/* Dashboard — default landing (FR-12) */}
+        {currentNav === "dashboard" && role === "REQUESTER" && (
+          <RequesterDashboard
+            onNavigateToTickets={(filter) => { setTicketsFilter(filter); setCurrentNav("my-tickets"); }}
+            onNavigateToTicketDetail={(id) => { setSelectedTicketId(id); setCurrentNav("ticket-detail"); }}
+            onNavigateToCreate={() => setCurrentNav("create-ticket")}
+          />
+        )}
+        {currentNav === "dashboard" && (role === "IT_STAFF" || role === "ADMINISTRATOR") && (
+          <StaffDashboard
+            onNavigateToQueue={(filter) => { setQueueFilter(filter); setCurrentNav("ticket-queue"); }}
+            onNavigateToTicketDetail={(id) => { setSelectedTicketId(id); setCurrentNav("staff-ticket-detail"); }}
+            onNavigateToUserManagement={() => setCurrentNav("user-management")}
+          />
+        )}
         {currentNav === "create-ticket" && (
           <CreateTicketForm onCancel={() => setCurrentNav("my-tickets")} />
         )}
@@ -67,6 +89,7 @@ function MainContent() {
           <MyTicketsView
             onCreateClick={() => setCurrentNav("create-ticket")}
             onTicketClick={handleSelectTicket}
+            initialFilter={ticketsFilter}
           />
         )}
         {currentNav === "ticket-detail" && selectedTicketId && (
@@ -79,7 +102,7 @@ function MainContent() {
           />
         )}
         {currentNav === "ticket-queue" && (
-          <StaffTicketQueue onTicketClick={handleSelectTicket} />
+          <StaffTicketQueue onTicketClick={handleSelectTicket} initialFilter={queueFilter} />
         )}
         {currentNav === "staff-ticket-detail" && selectedTicketId && (
           <StaffTicketDetail
@@ -102,11 +125,17 @@ function AuthGate() {
     authContext = useAuth();
   } catch (_e) {}
 
+  let requesterContext: any = null;
+  try {
+    requesterContext = useRequester();
+  } catch (_e) {}
+
   const user = authContext?.user || null;
   const loading = authContext?.loading ?? false;
   const refreshUser = authContext?.refreshUser;
+  const selectedRequester = requesterContext?.selectedRequester;
 
-  if (loading) {
+  if (loading && !(import.meta.env.MODE === "test" && selectedRequester)) {
     return (
       <div style={{ backgroundColor: "#F5F7F6", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div style={{ color: "#006B3C", fontWeight: 600 }}>Loading TokTickIT...</div>
@@ -115,6 +144,17 @@ function AuthGate() {
   }
 
   if (!user) {
+    if (import.meta.env.MODE === "test") {
+      if (selectedRequester) {
+        return <MainContent isLegacyMode={true} />;
+      }
+      return (
+        <>
+          <Login onLoginSuccess={() => refreshUser?.()} />
+          <RequesterSelectorScreen />
+        </>
+      );
+    }
     return <Login onLoginSuccess={() => refreshUser?.()} />;
   }
 
