@@ -104,8 +104,42 @@ export const ActionsTakenSection: React.FC<ActionsTakenSectionProps> = ({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && (isRecordModalOpen || !!editingAction)) {
+      const isModalActive = isRecordModalOpen || !!editingAction;
+      if (!isModalActive) return;
+
+      if (e.key === "Escape") {
         closeModals();
+        return;
+      }
+
+      if (e.key === "Tab") {
+        const modalId = isRecordModalOpen ? "record-action-modal" : "edit-action-modal";
+        const modalElement = document.getElementById(modalId);
+        if (!modalElement) return;
+
+        const focusableElements = modalElement.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const focusable = Array.from(focusableElements).filter(
+          (el) => !el.hasAttribute("disabled") && el.getAttribute("aria-hidden") !== "true"
+        );
+
+        if (focusable.length === 0) return;
+
+        const firstElement = focusable[0];
+        const lastElement = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement || !modalElement.contains(document.activeElement)) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement || !modalElement.contains(document.activeElement)) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -644,6 +678,9 @@ export const ActionsTakenSection: React.FC<ActionsTakenSectionProps> = ({
         >
           <div
             id="record-action-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="record-action-modal-title"
             style={{
               backgroundColor: "#FFFFFF",
               borderRadius: "12px",
@@ -656,12 +693,13 @@ export const ActionsTakenSection: React.FC<ActionsTakenSectionProps> = ({
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h4 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: "#1E293B" }}>
+              <h4 id="record-action-modal-title" style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: "#1E293B" }}>
                 Record Action Taken
               </h4>
               <button
                 type="button"
                 onClick={closeModals}
+                aria-label="Close record action modal"
                 style={{
                   background: "transparent",
                   border: "none",
@@ -958,6 +996,9 @@ export const ActionsTakenSection: React.FC<ActionsTakenSectionProps> = ({
         >
           <div
             id="edit-action-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-action-modal-title"
             style={{
               backgroundColor: "#FFFFFF",
               borderRadius: "12px",
@@ -970,12 +1011,13 @@ export const ActionsTakenSection: React.FC<ActionsTakenSectionProps> = ({
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h4 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: "#1E293B" }}>
+              <h4 id="edit-action-modal-title" style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: "#1E293B" }}>
                 Edit Action Taken
               </h4>
               <button
                 type="button"
                 onClick={closeModals}
+                aria-label="Close edit action modal"
                 style={{
                   background: "transparent",
                   border: "none",

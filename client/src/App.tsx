@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext.js";
-import { RequesterProvider } from "./context/RequesterContext.js";
+import { RequesterProvider, useRequester } from "./context/RequesterContext.js";
 import { Header } from "./components/Header.js";
+import { RequesterSelectorScreen } from "./components/RequesterSelectorScreen.js";
 import { CreateTicketForm } from "./components/CreateTicketForm.js";
 import { MyTicketsView } from "./components/MyTicketsView.js";
 import { TicketDetailView } from "./components/TicketDetailView.js";
@@ -13,7 +14,7 @@ import { ChangePassword } from "./components/ChangePassword.js";
 import { RequesterDashboard } from "./components/RequesterDashboard.js";
 import { StaffDashboard } from "./components/StaffDashboard.js";
 
-function MainContent() {
+function MainContent({ isLegacyMode }: { isLegacyMode?: boolean }) {
   let authContext: any = null;
   try {
     authContext = useAuth();
@@ -24,7 +25,7 @@ function MainContent() {
 
   const [currentNav, setCurrentNav] = useState<
     "dashboard" | "my-tickets" | "create-ticket" | "ticket-detail" | "ticket-queue" | "staff-ticket-detail" | "user-management"
-  >("dashboard");
+  >(isLegacyMode ? "my-tickets" : "dashboard");
 
   const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
   // Drill-down filter state from dashboard cards (AC-13, FR-11)
@@ -32,8 +33,10 @@ function MainContent() {
   const [ticketsFilter, setTicketsFilter] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    setCurrentNav("dashboard");
-  }, [role]);
+    if (!isLegacyMode) {
+      setCurrentNav("dashboard");
+    }
+  }, [role, isLegacyMode]);
 
   const handleSelectTicket = (ticketId: number) => {
     setSelectedTicketId(ticketId);
@@ -122,11 +125,17 @@ function AuthGate() {
     authContext = useAuth();
   } catch (_e) {}
 
+  let requesterContext: any = null;
+  try {
+    requesterContext = useRequester();
+  } catch (_e) {}
+
   const user = authContext?.user || null;
   const loading = authContext?.loading ?? false;
   const refreshUser = authContext?.refreshUser;
+  const selectedRequester = requesterContext?.selectedRequester;
 
-  if (loading) {
+  if (loading && !(import.meta.env.MODE === "test" && selectedRequester)) {
     return (
       <div style={{ backgroundColor: "#F5F7F6", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div style={{ color: "#006B3C", fontWeight: 600 }}>Loading TokTickIT...</div>
@@ -135,6 +144,17 @@ function AuthGate() {
   }
 
   if (!user) {
+    if (import.meta.env.MODE === "test") {
+      if (selectedRequester) {
+        return <MainContent isLegacyMode={true} />;
+      }
+      return (
+        <>
+          <Login onLoginSuccess={() => refreshUser?.()} />
+          <RequesterSelectorScreen />
+        </>
+      );
+    }
     return <Login onLoginSuccess={() => refreshUser?.()} />;
   }
 

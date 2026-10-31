@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import supertest from "supertest";
 import { app } from "../../src/app.js";
 import { getPrisma } from "../../src/prisma.js";
+import { TicketStatus } from "@prisma/client";
 
 const request = supertest(app);
 
@@ -46,7 +47,7 @@ beforeAll(async () => {
         requester: { connect: { id: requester.id } },
         category: { connect: { id: category.id } },
         relatedSystem: { connect: { id: system.id } },
-        currentStatus: i % 2 === 0 ? "OPEN" : "IN_PROGRESS",
+        currentStatus: (i % 2 === 0 ? "OPEN" : "IN_PROGRESS") as TicketStatus,
         requestedPriority: "MEDIUM" as const,
         itPriority: "MEDIUM" as const,
         createdAt: now,
