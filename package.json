@@ -13,6 +13,10 @@
   },
   "scripts": {
     "test:e2e": "playwright test --config=e2e/playwright.config.ts",
+    "test:server": "npm --prefix server test",
+    "test:client": "npm --prefix client test",
+    "test:full": "npm --prefix server test && npm --prefix client test",
+    "build": "npm --prefix client run build",
     "install:e2e": "playwright install chromium"
   },
   "repository": {

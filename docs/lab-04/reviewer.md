@@ -10,7 +10,11 @@
 | [PR #72](https://github.com/phatthidawadi/toktickit/pull/72) | `feature/26-doc-spec-tests` | Approved with comments |
 | [PR #73](https://github.com/phatthidawadi/toktickit/pull/73) | `feature/27-actions-taken-foundation` | Approved with comments |
 | [PR #74](https://github.com/phatthidawadi/toktickit/pull/74) | `feature/28-actions-taken-ui` | Approved with comments |
-| [PR #75](https://github.com/phatthidawadi/toktickit/pull/75) | `feature/29-ticket-workflow-and-resolution` | Pending Review |
+| [PR #75](https://github.com/phatthidawadi/toktickit/pull/75) | `feature/29-ticket-workflow-and-resolution` | Approved with comments |
+| [PR #76](https://github.com/phatthidawadi/toktickit/pull/76) | `feature/30-role-based-dashboards` | Approved with comments |
+| [PR #77](https://github.com/phatthidawadi/toktickit/pull/77) | `feature/31-e2e-automated-testing-and-screenshots` | Approved with comments |
+| [PR #78](https://github.com/phatthidawadi/toktickit/pull/78) | `feature/32-visual-style-accessibility-hardening` | Approved with comments |
+| [PR #79](https://github.com/phatthidawadi/toktickit/pull/79) | `feature/33-doc-reviewer-ai-use` | Approved with comments |
 
 ---
 
@@ -236,6 +240,218 @@
 >
 > 2. **เพิ่ม Escape Key Handler ใน `TicketDetailView.tsx`:**
 >    - เพิ่ม `useEffect` ดักจับ `keydown` Event บน window ตรวจสอบ `e.key === "Escape"` เมื่อ `showCancelModal` เป็น `true` และไม่อยู่ระหว่าง Cancelling เพื่อปิด Modal โดยเรียก `setShowCancelModal(false)` พร้อม Clean-up Event Listener อย่างถูกต้อง สอดคล้องกับ pattern เดียวกับ ActionsTakenSection.tsx
+
+---
+
+### Reviewer approval verdict (PR #75):
+> ### Re-review — PR #75 (Round 2) —
+>
+> ตรวจ head ล่าสุด commit `b4d2b57` เรียบร้อยแล้วค่ะ จุดที่ขอให้แก้ไขได้รับการปรับปรุงอย่างถูกต้องและรวดเร็วมาก:
+>
+> - **Resolution Gate Strictly Enforced**: ปรับปรุง `server/src/utils/workflow.ts` ให้ตัด `RESOLVED` ออกจาก `OPEN` และตัด `RESOLVED`, `CANCELLED` ออกจาก `REOPENED` ทำให้ Transition Matrix สอดคล้องกับ `specification.md` §5.1 และ `StaffTicketDetail.tsx` ครบ 100% ปิดช่องโหว่การ bypass ข้ามขั้นตอนได้อย่างสมบูรณ์
+> - **Keyboard Accessibility**: เพิ่ม `Escape` key event listener ใน `TicketDetailView.tsx` สำหรับปิด Cancel Confirmation Modal ช่วยให้การใช้งานผ่านคีย์บอร์ดสะดวกและตรงตามมาตรฐานสเปก
+> - **Test Verification**: ยืนยันผลการทดสอบ Server Integration Tests (`ticket-workflow.api.test.ts`) ผ่านครบ 10/10 tests และ Client Component Tests ผ่านครบถ้วน
+
+---
+
+
+### PR #76 — Issue #30: Role-Based Dashboards (feature/30-role-based-dashboards)
+
+### Reviewer comment I received (PR #76):
+> ตรวจทานโค้ดบนสาขา `feature/30-role-based-dashboards` (commit `31e44a7`) เทียบกับข้อกำหนด Lab 4 Handout, `specification.md` (FR-08 ถึง FR-12, BR-11 ถึง BR-13), `api-spec.md` และ `tests.md` เรียบร้อยแล้ว
+>
+> **จุดที่ต้องแก้ไข (Request Changes ⛔):**
+> 1. **การส่งต่อ Filter State จาก Dashboard ไปยัง Queue/Ticket Views (FR-11, AC-13):**
+>    - ใน `client/src/App.tsx` ฟังก์ชัน Callback ของ Dashboard ทั้งสอง (`onNavigateToTickets`, `onNavigateToQueue`) มีการประกาศ parameter `_filter` ไว้ แต่ไม่ได้ส่งต่อไปยัง Component ลูก (`StaffTicketQueue` และ `MyTicketsView`) ทำให้เมื่อผู้ใช้คลิกการ์ดตัวชี้วัด เช่น "Unassigned" หรือ "Urgent Priority" หรือ "Waiting on You" ตัวหน้า Queue/Ticket View ปลายทางไม่ได้ถูก Pre-filter ตามการ์ดที่กดจริง
+> 2. **โครงสร้าง Response ในเอกสาร `api-spec.md` ไม่ตรงกับการ Implement จริง (Spec Sync):**
+>    - ใน `docs/lab-04/api-spec.md` (§4.1 และ §4.2) ยังระบุตัวอย่าง Response ของทั้ง Requester และ Staff Dashboard ในรูปแบบที่มี wrapper ซ้อนอยู่ (`metrics: { ... }`) และใช้ชื่อฟิลด์เก่า แต่ในโค้ดจริงเป็น Flat object ที่ root (`totalOpenTickets`, `unassignedTickets`, ฯลฯ) และใช้ชื่อฟิลด์ `myRecentTickets`
+> 3. **ความสอดคล้องของนิยาม `myAssignedTickets` ในเอกสาร `api-spec.md`:**
+>    - ใน `api-spec.md` §4.2 ระบุว่า `myAssignedTickets` นับเฉพาะสถานะ `NOT IN ('CLOSED', 'CANCELLED')` แต่ในโค้ดจริงใช้ `ACTIVE_STATUSES` (ไม่รวม `RESOLVED` ด้วย) อยากให้ปรับคำอธิบายให้ระบุเงื่อนไขให้ตรงกับที่โค้ดทำงานจริง
+>
+> **คำแนะนำเพิ่มเติม (Suggestions / Non-blocking 💡):**
+> - ใน `server/src/app.ts` สำหรับ `GET /api/dashboard/staff` มีการดึง Ticket ทั้งหมดมาวนลูป group by ในหน่วยความจำ ในอนาคตหากมีตั๋วปริมาณมาก การใช้ Database Aggregation โดยตรงจะช่วยลด Memory Footprint ได้ดีขึ้น
+
+### How I responded (PR #76):
+> ดำเนินการปรับปรุงแก้ไขทั้ง 3 จุดเรียบร้อยแล้ว:
+>
+> 1. **เชื่อมต่อ Drill-Down Filtering ใน `client/src/App.tsx`, `StaffTicketQueue.tsx`, และ `MyTicketsView.tsx` (FR-11, AC-13):**
+>    - เพิ่ม state `queueFilter` และ `ticketsFilter` ใน `App.tsx` เพื่อรับ filter key จากการคลิกการ์ดบน `StaffDashboard` และ `RequesterDashboard`
+>    - ส่งต่อเป็น prop `initialFilter` ไปยัง `StaffTicketQueue` และ `MyTicketsView`
+>    - เพิ่ม helper `resolveInitialFilters` ใน `StaffTicketQueue` เพื่อ map filter (`"unassigned"`, `"my-assigned"`, `"urgent"`, `"waiting"`) ไปยัง state ตัวกรอง (`assignedStaffId`, `itPriority`, `status`) ส่งผลให้คิวถูก Pre-filter ทันทีที่เปิดหน้า และเคลียร์ filter เมื่อคลิกเปลี่ยนแท็บจาก Header
+>    - เพิ่ม helper `resolveMyTicketsFilter` ใน `MyTicketsView` เพื่อ map filter (`"waiting"`, `"resolved"`) เข้ากับ `selectedStatus` และเพิ่มตัวเลือกสถานะ (`OPEN`, `WAITING_FOR_REQUESTER`, `REOPENED`, `CANCELLED`) ใน status filter dropdown ให้ครบถ้วน
+>
+> 2. **ปรับปรุง Response Structure ใน `docs/lab-04/api-spec.md` (§4.1 และ §4.2) ให้ตรงกับ Implementation จริง:**
+>    - ปรับ JSON Response ตัวอย่างของทั้ง Requester Dashboard (`GET /api/dashboard/requester`) และ Staff Dashboard (`GET /api/dashboard/staff`) ให้เป็น Flat root object โดยนำ wrapper `metrics: {}` ออก
+>    - ปรับชื่อฟิลด์จาก `recentTickets` เป็น `myRecentTickets` พร้อมอธิบายโครงสร้างตั๋วที่คืนกลับมา
+>    - อัปเดต Zero-State behavior ให้ตรงกับผลลัพธ์จริง (คืนค่าเคาน์เตอร์ 0 ทุกตัว และ `myRecentTickets: []`)
+>
+> 3. **ปรับแก้คำอธิบายการคำนวณ `myAssignedTickets` และ `ticketsByPriority` ใน `api-spec.md` §4.2:**
+>    - ระบุชัดเจนว่านับเฉพาะ Active Workload สถานะ `IN ('NEW', 'OPEN', 'IN_PROGRESS', 'WAITING_FOR_REQUESTER', 'REOPENED')` (ตัด RESOLVED/CLOSED/CANCELLED ออก)
+>    - ระบุเงื่อนไข `ticketsByPriority` ว่านับเฉพาะ active tickets เพื่อให้สอดคล้องกับพฤติกรรมจริงของระบบ
+>
+> 4. **การตรวจสอบและชุดทดสอบ:**
+>    - Server Integration Tests (`dashboard.api.test.ts` และชุดทดสอบทั้งหมด 21 ไฟล์): ผ่านครบ **112/112 tests**
+>    - Client Component Tests (`Dashboard.test.tsx`, `TicketWorkflow.test.tsx`, `ActionsTaken.test.tsx`): ผ่านครบ **13/13 tests**
+>    - Client Build (`npm run build`): ผ่านฉลุย (TypeScript + Vite)
+
+### Reviewer approval verdict (PR #76):
+> **คำตัดสิน: Approved with comments ✅**
+>
+> ได้รับการตรวจทานซ้ำ (Re-review) หลังจากการปรับปรุงใน commit `b24c6df` และ `e0ff16c` ครบถ้วน:
+> 1. เชื่อมต่อ Drill-Down Filtering ใน `App.tsx`, `StaffTicketQueue.tsx`, และ `MyTicketsView.tsx` ได้อย่างสมบูรณ์ รองรับการส่งต่อและรีเซ็ต filter state ตามการคลิกการ์ดตัวชี้วัด (AC-13, FR-11)
+> 2. ปรับปรุงเอกสาร `docs/lab-04/api-spec.md` (§4.1 และ §4.2) ให้มีโครงสร้าง Flat JSON Response และชื่อฟิลด์ `myRecentTickets` สอดคล้องกับ Server implementation จริง
+> 3. ปรับแก้นิยามการคำนวณ `myAssignedTickets` และ `ticketsByPriority` ให้ชัดเจนว่าประเมินเฉพาะ Active Tickets เท่านั้น
+> 4. ยืนยันผลการทดสอบ Server Integration Tests (112/112 tests), Client Component Tests (13/13 tests) และ Client Production Build ผ่านครบถ้วน 100%
+>
+> อนุมัติการรวมโค้ด (Approved & Ready to Merge) เข้าสู่สาขา `lab4-staging` เรียบร้อยครับ
+
+---
+
+### Reviewer comment I received (PR #77):
+
+> **คำตัดสิน: Changes Requested**
+>
+> จากการตรวจทานโค้ดในสาขา `feature/31-e2e-automated-testing-and-screenshots` (commit `d733c56`) พบจุดบกพร่องสำคัญที่ต้องขอให้ปรับปรุงก่อนอนุมัติ ดังนี้:
+>
+> 1. **[Critical] False Positive Test ใน `ticket-resolution.spec.ts` (E2E-02-B):**
+>    - ในบรรทัด 219 มีการ Hardcode URL เรียก `/api/tickets/2/actions` แต่เนื่องจาก `POST /api/test/reset-db` ลบข้อมูลในตาราง Ticket โดยไม่รีเซ็ต SQLite autoincrement sequence ทำให้ ID ของตั๋ว `TKT-2026-000002` เปลี่ยนไปเป็นค่าอื่น
+>    - โค้ดได้นำการทดสอบ 409 Concurrency Conflict ไปครอบไว้ใน `if (actionsData && actionsData.length > 0)` เมื่อ API คืนค่าว่าง ตัวเทสต์จึงข้ามการทดสอบ 409 และการ Assert แบนเนอร์แจ้งเตือนไปโดยสิ้นเชิง แต่เทสต์กลับรายงานผลว่าผ่าน (False Positive)
+>    - ส่งผลให้รูปภาพ `03-concurrency-conflict-alert-chromium.png` ไม่ได้ถูกสร้างและขาดหายไปจากโฟลเดอร์ `artifacts/lab-04/screenshots/ticket-resolution/`
+>    - **วิธีแก้:** ดึง `actionId` จาก attribute ของปุ่ม Edit บนหน้าจอโดยตรง (เช่น `edit-action-btn-${id}`), นำ `if (actionsData && actionsData.length > 0)` ออกเพื่อให้เทสต์ Fail หากไม่พบข้อมูล และรันสร้างรูปภาพ `03-concurrency-conflict-alert-*.png` Commit เข้ามาให้ครบถ้วน
+>
+> 2. **[Medium] หลีกเลี่ยง Conditional Assertions (`if`) ใน E2E Specs:**
+>    - ใน `dashboards.spec.ts` (บรรทัด 66) มีการเขียน `if (await statusSelect.isVisible())` ครอบการ Assert ค่า Filter
+>    - ใน `actions-taken-flow.spec.ts` (บรรทัด 206) มีการเขียน `if (await recordBtn.isVisible())` ครอบการตรวจ Touch target 44px
+>    - **วิธีแก้:** ปรับเปลี่ยนจากการใช้ `if` เป็นการ Assert `await expect(...).toBeVisible()` โดยตรง เพื่อป้องกันการข้าม Assertion เงียบๆ เมื่อ Element ไม่แสดงผล
+
+### How I responded (PR #77):
+
+> ดำเนินการปรับปรุงแก้ไขทั้ง 2 จุดตามข้อเสนอแนะของ Reviewer เรียบร้อยแล้ว:
+>
+> 1. **แก้ไข False Positive และเพิ่มภาพ Screenshot 409 Concurrency Conflict (`ticket-resolution.spec.ts`):**
+>    - สกัด `actionId` จาก attribute `id` ของปุ่ม Edit บนหน้าจอ (`edit-action-btn-${id}`) โดยตรง ทำให้ไม่ขึ้นกับ Ticket ID หรือ Autoincrement sequence
+>    - นำ conditional wrapper `if (actionsData && actionsData.length > 0)` ออกทั้งหมด เพื่อให้มั่นใจว่าการจำลอง concurrent update และการตรวจสอบ HTTP 409 Concurrency Conflict (`#action-concurrency-conflict`) ถูกรันจริง 100% โดยไม่เกิด False Positive
+>    - รันการทดสอบและสร้างไฟล์ภาพหลักฐาน `03-concurrency-conflict-alert-chromium.png` บันทึกเข้าโฟลเดอร์ `artifacts/lab-04/screenshots/ticket-resolution/` ครบถ้วน
+>
+> 2. **ยกเลิก Conditional Assertions (`if`) ในทุก E2E Spec files:**
+>    - ใน `dashboards.spec.ts`: ปรับเป็น `await expect(statusSelect).toBeVisible()` และ `await expect(viewQueueBtn).toBeVisible()` โดยตรง ปราศจากการครอบด้วย `if`
+>    - ใน `actions-taken-flow.spec.ts`: ปรับเป็น `await expect(recordBtn).toBeVisible()` ก่อนวัดขนาด Touch Target (>= 44px) ปราศจากการครอบด้วย `if`
+>
+> 3. **การตรวจสอบผลการทดสอบ (Verification):**
+>    - ชุดทดสอบ Playwright E2E ทั้ง 8/8 tests บน Chromium ผ่าน 100%
+>    - ชุดทดสอบ Vitest Server ทั้ง 115/115 tests ผ่าน 100%
+>    - Client Production Build ผ่าน 0 errors
+
+### Reviewer approval verdict (PR #77):
+
+> ### คำตัดสินการตรวจทานรอบสุดท้าย (Final Review Verdict)
+>
+> ตรวจสอบการปรับปรุงแก้ไขใน commit `1978bb8` ครบถ้วนทุกจุดแล้ว:
+>
+> 1. **แก้ไข False Positive ใน Concurrency Conflict Test (AC-09, E2E-02-B):**
+>    - มีการดึง `actionId` จากปุ่ม Edit บนหน้าจอโดยตรง ทำให้ไม่พึ่งพา Autoincrement sequence ของฐานข้อมูล
+>    - นำเงื่อนไข `if` ที่ครอบการทดสอบออกทั้งหมด ทำให้กระบวนการจำลอง HTTP 409 Concurrency Conflict (`#action-concurrency-conflict`) ถูกรันจริงและ Assert ผลอย่างแม่นยำ
+>    - เพิ่มไฟล์ภาพหลักฐาน `03-concurrency-conflict-alert-chromium.png` เข้าสู่ Repository เรียบร้อย
+>
+> 2. **ยกเลิก Conditional Assertions (`if`) ใน E2E Specs:**
+>    - ใน `dashboards.spec.ts` และ `actions-taken-flow.spec.ts` มีการ Assert `toBeVisible()` นำหน้าโดยตรง ปราศจากการใช้ `if` ครอบ ทำให้ไม่มีการข้าม Assertion เงียบๆ อีกต่อไป
+>
+> 3. **ความสมบูรณ์ของการทดสอบและหลักฐาน:**
+>    - ชุดทดสอบ Playwright E2E ทั้ง 8/8 tests, Performance-Smoke tests (PERF-SMK-01 ถึง 03) และ Server Vitest 115/115 tests ผ่านครบถ้วน 100%
+>    - ภาพหลักฐาน Screenshot ครบทั้ง 12 ภาพครอบคลุม Desktop, Tablet, Mobile และ Concurrency Alert
+
+---
+
+### Reviewer comment I received (PR #78):
+
+> ### Reviewer Comment (PR #78)
+>
+> **คำตัดสิน: Changes Requested**
+>
+> จากการตรวจทานโค้ดในสาขา `feature/32-visual-style-accessibility-hardening` (commit `d131ee7`) พบจุดบกพร่องสำคัญที่ต้องขอให้ปรับปรุงก่อนอนุมัติ ดังนี้:
+>
+> #### 1. [Medium] ข้อผิดพลาด TypeScript Compilation บน Server (`server/src/app.ts`):
+> เมื่อรันการทดสอบ Type checking และ Build ฝั่ง Server ด้วย `npm --prefix server run build` (`tsc`) พบ Type Error 5 จุด ทำให้กระบวนการ Build ล้มเหลว (Exit Code 1):
+> ใน `server/src/app.ts` (บรรทัด 2072, 2134, 2137, 2140) ตัวแปร `ACTIVE_STATUSES` และ `ALL_STATUSES` ถูกระบุเป็น `string[]` ทั่วไป ซึ่งไม่ตรงกับ Prisma enum `TicketStatus[]` ที่ Prisma Client กำหนดไว้สำหรับฟิลด์ `currentStatus`
+> ใน `server/tests/lab-04/performance-smoke.test.ts` (บรรทัด 61) ค่า `currentStatus` ถูกส่งเป็น `string` ทั่วไป ทำให้เกิด Type Mismatch กับ `TicketStatus`
+> **วิธีแก้:** นำเข้า `TicketStatus` จาก `@prisma/client` ใน `server/src/app.ts` และระบุ Type ให้ชัดเจน (`const ACTIVE_STATUSES: TicketStatus[] = ...`, `const ALL_STATUSES: TicketStatus[] = ...`) และ cast ค่าใน `performance-smoke.test.ts` ให้เป็น `TicketStatus` เพื่อให้ `npm --prefix server run build` ผ่าน 0 errors
+>
+> #### 2. [Low] ขาด Keyboard Focus Trap ใน Modal Dialogs (`ActionsTakenSection.tsx`):
+> ใน `ActionsTakenSection.tsx` หน้าต่าง Modal ทั้ง Record Action (`#record-action-modal`) และ Edit Action (`#edit-action-modal`) มีการใส่ `role="dialog"`, `aria-modal="true"` และปุ่มปิด `Escape` ครบถ้วนแล้ว
+> อย่างไรก็ตาม เมื่อผู้ใช้กดปุ่ม `Tab` บนคีย์บอร์ดผ่านปุ่มสุดท้ายภายใน Modal ("Save Action Taken" หรือ "Cancel") โฟกัสสามารถหลุดออกไปยัง Element บนหน้าเว็บด้านหลัง Modal ได้ ซึ่งขัดกับมาตรฐาน Accessible Modal Dialog (WCAG 2.4.3 Focus Order)
+> **วิธีแก้:** เพิ่มการดักจับ Event `Tab` / `Shift + Tab` ภายใน Modal เพื่อให้ Focus วนลูปอยู่เฉพาะภายใน Interactive Elements ของ Modal Dialog เท่านั้น จนกว่าจะปิดหน้าต่าง
+
+### How I responded (PR #78):
+
+> ดำเนินการปรับปรุงแก้ไขทั้ง 2 จุดตามข้อเสนอแนะของ Reviewer เรียบร้อยแล้ว:
+>
+> 1. **แก้ไข TypeScript Compilation Errors ฝั่ง Server (`app.ts` และ `performance-smoke.test.ts`):**
+>    - นำเข้า `TicketStatus` enum จาก `@prisma/client` ใน `server/src/app.ts`
+>    - ประกาศ Type ชัดเจนให้กับ `ACTIVE_STATUSES: TicketStatus[]` และ `ALL_STATUSES: TicketStatus[]`
+>    - Cast ค่า `currentStatus` ใน `server/tests/lab-04/performance-smoke.test.ts` ให้เป็น `TicketStatus`
+>    - ยืนยันการรัน `npm --prefix server run build` (`tsc`) ผ่านสมบูรณ์ 0 errors
+>
+> 2. **เพิ่ม Accessible Keyboard Focus Trap ให้กับ Modal Dialogs (`ActionsTakenSection.tsx`):**
+>    - เพิ่มการดักจับ Event `Tab` และ `Shift + Tab` ภายใน `useEffect` ของ `ActionsTakenSection.tsx`
+>    - ควบคุมให้ Keyboard Focus วนลูปอยู่เฉพาะภายใน Focusable elements ของ Modal ที่เปิดอยู่ (`#record-action-modal` หรือ `#edit-action-modal`) ป้องกัน Focus หลุดออกไปนอก Modal ตามมาตรฐาน WCAG 2.4.3
+>
+> 3. **ผลการทดสอบและการ Build:**
+>    - `npm --prefix server run build`: ผ่าน 0 errors (Exit code 0)
+>    - `npm --prefix client run build`: ผ่าน 0 errors (Exit code 0)
+>    - `npm test --prefix server`: ผ่าน 115/115 tests (22 test files)
+>    - `npm test --prefix client`: ผ่าน 52/52 tests (22 test files)
+
+### Reviewer approval verdict (PR #78):
+
+> ### คำตัดสินการตรวจทานรอบสุดท้าย (Final Review Verdict)
+>
+> ตรวจสอบการปรับปรุงแก้ไขใน commit `6a5f03a` เรียบร้อยแล้ว ครบถ้วนตามมาตรฐานและข้อกำหนดทุกประการ:
+>
+> 1. **แก้ไข Server TypeScript Compilation (`app.ts` และ `performance-smoke.test.ts`):**
+>    - มีการนำเข้าและระบุ Type ของ `TicketStatus` Prisma enum สำหรับ `ACTIVE_STATUSES` และ `ALL_STATUSES` อย่างชัดเจน
+>    - คำสั่ง build ฝั่ง Server (`npm --prefix server run build`) ผ่านสมบูรณ์ 0 errors ปราศจาก Type Error
+>
+> 2. **เพิ่ม Accessible Modal Focus Trap (`ActionsTakenSection.tsx`):**
+>    - มีการดักจับ Event `Tab` และ `Shift + Tab` เพื่อล็อก Keyboard Focus ให้อยู่เฉพาะภายใน Focusable elements ของ Modal Dialog ที่เปิดอยู่
+>    - รองรับการวนลูป (Focus Loop) ระหว่าง element แรกและสุดท้ายอย่างถูกต้องตามเกณฑ์มาตรฐาน WCAG 2.4.3 Focus Order
+>
+> 3. **ความสมบูรณ์ของการทดสอบและหลักฐาน Visual Evidence:**
+>    - ทั้ง Server Build และ Client Build ผ่านฉลุย 0 errors
+>    - ชุดทดสอบทั้งหมด 115 Server tests, 52 Client tests และ 24 Playwright E2E tests ผ่านครบถ้วน 100%
+>    - ภาพหลักฐาน Screenshot ครบทั้ง 36 ภาพครอบคลุม Chromium Desktop, Tablet และ Mobile ทุก Subsystems
+
+### Reviewer approval verdict (PR #79):
+
+> ### ผลการตรวจทาน Peer Review
+>
+> ### สรุปผลการตรวจทานเชิงลึก (Audit Findings)
+>
+> #### 1. เอกสารบันทึกการรีวิว (`docs/lab-04/reviewer.md`) — ครบถ้วนตามเกณฑ์ Handout §10 & Part 1
+> - **ตารางสรุป PRs:** บันทึกและอัปเดตสถานะของ PR ทั้งหมดตั้งแต่ PR #72 ถึง #78 (ได้รับการ Approve พร้อมบันทึก Comment ตรวจรับจริงและการแก้ไข) และระบุ PR #79 เป็นขั้นตอน Final Release Integration ไว้อย่างถูกต้อง
+> - **การแบ่งบทบาท:** มีการแยกส่วนระหว่าง **"Tasks Authored"** โดย @phatthidawadi และ **"Tasks Reviewed"** โดยคู่ Partner (@chanya06) ไว้อย่างชัดเจน ถูกต้องตามเกณฑ์การประเมิน Part 1
+>
+> #### 2. เอกสารบันทึกการใช้งาน AI (`docs/lab-04/ai-use.md`) — สมบูรณ์ตามเกณฑ์ Handout §10 & Part 4
+> - **การระบุโมเดล:** ระบุเครื่องมือ LLM ที่ใช้งานจริงอย่างเป็นทางการ (`Gemini 3.8 Flash & Gemini 3.6 Flash via Antigravity`)
+> - **Key Prompts ทั้ง 10 ข้อ:** ถอดคำว่า `*(Planned)*` ออกทั้งหมด และบันทึกคำสั่งสำคัญ 10 ข้อที่สะท้อนการตัดสินใจทางสถาปัตยกรรมและการแก้ไขปัญหาหน้างานจริง (เช่น การออกแบบ Schema และ Optimistic Concurrency 409, การบังคับ Status Matrix, การทำ Dynamic DOM Selector แก้ปัญหา SQLite autoincrement ใน E2E, และการใส่ Focus Trap)
+> - **บทวิเคราะห์ (Reflection):** มีการถอดบทเรียนเปรียบเทียบระหว่าง **Spec-Agent** และ **Coding-Agent** อย่างลึกซึ้ง ครอบคลุมทั้งประเด็น Type Safety ของ Prisma enums, การดักจับ False Positives ในเทสต์ E2E และการรองรับ Accessibility ตามเกณฑ์ WCAG 2.4.3
+>
+> #### 3. โครงสร้างไฟล์ทดสอบตรงตามเกณฑ์ 100% (Handout §12 Minimum Structure)
+> - ดำเนินการแยกไฟล์ทดสอบ Dashboard ออกเป็น 4 ไฟล์ย่อยตรงตามหน้า 9 ของ Handout:
+>   - `server/tests/lab-04/requester-dashboard.api.test.ts` (DASH-API-01 ถึง 04)
+>   - `server/tests/lab-04/staff-dashboard.api.test.ts` (DASH-API-05 ถึง 08)
+>   - `client/tests/lab-04/RequesterDashboard.test.tsx` (UI-DASH-01 ถึง 03)
+>   - `client/tests/lab-04/StaffDashboard.test.tsx` (UI-DASH-04 ถึง 05)
+> - เพิ่มไฟล์ `artifacts/lab-04/.gitkeep` ตามข้อกำหนดโครงสร้างขั้นต่ำเรียบร้อย
+>
+> #### 4. คลังภาพหลักฐาน Visual Evidence (Handout §10 & §14)
+> - โฟลเดอร์ `artifacts/lab-04/screenshots/` จัดเก็บภาพหลักฐานครบถ้วน **36 ภาพ** ครอบคลุมทั้ง 4 Subsystems บนทั้ง 3 Viewports (Desktop 1280x720, Tablet 768x1024, Mobile 375x667)
+>
+> #### 5. สุขภาพของระบบและการทดสอบทั้งหมด (Build & Test Health)
+> - **Server Build (`tsc`):** ผ่านสมบูรณ์ 0 errors
+> - **Client Build (`vite build`):** ผ่านสมบูรณ์ 0 errors
+> - **Server Vitest Tests:** ผ่านครบ 115/115 tests (22 test suites)
+> - **Client Vitest Tests:** ผ่านครบ 52/52 tests (22 test suites)
+> - **Playwright E2E Tests:** ผ่านครบ 24/24 tests บนทุกเบราว์เซอร์และวิวพอร์ต
 
 ---
 
@@ -734,4 +950,3 @@
 > - มีการ Assert ยืนยัน Matching Count Parity ตามข้อกำหนด `E2E-DASH-01` และ AC-11 ครบถ้วน
 > - เพิ่มชุดทดสอบ E2E สำหรับ HTTP 409 Stale Update Concurrency Guard (AC-08) ตรงตามที่ระบุใน README อย่างแท้จริง
 > - ชุดทดสอบทั้งหมด 310 Vitest tests และ 9 Playwright E2E tests ผ่าน 100% โค้ดมีคุณภาพและความน่าเชื่อถือสูงสุด
-

@@ -30,32 +30,32 @@ Sprint 4 applies Spec-Driven Development (Spec DD) and Test-Driven Development (
 
 | Test ID | Layer | Requirement / AC | What It Tests | Expected Result | Automated Test File | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **ACT-API-01** | API | AC-01, FR-01 | Create valid Action Taken line (`POST /api/tickets/:id/actions`) | HTTP 201 Created; auto-populates `performedById` from session; returns action object | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
-| **ACT-API-02** | API | AC-02, BR-04 | Follow-up note validation enforcement | HTTP 400 Bad Request when `followUpRequired=true` but `followUpNote` is empty | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
-| **ACT-API-03** | API | AC-03, BR-05 | Inactive or non-staff assignee rejection | HTTP 400 Bad Request when assigning to inactive user or user with role `REQUESTER` | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
-| **ACT-API-04** | Security | AC-04, BR-03 | Requester creation block on Actions Taken | HTTP 403 Forbidden when Requester attempts to `POST /api/tickets/:id/actions` | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
-| **ACT-API-05** | API | AC-04, FR-02 | Requester view actions on owned ticket | HTTP 200 OK; returns chronological array of actions for ticket owned by user | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
-| **ACT-API-06** | Security | AC-05, BR-12 | Cross-requester action access block | HTTP 403 Forbidden when Requester attempts to fetch actions for another user's ticket | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
-| **ACT-API-07** | API | FR-03, BR-14 | List actions ordering | HTTP 200 OK; actions strictly sorted by `actionDateTime ASC, id ASC` | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
-| **ACT-API-08** | API | FR-03, BR-02 | Update Action Taken (`PATCH /api/actions/:id`) | HTTP 200 OK; updates description, result, status, and assignee | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
-| **ACT-API-09** | Concurrency | AC-09, BR-10 | Optimistic concurrency conflict on Action Taken | HTTP 409 Conflict when submitting update with stale `version` | `server/tests/lab-04/actions-taken.api.test.ts` | Planned |
-| **FLOW-API-01**| Workflow | AC-06, BR-06 | Requester "Problem Appears Resolved" toggle (`PATCH /api/tickets/:id/resolve-ack`) | HTTP 200 OK; sets `isRequesterResolved=true`, increments version, preserves active status | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| **FLOW-API-02**| Workflow | AC-07, FR-05 | IT Staff formal resolution (`IN_PROGRESS -> RESOLVED`) | HTTP 200 OK; updates `currentStatus` to `RESOLVED` and increments `version` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| **FLOW-API-03**| Workflow | AC-08, BR-07 | Invalid status transition rejection (`NEW -> RESOLVED`) | HTTP 400 Bad Request with error code `INVALID_STATUS_TRANSITION` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| **FLOW-API-04**| Workflow | BR-08 | Requester ticket cancellation in `NEW` status | HTTP 200 OK; transitions `NEW -> CANCELLED`; rejects cancellation if `OPEN` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| **FLOW-API-05**| Workflow | BR-09 | Auto-transition on Requester comment | Submitting public comment on `WAITING_FOR_REQUESTER` auto-transitions to `IN_PROGRESS` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| **FLOW-API-06**| Concurrency | AC-09, BR-10 | Optimistic locking on ticket status update | HTTP 409 Conflict when submitting status update with stale `ticket.version` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| **FLOW-API-07**| Concurrency | AC-09, BR-10 | Optimistic locking on resolve-ack toggle | HTTP 409 Conflict when submitting resolve-ack with stale `ticket.version` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| **FLOW-API-08**| Concurrency | AC-09, BR-10 | Optimistic locking on requester ticket cancellation | HTTP 409 Conflict when submitting cancel with stale `ticket.version` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| **FLOW-API-09**| Security | BR-07 | Requester formal status transition block | HTTP 403 Forbidden when Requester calls `/api/staff/tickets/:id/status` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
-| **DASH-API-01**| API | AC-10, FR-08 | Requester dashboard metrics (`GET /api/dashboard/requester`) | HTTP 200 OK; returns `totalOpenTickets`, `ticketsWaitingForRequester`, `recentlyResolvedTickets` | `server/tests/lab-04/requester-dashboard.api.test.ts` | Planned |
-| **DASH-API-02**| Security | BR-12 | Requester dashboard ownership isolation | HTTP 200 OK; metrics strictly omit tickets belonging to other requesters | `server/tests/lab-04/requester-dashboard.api.test.ts` | Planned |
-| **DASH-API-03**| API | FR-08, BR-13 | Requester dashboard recent tickets stream | HTTP 200 OK; returns up to 5 most recently updated owned tickets | `server/tests/lab-04/requester-dashboard.api.test.ts` | Planned |
-| **DASH-API-04**| Security | FR-08 | Staff/Admin access block on Requester dashboard | HTTP 403 Forbidden when non-requester calls `/api/dashboard/requester` | `server/tests/lab-04/requester-dashboard.api.test.ts` | Planned |
-| **DASH-API-05**| API | AC-11, FR-09 | IT Staff dashboard queue metrics (`GET /api/dashboard/staff`) | HTTP 200 OK; returns `unassignedTickets`, `myAssignedTickets`, status & priority breakdowns | `server/tests/lab-04/staff-dashboard.api.test.ts` | Planned |
-| **DASH-API-06**| API | AC-12, FR-10 | Administrator user account summary inclusion | HTTP 200 OK; includes `adminUserSummary` for Admin; omitted for IT Staff | `server/tests/lab-04/staff-dashboard.api.test.ts` | Planned |
-| **DASH-API-07**| Security | FR-09 | Requester access block on Staff dashboard | HTTP 403 Forbidden when Requester calls `/api/dashboard/staff` | `server/tests/lab-04/staff-dashboard.api.test.ts` | Planned |
-| **MIG-API-01** | Migration | AC-16, BR-01 | Database migration non-destructive check | All pre-existing Lab 1–3 tickets, users, comments, and attachments remain readable | `server/tests/lab-04/ticket-workflow.api.test.ts` | Planned |
+| **ACT-API-01** | API | AC-01, FR-01 | Create valid Action Taken line (`POST /api/tickets/:id/actions`) | HTTP 201 Created; auto-populates `performedById` from session; returns action object | `server/tests/lab-04/actions-taken.api.test.ts` | Passed |
+| **ACT-API-02** | API | AC-02, BR-04 | Follow-up note validation enforcement | HTTP 400 Bad Request when `followUpRequired=true` but `followUpNote` is empty | `server/tests/lab-04/actions-taken.api.test.ts` | Passed |
+| **ACT-API-03** | API | AC-03, BR-05 | Inactive or non-staff assignee rejection | HTTP 400 Bad Request when assigning to inactive user or user with role `REQUESTER` | `server/tests/lab-04/actions-taken.api.test.ts` | Passed |
+| **ACT-API-04** | Security | AC-04, BR-03 | Requester creation block on Actions Taken | HTTP 403 Forbidden when Requester attempts to `POST /api/tickets/:id/actions` | `server/tests/lab-04/actions-taken.api.test.ts` | Passed |
+| **ACT-API-05** | API | AC-04, FR-02 | Requester view actions on owned ticket | HTTP 200 OK; returns chronological array of actions for ticket owned by user | `server/tests/lab-04/actions-taken.api.test.ts` | Passed |
+| **ACT-API-06** | Security | AC-05, BR-12 | Cross-requester action access block | HTTP 403 Forbidden when Requester attempts to fetch actions for another user's ticket | `server/tests/lab-04/actions-taken.api.test.ts` | Passed |
+| **ACT-API-07** | API | FR-03, BR-14 | List actions ordering | HTTP 200 OK; actions strictly sorted by `actionDateTime ASC, id ASC` | `server/tests/lab-04/actions-taken.api.test.ts` | Passed |
+| **ACT-API-08** | API | FR-03, BR-02 | Update Action Taken (`PATCH /api/actions/:id`) | HTTP 200 OK; updates description, result, status, and assignee | `server/tests/lab-04/actions-taken.api.test.ts` | Passed |
+| **ACT-API-09** | Concurrency | AC-09, BR-10 | Optimistic concurrency conflict on Action Taken | HTTP 409 Conflict when submitting update with stale `version` | `server/tests/lab-04/actions-taken.api.test.ts` | Passed |
+| **FLOW-API-01**| Workflow | AC-06, BR-06 | Requester "Problem Appears Resolved" toggle (`PATCH /api/tickets/:id/resolve-ack`) | HTTP 200 OK; sets `isRequesterResolved=true`, increments version, preserves active status | `server/tests/lab-04/ticket-workflow.api.test.ts` | Passed |
+| **FLOW-API-02**| Workflow | AC-07, FR-05 | IT Staff formal resolution (`IN_PROGRESS -> RESOLVED`) | HTTP 200 OK; updates `currentStatus` to `RESOLVED` and increments `version` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Passed |
+| **FLOW-API-03**| Workflow | AC-08, BR-07 | Invalid status transition rejection (`NEW -> RESOLVED`) | HTTP 400 Bad Request with error code `INVALID_STATUS_TRANSITION` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Passed |
+| **FLOW-API-04**| Workflow | BR-08 | Requester ticket cancellation in `NEW` status | HTTP 200 OK; transitions `NEW -> CANCELLED`; rejects cancellation if `OPEN` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Passed |
+| **FLOW-API-05**| Workflow | BR-09 | Auto-transition on Requester comment | Submitting public comment on `WAITING_FOR_REQUESTER` auto-transitions to `IN_PROGRESS` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Passed |
+| **FLOW-API-06**| Concurrency | AC-09, BR-10 | Optimistic locking on ticket status update | HTTP 409 Conflict when submitting status update with stale `ticket.version` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Passed |
+| **FLOW-API-07**| Concurrency | AC-09, BR-10 | Optimistic locking on resolve-ack toggle | HTTP 409 Conflict when submitting resolve-ack with stale `ticket.version` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Passed |
+| **FLOW-API-08**| Concurrency | AC-09, BR-10 | Optimistic locking on requester ticket cancellation | HTTP 409 Conflict when submitting cancel with stale `ticket.version` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Passed |
+| **FLOW-API-09**| Security | BR-07 | Requester formal status transition block | HTTP 403 Forbidden when Requester calls `/api/staff/tickets/:id/status` | `server/tests/lab-04/ticket-workflow.api.test.ts` | Passed |
+| **DASH-API-01**| API | AC-10, FR-08 | Requester dashboard metrics (`GET /api/dashboard/requester`) | HTTP 200 OK; returns `totalOpenTickets`, `ticketsWaitingForRequester`, `recentlyResolvedTickets` | `server/tests/lab-04/requester-dashboard.api.test.ts` | Passed |
+| **DASH-API-02**| Security | BR-12 | Requester dashboard ownership isolation | HTTP 200 OK; metrics strictly omit tickets belonging to other requesters | `server/tests/lab-04/requester-dashboard.api.test.ts` | Passed |
+| **DASH-API-03**| API | FR-08, BR-13 | Requester dashboard recent tickets stream | HTTP 200 OK; returns up to 5 most recently updated owned tickets | `server/tests/lab-04/requester-dashboard.api.test.ts` | Passed |
+| **DASH-API-04**| Security | FR-08 | Staff/Admin access block on Requester dashboard | HTTP 403 Forbidden when non-requester calls `/api/dashboard/requester` | `server/tests/lab-04/requester-dashboard.api.test.ts` | Passed |
+| **DASH-API-05**| API | AC-11, FR-09 | IT Staff dashboard queue metrics (`GET /api/dashboard/staff`) | HTTP 200 OK; returns `unassignedTickets`, `myAssignedTickets`, status & priority breakdowns | `server/tests/lab-04/staff-dashboard.api.test.ts` | Passed |
+| **DASH-API-06**| API | AC-12, FR-10 | Administrator user account summary inclusion | HTTP 200 OK; includes `adminUserSummary` for Admin; omitted for IT Staff | `server/tests/lab-04/staff-dashboard.api.test.ts` | Passed |
+| **DASH-API-07**| Security | FR-09 | Requester access block on Staff dashboard | HTTP 403 Forbidden when Requester calls `/api/dashboard/staff` | `server/tests/lab-04/staff-dashboard.api.test.ts` | Passed |
+| **MIG-API-01** | Migration | AC-16, BR-01 | Database migration non-destructive check | All pre-existing Lab 1–3 tickets, users, comments, and attachments remain readable | `server/tests/lab-04/ticket-workflow.api.test.ts` | Passed |
 
 ---
 
@@ -63,21 +63,21 @@ Sprint 4 applies Spec-Driven Development (Spec DD) and Test-Driven Development (
 
 | Test ID | Layer | Requirement / AC | What It Tests | Expected Result | Automated Test File | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **UI-ACT-01** | UI Component | AC-04, FR-02 | Requester read-only Actions Taken rendering | Renders chronological action lines; "+ Record Action" and "Edit" buttons omitted | `client/tests/lab-04/ActionsTaken.test.tsx` | Planned |
-| **UI-ACT-02** | UI Component | AC-01, FR-01 | IT Staff record action modal | Opens modal, submits valid action description/result, triggers API POST and updates list | `client/tests/lab-04/ActionsTaken.test.tsx` | Planned |
-| **UI-ACT-03** | UI Component | AC-02, BR-04 | Follow-up toggle & mandatory validation | Checking follow-up toggle reveals note input; prevents submit if empty | `client/tests/lab-04/ActionsTaken.test.tsx` | Planned |
-| **UI-ACT-04** | UI Component | AC-03, BR-05 | Inactive assignee alert feedback | Displays validation error alert when assigned user is rejected by server | `client/tests/lab-04/ActionsTaken.test.tsx` | Planned |
-| **UI-ACT-05** | UI Component | AC-09, BR-10 | Concurrency conflict handling in edit modal | Displays warning banner on HTTP 409 and preserves entered form text | `client/tests/lab-04/ActionsTaken.test.tsx` | Planned |
-| **UI-FLOW-01**| UI Component | FR-05, BR-07 | Permitted status transition dropdown options | Dropdown displays ONLY matrix-allowed transitions for current ticket status | `client/tests/lab-04/TicketWorkflow.test.tsx` | Planned |
-| **UI-FLOW-02**| UI Component | AC-06, BR-06 | Advisory resolution callout banner | Renders amber callout when `isRequesterResolved=true` guiding staff to verify work | `client/tests/lab-04/TicketWorkflow.test.tsx` | Planned |
-| **UI-FLOW-03**| UI Component | AC-08, BR-07 | Status update submission with version | Submits target status with `ticket.version`; displays error alert on failure | `client/tests/lab-04/TicketWorkflow.test.tsx` | Planned |
-| **UI-DASH-01**| UI Component | AC-10, FR-08 | Requester dashboard metrics & cards | Renders 3 summary cards, recent tickets table, and "+ Create Ticket" button | `client/tests/lab-04/RequesterDashboard.test.tsx` | Planned |
-| **UI-DASH-02**| UI Component | AC-13, FR-11 | Requester metric drill-down click | Clicking "Waiting on You" metric card navigates to filtered ticket list | `client/tests/lab-04/RequesterDashboard.test.tsx` | Planned |
-| **UI-DASH-03**| UI Component | FR-08 | Requester dashboard empty zero-state | Displays friendly zero-state callout when user has 0 active tickets | `client/tests/lab-04/RequesterDashboard.test.tsx` | Planned |
-| **UI-DASH-04**| UI Component | AC-11, FR-09 | IT Staff dashboard operational triage view | Renders 4 operational cards, status distribution, and recent queue activity | `client/tests/lab-04/StaffDashboard.test.tsx` | Planned |
-| **UI-DASH-05**| UI Component | AC-12, FR-10 | Administrator user account summary card | Renders Admin user account card with role counts; hidden for IT Staff | `client/tests/lab-04/StaffDashboard.test.tsx` | Planned |
-| **UI-DASH-06**| UI Component | AC-13, FR-11 | Staff queue metric drill-down click | Clicking "Unassigned Tickets" card navigates to `/staff/queue?filter=unassigned` | `client/tests/lab-04/StaffDashboard.test.tsx` | Planned |
-| **UI-NAV-01** | UI Component | FR-12 | Header navigation with active Dashboard tab | Post-login directs to Dashboard; header displays highlighted active tab | `client/tests/lab-04/StaffDashboard.test.tsx` | Planned |
+| **UI-ACT-01** | UI Component | AC-04, FR-02 | Requester read-only Actions Taken rendering | Renders chronological action lines; "+ Record Action" and "Edit" buttons omitted | `client/tests/lab-04/ActionsTaken.test.tsx` | Passed |
+| **UI-ACT-02** | UI Component | AC-01, FR-01 | IT Staff record action modal | Opens modal, submits valid action description/result, triggers API POST and updates list | `client/tests/lab-04/ActionsTaken.test.tsx` | Passed |
+| **UI-ACT-03** | UI Component | AC-02, BR-04 | Follow-up toggle & mandatory validation | Checking follow-up toggle reveals note input; prevents submit if empty | `client/tests/lab-04/ActionsTaken.test.tsx` | Passed |
+| **UI-ACT-04** | UI Component | AC-03, BR-05 | Inactive assignee alert feedback | Displays validation error alert when assigned user is rejected by server | `client/tests/lab-04/ActionsTaken.test.tsx` | Passed |
+| **UI-ACT-05** | UI Component | AC-09, BR-10 | Concurrency conflict handling in edit modal | Displays warning banner on HTTP 409 and preserves entered form text | `client/tests/lab-04/ActionsTaken.test.tsx` | Passed |
+| **UI-FLOW-01**| UI Component | FR-05, BR-07 | Permitted status transition dropdown options | Dropdown displays ONLY matrix-allowed transitions for current ticket status | `client/tests/lab-04/TicketWorkflow.test.tsx` | Passed |
+| **UI-FLOW-02**| UI Component | AC-06, BR-06 | Advisory resolution callout banner | Renders amber callout when `isRequesterResolved=true` guiding staff to verify work | `client/tests/lab-04/TicketWorkflow.test.tsx` | Passed |
+| **UI-FLOW-03**| UI Component | AC-08, BR-07 | Status update submission with version | Submits target status with `ticket.version`; displays error alert on failure | `client/tests/lab-04/TicketWorkflow.test.tsx` | Passed |
+| **UI-DASH-01**| UI Component | AC-10, FR-08 | Requester dashboard metrics & cards | Renders 3 summary cards, recent tickets table, and "+ Create Ticket" button | `client/tests/lab-04/RequesterDashboard.test.tsx` | Passed |
+| **UI-DASH-02**| UI Component | AC-13, FR-11 | Requester metric drill-down click | Clicking "Waiting on You" metric card navigates to filtered ticket list | `client/tests/lab-04/RequesterDashboard.test.tsx` | Passed |
+| **UI-DASH-03**| UI Component | FR-08 | Requester dashboard empty zero-state | Displays friendly zero-state callout when user has 0 active tickets | `client/tests/lab-04/RequesterDashboard.test.tsx` | Passed |
+| **UI-DASH-04**| UI Component | AC-11, FR-09 | IT Staff dashboard operational triage view | Renders 4 operational cards, status distribution, and recent queue activity | `client/tests/lab-04/StaffDashboard.test.tsx` | Passed |
+| **UI-DASH-05**| UI Component | AC-12, FR-10 | Administrator user account summary card | Renders Admin user account card with role counts; hidden for IT Staff | `client/tests/lab-04/StaffDashboard.test.tsx` | Passed |
+| **UI-DASH-06**| UI Component | AC-13, FR-11 | Staff queue metric drill-down click | Clicking "Unassigned Tickets" card navigates to `/staff/queue?filter=unassigned` | `client/tests/lab-04/StaffDashboard.test.tsx` | Passed |
+| **UI-NAV-01** | UI Component | FR-12 | Header navigation with active Dashboard tab | Post-login directs to Dashboard; header displays highlighted active tab | `client/tests/lab-04/StaffDashboard.test.tsx` | Passed |
 
 ---
 
@@ -85,14 +85,14 @@ Sprint 4 applies Spec-Driven Development (Spec DD) and Test-Driven Development (
 
 | Test ID | Viewport | Requirement / AC | User Journey Tested | Expected Result | Automated Test File | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **E2E-01-A** | Desktop (1280px)| AC-01, AC-02 | IT Staff logs in, claims ticket, records Action Taken with follow-up note | Action line appears in list with green status pill and amber follow-up note | `e2e/lab-04/actions-taken-flow.spec.ts` | Planned |
-| **E2E-01-B** | Tablet (768px) | AC-04, AC-14 | Requester logs in, views owned ticket Actions Taken | Actions Taken rendered in read-only format; zero create/edit buttons visible | `e2e/lab-04/actions-taken-flow.spec.ts` | Planned |
-| **E2E-01-C** | Mobile (375px) | AC-14, AC-15 | Mobile stacked card view for Actions Taken | Actions table collapses into vertical cards; 44px touch targets; no horizontal scroll | `e2e/lab-04/actions-taken-flow.spec.ts` | Planned |
-| **E2E-02-A** | Desktop (1280px)| AC-06, AC-07 | Requester marks problem resolved $\to$ IT Staff verifies and marks `RESOLVED` | Advisory flag shown; only staff transition updates status to `RESOLVED` | `e2e/lab-04/ticket-resolution.spec.ts` | Planned |
-| **E2E-02-B** | Desktop (1280px)| AC-08, AC-09 | Permitted status transitions & optimistic locking | Permitted dropdown values verified; concurrent update conflict safely alerts user | `e2e/lab-04/ticket-resolution.spec.ts` | Planned |
-| **E2E-03-A** | Desktop (1280px)| AC-10, AC-13 | Requester logs in $\to$ lands on Dashboard $\to$ clicks drill-down | Dashboard renders accurate counts; drill-down filters ticket view | `e2e/lab-04/dashboards.spec.ts` | Planned |
-| **E2E-03-B** | Desktop (1280px)| AC-11, AC-12 | Admin logs in $\to$ views Staff Dashboard with User Summary card | Unassigned counts, status breakdown, and user administration counts match DB | `e2e/lab-04/dashboards.spec.ts` | Planned |
-| **E2E-03-C** | Mobile (375px) | AC-14, AC-15 | Mobile dashboard layout & focus indicators | Single-column stacked metric cards; visible focus rings; responsive navigation | `e2e/lab-04/dashboards.spec.ts` | Planned |
+| **E2E-01-A** | Desktop (1280px)| AC-01, AC-02 | IT Staff logs in, claims ticket, records Action Taken with follow-up note | Action line appears in list with green status pill and amber follow-up note | `e2e/lab-04/actions-taken-flow.spec.ts` | Passed |
+| **E2E-01-B** | Tablet (768px) | AC-04, AC-14 | Requester logs in, views owned ticket Actions Taken | Actions Taken rendered in read-only format; zero create/edit buttons visible | `e2e/lab-04/actions-taken-flow.spec.ts` | Passed |
+| **E2E-01-C** | Mobile (375px) | AC-14, AC-15 | Mobile stacked card view for Actions Taken | Actions table collapses into vertical cards; 44px touch targets; no horizontal scroll | `e2e/lab-04/actions-taken-flow.spec.ts` | Passed |
+| **E2E-02-A** | Desktop (1280px)| AC-06, AC-07 | Requester marks problem resolved $\to$ IT Staff verifies and marks `RESOLVED` | Advisory flag shown; only staff transition updates status to `RESOLVED` | `e2e/lab-04/ticket-resolution.spec.ts` | Passed |
+| **E2E-02-B** | Desktop (1280px)| AC-08, AC-09 | Permitted status transitions & optimistic locking | Permitted dropdown values verified; concurrent update conflict safely alerts user | `e2e/lab-04/ticket-resolution.spec.ts` | Passed |
+| **E2E-03-A** | Desktop (1280px)| AC-10, AC-13 | Requester logs in $\to$ lands on Dashboard $\to$ clicks drill-down | Dashboard renders accurate counts; drill-down filters ticket view | `e2e/lab-04/dashboards.spec.ts` | Passed |
+| **E2E-03-B** | Desktop (1280px)| AC-11, AC-12 | Admin logs in $\to$ views Staff Dashboard with User Summary card | Unassigned counts, status breakdown, and user administration counts match DB | `e2e/lab-04/dashboards.spec.ts` | Passed |
+| **E2E-03-C** | Mobile (375px) | AC-14, AC-15 | Mobile dashboard layout & focus indicators | Single-column stacked metric cards; visible focus rings; responsive navigation | `e2e/lab-04/dashboards.spec.ts` | Passed |
 
 ---
 
@@ -100,9 +100,9 @@ Sprint 4 applies Spec-Driven Development (Spec DD) and Test-Driven Development (
 
 | Test ID | Layer | Requirement / AC | What It Tests | Expected Result | Automated Test File | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **PERF-SMK-01** | Performance | AC-17 | Dashboard metric queries latency under load (100+ tickets in DB) | `GET /api/dashboard/requester` and `/api/dashboard/staff` respond with p95 < 200ms | `server/tests/lab-04/performance-smoke.test.ts` | Planned |
-| **PERF-SMK-02** | Performance | AC-17 | Actions Taken chronological query latency (ticket with 20+ action lines) | `GET /api/tickets/:id/actions` responds with p95 < 150ms | `server/tests/lab-04/performance-smoke.test.ts` | Planned |
-| **PERF-SMK-03** | Performance | AC-17, BR-10 | Burst concurrency conflict throughput (10 concurrent updates) | 1 write succeeds, 9 fail with 409 Conflict safely; average latency < 300ms | `server/tests/lab-04/performance-smoke.test.ts` | Planned |
+| **PERF-SMK-01** | Performance | AC-17 | Dashboard metric queries latency under load (100+ tickets in DB) | `GET /api/dashboard/requester` and `/api/dashboard/staff` respond with p95 < 200ms | `server/tests/lab-04/performance-smoke.test.ts` | Passed |
+| **PERF-SMK-02** | Performance | AC-17 | Actions Taken chronological query latency (ticket with 20+ action lines) | `GET /api/tickets/:id/actions` responds with p95 < 150ms | `server/tests/lab-04/performance-smoke.test.ts` | Passed |
+| **PERF-SMK-03** | Performance | AC-17, BR-10 | Burst concurrency conflict throughput (10 concurrent updates) | 1 write succeeds, 9 fail with 409 Conflict safely; average latency < 300ms | `server/tests/lab-04/performance-smoke.test.ts` | Passed |
 
 ---
 

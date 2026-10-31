@@ -19,6 +19,7 @@ import { authenticateSession, requireRole } from "./middleware/authMiddleware.js
 import { loginRateLimiter, clearRateLimitStore } from "./middleware/rateLimiter.js";
 import { generateTicketNumber } from "./utils/ticketNumber.js";
 import { isValidStatusTransition } from "./utils/workflow.js";
+import { TicketStatus } from "@prisma/client";
 
 // The Express app is exported separately from app.listen() (see index.ts) so
 // Supertest can import `app` without opening a port. Do not merge these files.
@@ -45,6 +46,11 @@ app.post("/api/test/reset-db", async (_req: Request, res: Response) => {
   }
   try {
     clearRateLimitStore();
+    const prisma = getPrisma();
+    await prisma.actionTaken.deleteMany({});
+    await prisma.ticketComment.deleteMany({});
+    await prisma.ticketInternalNote.deleteMany({});
+    await prisma.ticket.deleteMany({});
     await seedDatabase();
     return res.json({ success: true, message: "Database re-seeded successfully." });
   } catch (err: any) {
@@ -2042,9 +2048,185 @@ app.patch("/api/actions/:id", authenticateSession, requireRole(["IT_STAFF", "ADM
   }
 });
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Dashboard Endpoints (Issue #30)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// GET /api/dashboard/requester — Requester-scoped metrics (FR-08, BR-12)
+app.get("/api/dashboard/requester", authenticateSession, async (req: Request, res: Response) => {
+  const user = (req as any).user;
+  if (!user || user.role !== "REQUESTER") {
+    return res.status(403).json({ error: "Forbidden: Requester access only.", code: "FORBIDDEN" });
+  }
+
+  try {
+    const prisma = getPrisma();
+    const requesterId = user.id;
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    const ACTIVE_STATUSES: TicketStatus[] = [
+      TicketStatus.NEW,
+      TicketStatus.OPEN,
+      TicketStatus.IN_PROGRESS,
+      TicketStatus.WAITING_FOR_REQUESTER,
+      TicketStatus.REOPENED,
+    ];
+
+    const [totalOpenTickets, ticketsWaitingForRequester, recentlyResolvedTickets, myRecentTickets] =
+      await Promise.all([
+        prisma.ticket.count({
+          where: { requesterId, currentStatus: { in: ACTIVE_STATUSES } },
+        }),
+        prisma.ticket.count({
+          where: { requesterId, currentStatus: "WAITING_FOR_REQUESTER" },
+        }),
+        prisma.ticket.count({
+          where: {
+            requesterId,
+            currentStatus: "RESOLVED",
+            updatedAt: { gte: thirtyDaysAgo },
+          },
+        }),
+        prisma.ticket.findMany({
+          where: { requesterId },
+          orderBy: { updatedAt: "desc" },
+          take: 5,
+          select: {
+            id: true,
+            ticketNumber: true,
+            summary: true,
+            currentStatus: true,
+            requestedPriority: true,
+            updatedAt: true,
+            createdAt: true,
+          },
+        }),
+      ]);
+
+    return res.status(200).json({
+      totalOpenTickets,
+      ticketsWaitingForRequester,
+      recentlyResolvedTickets,
+      myRecentTickets,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+  }
+});
+
+// GET /api/dashboard/staff — IT Staff & Administrator queue metrics (FR-09, FR-10, BR-11)
+app.get("/api/dashboard/staff", authenticateSession, async (req: Request, res: Response) => {
+  const user = (req as any).user;
+  if (!user || user.role === "REQUESTER") {
+    return res.status(403).json({ error: "Forbidden: IT Staff or Administrator access only.", code: "FORBIDDEN" });
+  }
+
+  try {
+    const prisma = getPrisma();
+    const staffId = user.id;
+
+    const ACTIVE_STATUSES: TicketStatus[] = [
+      TicketStatus.NEW,
+      TicketStatus.OPEN,
+      TicketStatus.IN_PROGRESS,
+      TicketStatus.WAITING_FOR_REQUESTER,
+      TicketStatus.REOPENED,
+    ];
+    const ALL_STATUSES: TicketStatus[] = [
+      TicketStatus.NEW,
+      TicketStatus.OPEN,
+      TicketStatus.IN_PROGRESS,
+      TicketStatus.WAITING_FOR_REQUESTER,
+      TicketStatus.RESOLVED,
+      TicketStatus.CLOSED,
+      TicketStatus.REOPENED,
+      TicketStatus.CANCELLED,
+    ];
+
+    // Use findMany for all counts to avoid groupBy on nullable columns
+    const [
+      unassignedTickets,
+      myAssignedTickets,
+      urgentTicketsCount,
+      allTickets,
+      recentQueueTickets,
+    ] = await Promise.all([
+      prisma.ticket.count({
+        where: { currentStatus: { in: ACTIVE_STATUSES }, assignedStaffId: null },
+      }),
+      prisma.ticket.count({
+        where: { currentStatus: { in: ACTIVE_STATUSES }, assignedStaffId: staffId },
+      }),
+      prisma.ticket.count({
+        where: { currentStatus: { in: ACTIVE_STATUSES }, itPriority: "URGENT" },
+      }),
+      // Fetch all tickets for status+priority aggregation
+      prisma.ticket.findMany({
+        select: { currentStatus: true, itPriority: true },
+      }),
+      prisma.ticket.findMany({
+        orderBy: { updatedAt: "desc" },
+        take: 5,
+        select: {
+          id: true,
+          ticketNumber: true,
+          summary: true,
+          currentStatus: true,
+          itPriority: true,
+          updatedAt: true,
+          requester: { select: { id: true, name: true, email: true } },
+          assignedStaff: { select: { id: true, name: true, email: true } },
+        },
+      }),
+    ]);
+
+    // Build ticketsByStatus map via JS
+    const ticketsByStatus: Record<string, number> = {};
+    for (const s of ALL_STATUSES) ticketsByStatus[s] = 0;
+    for (const t of allTickets) {
+      if (ticketsByStatus[t.currentStatus] !== undefined) {
+        ticketsByStatus[t.currentStatus]++;
+      }
+    }
+
+    // Build ticketsByPriority map via JS (active tickets only)
+    const ticketsByPriority: Record<string, number> = { LOW: 0, MEDIUM: 0, HIGH: 0, URGENT: 0 };
+    for (const t of allTickets) {
+      if (ACTIVE_STATUSES.includes(t.currentStatus) && t.itPriority && ticketsByPriority[t.itPriority] !== undefined) {
+        ticketsByPriority[t.itPriority]++;
+      }
+    }
+
+    const payload: any = {
+      unassignedTickets,
+      myAssignedTickets,
+      urgentTicketsCount,
+      ticketsByStatus,
+      ticketsByPriority,
+      recentQueueTickets,
+    };
+
+    // Administrator-only extension: user summary (FR-10)
+    if (user.role === "ADMINISTRATOR") {
+      const [totalUsers, activeUsers, allUsers] = await Promise.all([
+        prisma.user.count(),
+        prisma.user.count({ where: { isActive: true } }),
+        prisma.user.findMany({ select: { role: true } }),
+      ]);
+      const usersByRole: Record<string, number> = { REQUESTER: 0, IT_STAFF: 0, ADMINISTRATOR: 0 };
+      for (const u of allUsers) {
+        if (usersByRole[u.role] !== undefined) usersByRole[u.role]++;
+      }
+      payload.adminUserSummary = { totalUsers, activeUsers, usersByRole };
+    }
+
+    return res.status(200).json(payload);
+  } catch (error) {
+    console.error("Dashboard staff error:", error);
+    return res.status(500).json({ error: "Internal Server Error", code: "INTERNAL_ERROR" });
+  }
+});
+
 export default app;
-
-
-
-
 
