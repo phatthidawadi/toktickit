@@ -22,8 +22,12 @@ TokTickIT is a full-stack IT Service Desk application designed to streamline org
 - **Database Schema Evolution & User Migration**: Prisma DDL migration (`20260914000000_init_lab3`) consolidating scaffold `RequesterUser` accounts into a unified `User` model, preserving foreign key relations with zero data loss.
 - **IT Staff Operational Queue & Ticket Workflow**: Ticket Queue with keyword search, multi-criteria filtering, sorting, pagination, ownership claim/reassignment, independent IT Priority editing (`itPriority`), permitted status transition matrix enforcement (BR-10), Public Comments stream, and confidential Internal Notes stream (`#FEF3C7`).
 - **Administrator User Management Portal**: User management interface (`/admin/users`) with search, role filters, user creation, account editing, initial password resets, and safety protections against self-deactivation and last-admin deactivation.
-- **Zen Green Design System & Responsive Layouts**: Unified visual design tokens, role badges, interactive focus outlines, touch target standards (>= 44px), and responsive viewport adaptations across Desktop (>= 992px), Tablet (768px - 991px), and Mobile (< 768px).
-- **Automated Test Architecture**: 100% test coverage across 8 layers including Unit, REST API Integration, UI Components, UI Style, Responsive, Security/Auth, Migration/Regression, and Playwright E2E tests.
+### Lab 4 — Actions Taken, Dashboards, and Final Hardening
+- **Actions Taken Subsystem**: Chronological tracking of IT troubleshooting activities (`POST /api/tickets/:id/actions`, `GET /api/tickets/:id/actions`, `PATCH /api/actions/:id`), follow-up required validation, inactive assignee guard, and optimistic concurrency version tracking.
+- **Ticket Resolution Lifecycle & Advisory Gate**: Requester "Problem Appears Resolved" toggle (`PATCH /api/tickets/:id/resolve-ack`), advisory callout banner guiding staff resolution, strict transition matrix enforcement (`NEW -> RESOLVED` forbidden), and auto-transition to `IN_PROGRESS` on requester public comment.
+- **Role-Based Operational Dashboards**: Authoritative server-side aggregated metrics for Requesters (`/api/dashboard/requester`) and IT Staff/Admin (`/api/dashboard/staff`), interactive metric card drill-downs, and Administrator user account summaries.
+- **Accessibility & Design Hardening**: Full Zen Green visual system audit (`#006B3C`, `#0B7A46`, `#EAF6EF`, `#F5F7F6`), visible keyboard focus rings (`focus:ring-2 focus:ring-emerald-500`), semantic ARIA dialog roles on modals, and >= 44px mobile touch targets.
+- **End-to-End Automated Testing**: Comprehensive Playwright journeys covering Actions Taken logging, resolution workflows, and dashboards across Desktop, Tablet, and Mobile viewports.
 
 ---
 
@@ -138,15 +142,15 @@ The codebase includes complete automated test coverage across all layers.
 ### 1. Server Unit & REST API Integration Tests
 ```bash
 cd server
-npx vitest run --fileParallelism=false
-# Executes 84 tests across 18 test files (100% Pass)
+npm test
+# Executes 115 tests across 22 test files (100% Pass)
 ```
 
 ### 2. Client UI Component, Style & Responsive Tests
 ```bash
 cd client
-npx vitest run tests/lab-03
-# Executes 24 component tests across 10 test files (100% Pass)
+npm test
+# Executes 52 component and style tests across 22 test files (100% Pass)
 ```
 
 ### 3. Client Production Build Verification
@@ -159,6 +163,6 @@ npm run build
 ### 4. Playwright End-to-End Tests
 ```bash
 # Run from repository root
-npx playwright test --config e2e/playwright.config.ts
-# Executes 21 E2E tests across Desktop, Tablet, and Mobile viewports (100% Pass)
+npm run test:e2e
+# Executes 24 E2E tests across Desktop, Tablet, and Mobile viewports (100% Pass)
 ```

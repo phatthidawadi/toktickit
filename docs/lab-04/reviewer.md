@@ -11,7 +11,9 @@
 | [PR #73](https://github.com/phatthidawadi/toktickit/pull/73) | `feature/27-actions-taken-foundation` | Approved with comments |
 | [PR #74](https://github.com/phatthidawadi/toktickit/pull/74) | `feature/28-actions-taken-ui` | Approved with comments |
 | [PR #75](https://github.com/phatthidawadi/toktickit/pull/75) | `feature/29-ticket-workflow-and-resolution` | Approved with comments |
-| [PR #77](https://github.com/phatthidawadi/toktickit/pull/77) | `feature/31-e2e-automated-testing-and-screenshots` | Changes requested |
+| [PR #76](https://github.com/phatthidawadi/toktickit/pull/76) | `feature/30-role-based-dashboards` | Approved with comments |
+| [PR #77](https://github.com/phatthidawadi/toktickit/pull/77) | `feature/31-e2e-automated-testing-and-screenshots` | Approved with comments |
+| [PR #78](https://github.com/phatthidawadi/toktickit/pull/78) | `feature/32-visual-style-accessibility-hardening` | Pending |
 
 ---
 
@@ -837,4 +839,23 @@
 >    - ชุดทดสอบ Playwright E2E ทั้ง 8/8 tests บน Chromium ผ่าน 100%
 >    - ชุดทดสอบ Vitest Server ทั้ง 115/115 tests ผ่าน 100%
 >    - Client Production Build ผ่าน 0 errors
+
+### Reviewer approval verdict (PR #77):
+
+> ### คำตัดสินการตรวจทานรอบสุดท้าย (Final Review Verdict)
+>
+> ตรวจสอบการปรับปรุงแก้ไขใน commit `1978bb8` ครบถ้วนทุกจุดแล้ว:
+>
+> 1. **แก้ไข False Positive ใน Concurrency Conflict Test (AC-09, E2E-02-B):**
+>    - มีการดึง `actionId` จากปุ่ม Edit บนหน้าจอโดยตรง ทำให้ไม่พึ่งพา Autoincrement sequence ของฐานข้อมูล
+>    - นำเงื่อนไข `if` ที่ครอบการทดสอบออกทั้งหมด ทำให้กระบวนการจำลอง HTTP 409 Concurrency Conflict (`#action-concurrency-conflict`) ถูกรันจริงและ Assert ผลอย่างแม่นยำ
+>    - เพิ่มไฟล์ภาพหลักฐาน `03-concurrency-conflict-alert-chromium.png` เข้าสู่ Repository เรียบร้อย
+>
+> 2. **ยกเลิก Conditional Assertions (`if`) ใน E2E Specs:**
+>    - ใน `dashboards.spec.ts` และ `actions-taken-flow.spec.ts` มีการ Assert `toBeVisible()` นำหน้าโดยตรง ปราศจากการใช้ `if` ครอบ ทำให้ไม่มีการข้าม Assertion เงียบๆ อีกต่อไป
+>
+> 3. **ความสมบูรณ์ของการทดสอบและหลักฐาน:**
+>    - ชุดทดสอบ Playwright E2E ทั้ง 8/8 tests, Performance-Smoke tests (PERF-SMK-01 ถึง 03) และ Server Vitest 115/115 tests ผ่านครบถ้วน 100%
+>    - ภาพหลักฐาน Screenshot ครบทั้ง 12 ภาพครอบคลุม Desktop, Tablet, Mobile และ Concurrency Alert
+
 
