@@ -501,6 +501,7 @@
 | [PR #75](https://github.com/lmaybelgracel/TokTickit/pull/75) | `feature/33-staff-dashboard-ui` | Approved (Round 1: Changes Requested, Round 2: Changes Requested, Round 3: Approved) |
 | [PR #76](https://github.com/lmaybelgracel/TokTickit/pull/76) | `feature/34-requester-dashboard-ui` | Approved (Round 1: Changes Requested, Round 2: Changes Requested, Round 3: Approved) |
 | [PR #77](https://github.com/lmaybelgracel/TokTickit/pull/77) | `feature/35-e2e-automation-and-audit` | Approved (Round 1: Changes Requested, Round 2: Changes Requested, Round 3: Approved) |
+| [PR #78](https://github.com/lmaybelgracel/TokTickit/pull/78) | `lab4-staging` | Approved (Round 1: Changes Requested, Round 2: Approved) |
 
 ---
 
@@ -981,3 +982,36 @@
 > - มีการ Assert ยืนยัน Matching Count Parity ตามข้อกำหนด `E2E-DASH-01` และ AC-11 ครบถ้วน
 > - เพิ่มชุดทดสอบ E2E สำหรับ HTTP 409 Stale Update Concurrency Guard (AC-08) ตรงตามที่ระบุใน README อย่างแท้จริง
 > - ชุดทดสอบทั้งหมด 310 Vitest tests และ 9 Playwright E2E tests ผ่าน 100% โค้ดมีคุณภาพและความน่าเชื่อถือสูงสุด
+
+---
+
+### My review comment for partner's PR #78 (Final Release):
+
+> จากการตรวจทานโค้ดใน PR #78 โดยรวมทำระบบ Dashboard, Concurrency และ UI ออกมาได้ดีมากและชุดเทสต์ผ่านครบ แต่พบข้อบกพร่องสำคัญที่ต้องปรับปรุงก่อนควบรวมเข้า main ดังนี้:
+> 
+> 1. Resolution Gate ไม่ได้เช็ค Action จริง: ใน PR เขียนไว้ว่าตั๋วจะ Resolve ได้ต้องมี Action Taken อย่างน้อย 1 รายการ แต่โค้ดใน /resolve ยังไม่ได้ใส่ตัวนับ actionTaken.count Staff เลยยัง Resolve ตั๋วที่มี 0 Action ได้อยู่ ต้องเพิ่มตัวตรวจจับนี้ลงไปใน Backend
+> 2. สิทธิ์ของ Inactive User ในการแก้ไข Action: ในคำสั่ง PATCH /api/actions/:id ยังขาดการเช็ค isActive จากฐานข้อมูล (เช็คแต่ Token) ทำให้ User ที่ถูก Deactivate ไปแล้วยังเข้ามาแก้ไข Action เดิมได้ ต้องเพิ่มการตรวจ caller.isActive เหมือนในคำสั่ง POST
+> 3. ความปลอดภัยของฐานข้อมูล (Atomicity): ตอนสร้าง Action ใหม่ ควรครอบ actionTaken.create และการ touch ticket.updatedAt ด้วย prisma.$transaction เพื่อป้องกัน Timestamp คลาดเคลื่อน
+> 
+> รบกวนช่วยแก้ 3 จุดนี้แล้ว push commit ขึ้นมาใหม่
+
+### How partner responded (PR #78):
+
+> ได้ดำเนินการแก้ไขตามข้อเสนอแนะทั้ง 3 จุดใน commit 5ccaaf9 เรียบร้อยแล้ว:
+> 
+> 1. [Resolution Gate ตรวจสอบ Action Taken]: เพิ่มการตรวจสอบ actionTaken.count ใน PATCH /api/staff/tickets/:id/resolve หากตั๋วมี Action Taken เป็น 0 จะปฏิเสธด้วย HTTP 422 Unprocessable Entity ทันที พร้อมเพิ่มชุดทดสอบใน ticket-workflow.api.test.ts
+> 2. [ตรวจสอบสิทธิ์ Inactive User บน PATCH Action]: เพิ่มการตรวจสอบ caller.isActive จากฐานข้อมูลใน PATCH /api/actions/:id หากผู้ใช้ถูกระงับสิทธิ์จะปฏิเสธด้วย HTTP 422 ทันที พร้อมเพิ่มชุดทดสอบใน actions-taken.api.test.ts
+> 3. [ความปลอดภัยของฐานข้อมูล Atomicity]: ครอบการทำงานของ actionTaken.create และการอัปเดต updatedAt ของตั๋วด้วย prisma.$transaction ใน POST /api/tickets/:id/actions เพื่อรับประกันความปลอดภัยของข้อมูล
+> 
+> ชุดทดสอบทั้งหมดผ่านครบถ้วน: Vitest 312/312 tests (100%), Playwright E2E 9/9 tests (100%), และ Production Build ผ่านเรียบร้อย รบกวนช่วยตรวจทานรอบที่ 2
+
+### My approval review comment for partner's PR #78:
+
+> ตรวจสอบการแก้ไขใน commit 5ccaaf9 เรียบร้อยแล้ว:
+> 
+> 1. ตัวตรวจจับ Resolution Gate นับจำนวน Action Taken ก่อนปิดงานทำงานถูกต้องแล้ว ถ้าไม่มี Action จะถูกปฏิเสธด้วย 422 ทันที
+> 2. ตัวป้องกัน Inactive User ในการแก้ไข Action ทำงานถูกต้อง ป้องกัน User ที่ถูกปิดการใช้งานเรียบร้อย
+> 3. การสร้าง Action ถูกครอบด้วย $transaction ทำให้ Timestamp ของตั๋วซิงค์กันแบบ Atomic
+> 4. รันเทสต์ทั้งระบบผ่านครบ 312/312 เทสต์ (100%) และบิลด์ผ่านทั้ง Server/Client ปราศจาก Error
+> 
+> ผลการประเมิน: ผ่านการตรวจทาน (Approve) พร้อมสำหรับ Merge เข้าสู่ main ได้แล้ว
