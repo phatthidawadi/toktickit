@@ -202,11 +202,10 @@ test.describe('E2E-01: Actions Taken Subsystem Lifecycle Flow (AC-01, AC-02, AC-
 
     // 4. Check Touch Targets: min-height >= 44px
     const recordBtn = page.locator('#record-action-btn');
-    if (await recordBtn.isVisible()) {
-      const box = await recordBtn.boundingBox();
-      expect(box).toBeTruthy();
-      expect(box!.height).toBeGreaterThanOrEqual(40); // 44px accessible target
-    }
+    await expect(recordBtn).toBeVisible();
+    const box = await recordBtn.boundingBox();
+    expect(box).toBeTruthy();
+    expect(box!.height).toBeGreaterThanOrEqual(40); // 44px accessible target
 
     // 5. Check No Horizontal Overflow (AC-14)
     const isOverflowing = await page.evaluate(() => {

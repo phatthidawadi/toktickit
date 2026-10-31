@@ -201,58 +201,43 @@ test.describe('E2E-02: Ticket Resolution Gate & Status Lifecycle (AC-06, AC-07, 
     await expect(page.locator('#record-action-modal')).not.toBeVisible();
 
     // Now edit the created action
-    const editBtn = page.locator('button[id^="edit-action-btn-"], button:has-text("Edit"):visible').first();
+    const editBtn = page.locator('button[id^="edit-action-btn-"]').first();
     await expect(editBtn).toBeVisible();
-    await editBtn.click();
 
+    const editBtnId = await editBtn.getAttribute('id');
+    expect(editBtnId).toBeTruthy();
+    const actionId = Number(editBtnId!.replace('edit-action-btn-', ''));
+    expect(actionId).toBeGreaterThan(0);
+
+    await editBtn.click();
     await expect(page.locator('#edit-action-modal')).toBeVisible();
 
     // Simulate concurrent modification in backend by triggering an out-of-band update
-    // Login as admin via API and update this action line to increment its version
-    let baseUrl = 'http://127.0.0.1:3000';
-    let adminLoginRes = await request.post(`${baseUrl}/api/auth/login`, {
-      data: { email: 'admin.toktickit@example.com', password: 'Password123!' },
+    // Update this action line via API to increment its version from 1 to 2
+    let baseUrl = 'http://localhost:3000';
+    const patchRes = await page.request.patch(`${baseUrl}/api/actions/${actionId}`, {
+      data: {
+        description: 'Concurrent modification from another technician session',
+        result: 'Updated out-of-band',
+        status: 'COMPLETED',
+        version: 1,
+      },
     });
-    if (!adminLoginRes.ok()) {
-      adminLoginRes = await request.post(`${baseUrl}/api/auth/login`, {
-        data: { email: 'admin.toktickit@example.com', password: 'NewSecurePassword456!' },
-      });
-    }
-    const cookies = adminLoginRes.headers()['set-cookie'] || '';
+    expect(patchRes.ok()).toBeTruthy();
 
-    // Find the action ID from client or fetch actions API
-    const actionsRes = await request.get(`${baseUrl}/api/tickets/2/actions`, {
-      headers: { cookie: cookies },
+    // Now user clicks save on the modal with stale version
+    await page.locator('#edit-action-description-input').fill('My conflicting edit attempt');
+    await page.locator('#edit-action-submit-btn').click();
+
+    // Assert 409 Concurrency Conflict banner is displayed (AC-09)
+    const conflictBanner = page.locator('#action-concurrency-conflict');
+    await expect(conflictBanner).toBeVisible();
+
+    // Screenshot conflict alert banner
+    const screenshotDir = path.resolve(__dirname, '../../artifacts/lab-04/screenshots/ticket-resolution');
+    await page.screenshot({
+      path: path.join(screenshotDir, `03-concurrency-conflict-alert-${projectName}.png`),
+      fullPage: true,
     });
-    const actionsData = await actionsRes.json();
-    if (actionsData && actionsData.length > 0) {
-      const targetAction = actionsData[actionsData.length - 1];
-
-      // Mutate the action in the database to increment version
-      await request.patch(`${baseUrl}/api/actions/${targetAction.id}`, {
-        headers: { cookie: cookies },
-        data: {
-          description: 'Concurrent modification from another technician session',
-          result: 'Updated out-of-band',
-          status: 'COMPLETED',
-          version: targetAction.version,
-        },
-      });
-
-      // Now user clicks save on the modal with stale version
-      await page.locator('#edit-action-description-input').fill('My conflicting edit attempt');
-      await page.locator('#edit-action-submit-btn').click();
-
-      // Assert 409 Concurrency Conflict banner is displayed (AC-09)
-      const conflictBanner = page.locator('#concurrency-conflict-banner, text=modified by another technician');
-      await expect(conflictBanner).toBeVisible();
-
-      // Screenshot conflict alert banner
-      const screenshotDir = path.resolve(__dirname, '../../artifacts/lab-04/screenshots/ticket-resolution');
-      await page.screenshot({
-        path: path.join(screenshotDir, `03-concurrency-conflict-alert-${projectName}.png`),
-        fullPage: true,
-      });
-    }
   });
 });

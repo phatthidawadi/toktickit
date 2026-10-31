@@ -94,9 +94,8 @@ test.describe('E2E-03: Role-Based Dashboards & Drill-Down Navigation (AC-10, AC-
 
     // Verify filter was applied via initialFilter
     const statusSelect = page.locator('#status-filter');
-    if (await statusSelect.isVisible()) {
-      await expect(statusSelect).toHaveValue('WAITING_FOR_REQUESTER');
-    }
+    await expect(statusSelect).toBeVisible();
+    await expect(statusSelect).toHaveValue('WAITING_FOR_REQUESTER');
 
     // Screenshot drill-down target view
     await page.screenshot({
@@ -175,11 +174,10 @@ test.describe('E2E-03: Role-Based Dashboards & Drill-Down Navigation (AC-10, AC-
 
     // Verify visible focus ring on dashboard button
     const viewQueueBtn = page.locator('#dash-view-queue');
-    if (await viewQueueBtn.isVisible()) {
-      await viewQueueBtn.focus();
-      const hasFocus = await viewQueueBtn.evaluate((el) => document.activeElement === el);
-      expect(hasFocus).toBe(true);
-    }
+    await expect(viewQueueBtn).toBeVisible();
+    await viewQueueBtn.focus();
+    const hasFocus = await viewQueueBtn.evaluate((el) => document.activeElement === el);
+    expect(hasFocus).toBe(true);
 
     // Screenshot mobile Staff Dashboard
     const staffDir = path.resolve(__dirname, '../../artifacts/lab-04/screenshots/staff-dashboard');
