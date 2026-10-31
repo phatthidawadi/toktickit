@@ -45,6 +45,11 @@ app.post("/api/test/reset-db", async (_req: Request, res: Response) => {
   }
   try {
     clearRateLimitStore();
+    const prisma = getPrisma();
+    await prisma.actionTaken.deleteMany({});
+    await prisma.ticketComment.deleteMany({});
+    await prisma.ticketInternalNote.deleteMany({});
+    await prisma.ticket.deleteMany({});
     await seedDatabase();
     return res.json({ success: true, message: "Database re-seeded successfully." });
   } catch (err: any) {

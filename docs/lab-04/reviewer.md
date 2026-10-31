@@ -12,6 +12,7 @@
 | [PR #74](https://github.com/phatthidawadi/toktickit/pull/74) | `feature/28-actions-taken-ui` | Approved with comments |
 | [PR #75](https://github.com/phatthidawadi/toktickit/pull/75) | `feature/29-ticket-workflow-and-resolution` | Approved with comments |
 | [PR #76](https://github.com/phatthidawadi/toktickit/pull/76) | `feature/30-role-based-dashboards` | Approved with comments |
+| PR #77 (pending) | `feature/31-e2e-automated-testing-and-screenshots` | Pending review |
 
 ---
 
@@ -801,3 +802,18 @@
 > - เพิ่มชุดทดสอบ E2E สำหรับ HTTP 409 Stale Update Concurrency Guard (AC-08) ตรงตามที่ระบุใน README อย่างแท้จริง
 > - ชุดทดสอบทั้งหมด 310 Vitest tests และ 9 Playwright E2E tests ผ่าน 100% โค้ดมีคุณภาพและความน่าเชื่อถือสูงสุด
 
+---
+
+## PR #77 — Issue 31: End-to-End Automated Testing Suite and Screenshot Evidence
+
+**Branch:** `feature/31-e2e-automated-testing-and-screenshots`
+**Resolves:** GitHub Issue #69
+**Reviewer verdict:** Pending review
+
+### Reviewer comment I received (PR #77):
+
+> (Awaiting peer review from @chanya06)
+
+### How I responded (PR #77):
+
+> (Pending)

@@ -520,7 +520,7 @@ export const ActionsTakenSection: React.FC<ActionsTakenSectionProps> = ({
           </div>
 
           {/* Mobile Card View (< 768px) */}
-          <div className="d-block d-md-none" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div id="actions-card-list" className="d-block d-md-none" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             {actions.map((act) => {
               const badgeStyle = getStatusBadgeStyle(act.status);
               return (

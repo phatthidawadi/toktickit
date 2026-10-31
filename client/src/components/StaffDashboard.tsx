@@ -29,7 +29,7 @@ function StatusPill({ status }: { status: string }) {
 }
 
 function PriorityBadge({ priority }: { priority?: string | null }) {
-  if (!priority) return <span style={{ color: "#65756E", fontSize: "12px" }}>—</span>;
+  if (!priority) return <span style={{ color: "#65756E", fontSize: "12px" }}>ï¿½</span>;
   const map: Record<string, string> = { URGENT: "#C5221F", HIGH: "#D97706", MEDIUM: "#006B3C", LOW: "#6B7280" };
   return <span style={{ color: map[priority] || "#374151", fontWeight: 700, fontSize: "12px" }}>{priority}</span>;
 }
@@ -80,7 +80,7 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
       <div style={{ background: "linear-gradient(135deg, #006B3C, #0B7A46)", borderRadius: "12px", padding: "24px 28px", color: "#FFFFFF", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
         <div>
           <h1 style={{ fontSize: "22px", fontWeight: "bold", margin: "0 0 4px 0" }}>IT Helpdesk Dashboard</h1>
-          <p style={{ fontSize: "13px", margin: 0, opacity: 0.85 }}>{today} — Logged in as {user?.name || "Staff"}</p>
+          <p style={{ fontSize: "13px", margin: 0, opacity: 0.85 }}>{today} ï¿½ Logged in as {user?.name || "Staff"}</p>
         </div>
         <span style={{ backgroundColor: "rgba(255,255,255,0.15)", padding: "6px 14px", borderRadius: "20px", fontSize: "13px", fontWeight: 600 }}>{isAdmin ? "Administrator" : "IT Staff"}</span>
       </div>
@@ -163,7 +163,7 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
                     <td style={{ padding: "11px 14px", color: "#1F2925", maxWidth: "220px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ticket.summary}</td>
                     <td style={{ padding: "11px 14px" }}><StatusPill status={ticket.currentStatus} /></td>
                     <td style={{ padding: "11px 14px" }}><PriorityBadge priority={ticket.itPriority} /></td>
-                    <td style={{ padding: "11px 14px", color: "#65756E", whiteSpace: "nowrap" }}>{ticket.requester?.name || "—"}</td>
+                    <td style={{ padding: "11px 14px", color: "#65756E", whiteSpace: "nowrap" }}>{ticket.requester?.name || "ï¿½"}</td>
                     <td style={{ padding: "11px 14px", color: "#65756E", whiteSpace: "nowrap" }}>{new Date(ticket.updatedAt).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</td>
                     <td style={{ padding: "11px 14px" }}>
                       <button id={`staff-dash-ticket-${ticket.id}`} onClick={() => onNavigateToTicketDetail(ticket.id)} style={{ backgroundColor: "#006B3C", color: "#FFFFFF", border: "none", padding: "5px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>Open</button>
@@ -178,7 +178,7 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
 
       {/* Administrator User Summary Card */}
       {isAdmin && data.adminUserSummary && (
-        <div style={{ backgroundColor: "#FFFFFF", borderRadius: "10px", border: "1px solid #C7D2FE", padding: "20px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+        <div id="dash-admin-user-summary" style={{ backgroundColor: "#FFFFFF", borderRadius: "10px", border: "1px solid #C7D2FE", padding: "20px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
             <h2 style={{ fontSize: "15px", fontWeight: 700, color: "#1F2925", margin: 0 }}>User Account Summary</h2>
             <button id="dash-user-management" onClick={onNavigateToUserManagement} style={{ backgroundColor: "transparent", border: "1px solid #4338CA", color: "#4338CA", padding: "4px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>Manage Users</button>
