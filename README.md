@@ -1,6 +1,6 @@
 # TokTickIT - Enterprise IT Service Desk Application
 
-TokTickIT is a full-stack IT Service Desk application designed to streamline organizational IT support workflows, including Account & Access, Hardware, Software, and Network service requests. The application has evolved across three major engineering sprints (Lab 1, Lab 2, and Lab 3) into a production-grade, multi-role enterprise system.
+TokTickIT is a full-stack IT Service Desk application designed to streamline organizational IT support workflows, including Account & Access, Hardware, Software, and Network service requests. The application has evolved across four major engineering sprints (Lab 1, Lab 2, Lab 3, and Lab 4) into a production-grade, multi-role enterprise system.
 
 ---
 
@@ -93,10 +93,10 @@ Ensure your PostgreSQL service is running, then execute Prisma migrations and se
 ```bash
 cd server
 
-# Apply database migration for Lab 3 schema
-npx prisma migrate dev --name init_lab3
+# Apply database migrations for Lab 4 schema
+npx prisma migrate deploy
 
-# Seed database with categories, related systems, users, and tickets
+# Seed database with categories, related systems, users, tickets, and actions taken
 npx prisma db seed
 ```
 
