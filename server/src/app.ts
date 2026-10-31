@@ -19,6 +19,7 @@ import { authenticateSession, requireRole } from "./middleware/authMiddleware.js
 import { loginRateLimiter, clearRateLimitStore } from "./middleware/rateLimiter.js";
 import { generateTicketNumber } from "./utils/ticketNumber.js";
 import { isValidStatusTransition } from "./utils/workflow.js";
+import { TicketStatus } from "@prisma/client";
 
 // The Express app is exported separately from app.listen() (see index.ts) so
 // Supertest can import `app` without opening a port. Do not merge these files.
@@ -2064,7 +2065,13 @@ app.get("/api/dashboard/requester", authenticateSession, async (req: Request, re
     const requesterId = user.id;
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-    const ACTIVE_STATUSES = ["NEW", "OPEN", "IN_PROGRESS", "WAITING_FOR_REQUESTER", "REOPENED"];
+    const ACTIVE_STATUSES: TicketStatus[] = [
+      TicketStatus.NEW,
+      TicketStatus.OPEN,
+      TicketStatus.IN_PROGRESS,
+      TicketStatus.WAITING_FOR_REQUESTER,
+      TicketStatus.REOPENED,
+    ];
 
     const [totalOpenTickets, ticketsWaitingForRequester, recentlyResolvedTickets, myRecentTickets] =
       await Promise.all([
@@ -2119,8 +2126,23 @@ app.get("/api/dashboard/staff", authenticateSession, async (req: Request, res: R
     const prisma = getPrisma();
     const staffId = user.id;
 
-    const ACTIVE_STATUSES = ["NEW", "OPEN", "IN_PROGRESS", "WAITING_FOR_REQUESTER", "REOPENED"];
-    const ALL_STATUSES = ["NEW", "OPEN", "IN_PROGRESS", "WAITING_FOR_REQUESTER", "RESOLVED", "CLOSED", "REOPENED", "CANCELLED"];
+    const ACTIVE_STATUSES: TicketStatus[] = [
+      TicketStatus.NEW,
+      TicketStatus.OPEN,
+      TicketStatus.IN_PROGRESS,
+      TicketStatus.WAITING_FOR_REQUESTER,
+      TicketStatus.REOPENED,
+    ];
+    const ALL_STATUSES: TicketStatus[] = [
+      TicketStatus.NEW,
+      TicketStatus.OPEN,
+      TicketStatus.IN_PROGRESS,
+      TicketStatus.WAITING_FOR_REQUESTER,
+      TicketStatus.RESOLVED,
+      TicketStatus.CLOSED,
+      TicketStatus.REOPENED,
+      TicketStatus.CANCELLED,
+    ];
 
     // Use findMany for all counts to avoid groupBy on nullable columns
     const [

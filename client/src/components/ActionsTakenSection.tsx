@@ -104,8 +104,42 @@ export const ActionsTakenSection: React.FC<ActionsTakenSectionProps> = ({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && (isRecordModalOpen || !!editingAction)) {
+      const isModalActive = isRecordModalOpen || !!editingAction;
+      if (!isModalActive) return;
+
+      if (e.key === "Escape") {
         closeModals();
+        return;
+      }
+
+      if (e.key === "Tab") {
+        const modalId = isRecordModalOpen ? "record-action-modal" : "edit-action-modal";
+        const modalElement = document.getElementById(modalId);
+        if (!modalElement) return;
+
+        const focusableElements = modalElement.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const focusable = Array.from(focusableElements).filter(
+          (el) => !el.hasAttribute("disabled") && el.getAttribute("aria-hidden") !== "true"
+        );
+
+        if (focusable.length === 0) return;
+
+        const firstElement = focusable[0];
+        const lastElement = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement || !modalElement.contains(document.activeElement)) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement || !modalElement.contains(document.activeElement)) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
